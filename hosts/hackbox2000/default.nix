@@ -14,7 +14,7 @@
 
   # Used for backwards compatibility. please read the changelog
   # before changing: `darwin-rebuild changelog`.
-  system.stateVersion = "23.11";
+  system.stateVersion = "4";
         
   # macOS system defaults configuration
   # https://daiderd.com/nix-darwin/manual/index.html#opt-system.defaults.dock.autohide
