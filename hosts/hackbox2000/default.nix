@@ -1,8 +1,5 @@
 { pkgs, ... }:
 {
-  # Make sure the nix daemon always runs
-  # Without this configuration, the switch command won't work due to this error:
-  # error: The daemon is not enabled but this is a multi-user install, aborting activation
   nix.useDaemon = true;
 
   # Configure extra options: https://nix-community.github.io/home-manager/options.html#opt-nix.extraOptions
@@ -15,9 +12,15 @@
     extra-nix-path = nixpkgs=flake:nixpkgs
   '';
 
+  # Used for backwards compatibility. please read the changelog
+  # before changing: `darwin-rebuild changelog`.
+  system.stateVersion = 4;
+        
   # macOS system defaults configuration
   # https://daiderd.com/nix-darwin/manual/index.html#opt-system.defaults.dock.autohide
   system.defaults.dock.autohide = true;
+
+  system.configurationRevision = self.rev or self.dirtyRev or null;
 
   # Explicitly set the home directory for the user.
   users.users.ipiesh.home = "/Users/ipiesh";
