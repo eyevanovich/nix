@@ -20,8 +20,6 @@
   # https://daiderd.com/nix-darwin/manual/index.html#opt-system.defaults.dock.autohide
   system.defaults.dock.autohide = true;
 
-  system.configurationRevision = self.rev or self.dirtyRev or null;
-
   # Explicitly set the home directory for the user.
   users.users.ipiesh.home = "/Users/ipiesh";
 
