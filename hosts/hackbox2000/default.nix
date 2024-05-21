@@ -24,6 +24,7 @@
   users.users.ipiesh.home = "/Users/ipiesh";
 
   environment.systemPackages = [ pkgs.neofetch ];
+  environment.variables.HOMEBREW_NO_ANALYTICS = "1";
 
   # Fonts
   fonts = {
