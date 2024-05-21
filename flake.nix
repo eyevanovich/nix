@@ -2,32 +2,26 @@
   description = "ipiesh flake";
 
   inputs = {
-    # Package sets
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-23.11-darwin";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
+    nixpkgs-darwin.url = "github:NixOS/nixpkgs/nixpkgs-23.11-darwin";
 
-    # Environment/system management
-    darwin.url = "github:LnL7/nix-darwin";
-    darwin.inputs.nixpkgs.follows = "nixpkgs";
+    nix-darwin.url = "github:LnL7/nix-darwin/master";
+    nix-darwin.inputs.nixpkgs.follows = "nixpkgs-darwin";
 
-    # Home Manager
     home-manager.url = "github:nix-community/home-manager/release-23.11";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = { self, nixpkgs, darwin, home-manager }: {
-
-    # We need a darwinConfigurations output to actually have a `nix-darwin` configuration.
-    # https://github.com/LnL7/nix-darwin#flakes-experimental
-    darwinConfigurations.ipiesh = darwin.lib.darwinSystem {
+    darwinConfigurations."hackbox2000" = darwin.lib.darwinSystem {
       system = "aarch64-darwin";
       modules = [
         # Main `nix-darwin` configuration
-        # https://github.com/LnL7/nix-darwin#flakes-experimental
-        ./configuration.nix
+        ./hosts/hackbox2000/default.nix
 
         # Homebrew configuration
         # https://xyno.space/post/nix-darwin-introduction
-        ./homebrew.nix
+        ./hosts/hackbox2000/homebrew.nix
 
         # The flake-based setup of the Home Manager `nix-darwin` module
         # https://nix-community.github.io/home-manager/index.html#sec-flakes-nix-darwin-module
@@ -35,7 +29,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.users.zain = import ./home;
+            home-manager.users.ipiesh = import ./home;
 
             # Optionally, use home-manager.extraSpecialArgs to pass
             # arguments to home.nix
