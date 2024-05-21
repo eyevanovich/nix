@@ -19,19 +19,13 @@
         ./hosts/hackbox2000/default.nix
 
         # Homebrew configuration
-        # https://xyno.space/post/nix-darwin-introduction
         ./hosts/hackbox2000/homebrew.nix
 
         # The flake-based setup of the Home Manager `nix-darwin` module
-        # https://nix-community.github.io/home-manager/index.html#sec-flakes-nix-darwin-module
         home-manager.darwinModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.users.ipiesh = import ./home;
-
-            # Optionally, use home-manager.extraSpecialArgs to pass
-            # arguments to home.nix
           }
       ];
     };
