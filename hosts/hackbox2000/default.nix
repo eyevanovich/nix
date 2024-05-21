@@ -14,7 +14,7 @@
 
   # Used for backwards compatibility. please read the changelog
   # before changing: `darwin-rebuild changelog`.
-  system.stateVersion = 4;
+  system.stateVersion = "23.11";
         
   # macOS system defaults configuration
   # https://daiderd.com/nix-darwin/manual/index.html#opt-system.defaults.dock.autohide
@@ -25,7 +25,7 @@
 
   environment.systemPackages = [ pkgs.neofetch ];
   environment.variables.HOMEBREW_NO_ANALYTICS = "1";
-
+  programs.fish.enable = true;`
   # Fonts
   fonts = {
     fontDir.enable = true;
