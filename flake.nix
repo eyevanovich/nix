@@ -27,6 +27,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
+            home-manager.users.ipiesh = import ./hosts/hackbox2000/home.nix;
           }
       ];
     };
