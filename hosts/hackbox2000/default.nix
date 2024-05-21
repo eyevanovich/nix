@@ -22,7 +22,7 @@
   # Explicitly set the home directory for the user.
   users.users.ipiesh.home = "/Users/ipiesh";
 
-  environment.systemPackages = [ pkgs.neofetch ]
+  environment.systemPackages = [ pkgs.neofetch ];
 
   # Fonts
   fonts = {
