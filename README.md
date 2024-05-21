@@ -26,9 +26,16 @@ A repo to host a declarative macOS setup
 ### Clone repo
 - `git clone git@github.com:eyevanovich/nix.git` within `~/.config/`
 
-### Build Nix stores
+### Run nix-darwin
 
 ```bash
-  nix build .
+  nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --flake ~/.config/nix
 ```
 
+### Rebuild and switch
+```bash
+  darwin-rebuild switch --flake ~/.config/nix
+```
+
+#### References
+- https://davi.sh/blog/2024/01/nix-darwin/
