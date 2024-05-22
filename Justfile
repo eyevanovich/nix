@@ -1,4 +1,3 @@
-# just is a command runner, Justfile is very similar to Makefile, but simpler.
 
 hostname := "hackbox2000"
 
@@ -8,10 +7,10 @@ hostname := "hackbox2000"
 #
 ############################################################################
 darwin: 
-  nix build .#darwinConfigurations.${hostname}.system \
-    --extra-experimental-features 'nix-command flakes'
-
-  ./result/sw/bin/darwin-rebuild switch --flake .#${hostname}
+  nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --flake ~/.config/nix
+  darwin-rebuild switch --flake ~/.config/nix
+  # nix build .#darwinConfigurations.${hostname}.system --extra-experimental-features 'nix-command flakes'
+  # ./result/sw/bin/darwin-rebuild switch --flake .#${hostname}
 
 darwin-debug:
   nix build .#darwinConfigurations.${hostname}.system --show-trace --verbose \
