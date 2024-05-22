@@ -6,11 +6,13 @@ hostname := "hackbox2000"
 #  Darwin related commands
 #
 ############################################################################
-darwin: 
+build: 
   nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --flake ~/.config/nix
-  darwin-rebuild switch --flake ~/.config/nix
   # nix build .#darwinConfigurations.${hostname}.system --extra-experimental-features 'nix-command flakes'
   # ./result/sw/bin/darwin-rebuild switch --flake .#${hostname}
+
+rebuild: 
+  darwin-rebuild switch --flake ~/.config/nix
 
 darwin-debug:
   nix build .#darwinConfigurations.${hostname}.system --show-trace --verbose \
