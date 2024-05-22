@@ -25,6 +25,7 @@
 
   environment.systemPackages = [ pkgs.neofetch ];
   environment.variables.HOMEBREW_NO_ANALYTICS = "1";
+
   programs.fish.enable = true; 
 
   # Fonts
