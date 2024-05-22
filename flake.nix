@@ -18,7 +18,7 @@
   outputs = inputs @ {
     self,
     nixpkgs,
-    darwin,
+    nix-darwin,
     home-manager,
     ...
   }: let
@@ -32,7 +32,7 @@
         inherit username useremail hostname;
       };
   in {
-    darwinConfigurations."${hostname}" = darwin.lib.darwinSystem {
+    darwinConfigurations."${hostname}" = nix-darwin.lib.darwinSystem {
       inherit system specialArgs;
       modules = [
         ./hosts/hackbox2000/modules/nix-core.nix
