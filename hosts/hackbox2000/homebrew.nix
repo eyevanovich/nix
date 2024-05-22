@@ -40,12 +40,12 @@
 
   # List of Homebrew casks to install.
   # https://daiderd.com/nix-darwin/manual/index.html#opt-homebrew.casks
-  homebrew.casks = [
-    "arc"
-    "karabiner-elements"
-    "obsidian"
-    "rectangle"
-    "spotify"
-    "setapp"
-  ];
+  # homebrew.casks = [
+  #   "arc"
+  #   "karabiner-elements"
+  #   "obsidian"
+  #   "rectangle"
+  #   "spotify"
+  #   "setapp"
+  # ];
 }
