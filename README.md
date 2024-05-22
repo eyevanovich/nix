@@ -7,6 +7,7 @@ A repo to host a declarative macOS setup
 ## Provisioning a new macOS machine from scratch
 
 ### User
+
 - create admin user `ipiesh`
 
 ### Dependencies
@@ -24,17 +25,22 @@ A repo to host a declarative macOS setup
 ```
 
 ### Clone repo
+
 - `git clone git@github.com:eyevanovich/nix.git` within `~/.config/`
 
-### Run nix-darwin
+### Setup
+
+#### without Justfile
 
 ```bash
   nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --flake ~/.config/nix
+  darwin-rebuild switch --flake ~/.config/nix
 ```
 
-### Rebuild and switch
+#### with Justfile
+
 ```bash
-  darwin-rebuild switch --flake ~/.config/nix
+  just darwin
 ```
 
 #### References

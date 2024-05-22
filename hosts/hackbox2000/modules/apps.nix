@@ -1,6 +1,11 @@
-{ ... }:
+{ pkgs, ... }:
 
 {
+  programs.fish.enable = true; 
+
+  environment.variables.HOMEBREW_NO_ANALYTICS = "1";
+  environment.systemPackages = [ pkgs.neofetch ];
+
   # Enable Homebrew
   # Note that enabling this option does not install Homebrew, see the Homebrew website for installation instructions.
   # https://brew.sh/

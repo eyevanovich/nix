@@ -1,5 +1,5 @@
 {
-  description = "ipiesh flake";
+  description = "macOS configurator";
 
   inputs = {
      nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -15,21 +15,44 @@
     };
   };
 
-  outputs = { self, nixpkgs, nix-darwin, home-manager }: {
-    darwinConfigurations."hackbox2000" = nix-darwin.lib.darwinSystem {
-      system = "aarch64-darwin";
+  outputs = inputs @ {
+    self,
+    nixpkgs,
+    darwin,
+    home-manager,
+    ...
+  }: let
+    username = "ipiesh";
+    useremail = "macos@ivanpiesh.info";
+    system = "aarch64-darwin"; # aarch64-darwin or x86_64-darwin
+    hostname = "hackbox2000";
+    specialArgs =
+      inputs
+      // {
+        inherit username useremail hostname;
+      };
+  in {
+    darwinConfigurations."${hostname}" = darwin.lib.darwinSystem {
+      inherit system specialArgs;
       modules = [
-        ./hosts/hackbox2000/default.nix
-        ./hosts/hackbox2000/homebrew.nix
+        ./hosts/hackbox2000/modules/nix-core.nix
+        ./hosts/hackbox2000/modules/apps.nix
+        ./hosts/hackbox2000/modules/system.nix
+        ./hosts/hackbox2000/modules/host-users.nix
 
-        # The flake-based setup of the Home Manager `nix-darwin` module
+        # home manager
         home-manager.darwinModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.ipiesh = import ./hosts/hackbox2000/home.nix;
-          }
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+          home-manager.extraSpecialArgs = specialArgs;
+          home-manager.users.${username} = import ./hosts/hackbox2000/home/core.nix;
+        }
       ];
     };
+
+    # nix code formatter
+    formatter.${system} = nixpkgs.legacyPackages.${system}.alejandra;
   };
 }
+
