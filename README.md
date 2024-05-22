@@ -39,3 +39,4 @@ A repo to host a declarative macOS setup
 
 #### References
 - https://davi.sh/blog/2024/01/nix-darwin/
+- https://github.com/ryan4yin/nix-darwin-kickstarter/tree/main
