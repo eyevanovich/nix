@@ -2,9 +2,9 @@
 
 {
 
-  environment.variables.HOMEBREW_NO_ANALYTICS = "1";
-
   programs.fish.enable = true; 
+  environment.variables.HOMEBREW_NO_ANALYTICS = "1";
+  environment.variables.EDITOR = "hx";
 
   ##########################################################################
   # 
@@ -26,8 +26,8 @@
   environment.systemPackages = with pkgs; [
     git
     just # use Justfile to simplify nix-darwin's commands 
+    fishPlugins.tide
   ];
-  environment.variables.EDITOR = "nvim";
 
   # TODO To make this work, homebrew need to be installed manually, see https://brew.sh
   # 
@@ -50,18 +50,16 @@
       # TODO Feel free to add your favorite apps here.
 
       # Xcode = 497799835;
-      # Wechat = 836500024;
-      # NeteaseCloudMusic = 944848654;
-      # QQ = 451108668;
-      # WeCom = 1189898970;  # Wechat for Work
-      # TecentMetting = 1484048379;
-      # QQMusic = 595615424;
     };
 
     taps = [
-      "homebrew/cask-fonts"
-      "homebrew/services"
-      "homebrew/cask-versions"
+      "1password/tap"
+      "cirruslabs/cli"
+      "derailed/k9s"
+      "go-task/tap"
+      "goreleaser/tap"
+      "hashicorp/tap"
+      "jesseduffield/lazygit"
     ];
 
     # `brew install`
@@ -88,6 +86,9 @@
 
     # `brew install --cask`
     casks = [
+      "1password-cli"
+      "openlens"
+      "wezterm"
       "arc"
       "karabiner-elements"
       "obsidian"
