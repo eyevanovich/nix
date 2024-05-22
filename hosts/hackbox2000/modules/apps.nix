@@ -54,9 +54,6 @@
 
     taps = [
       "1password/tap"
-      "cirruslabs/cli"
-      "derailed/k9s"
-      "go-task/tap"
       "goreleaser/tap"
       "hashicorp/tap"
       "jesseduffield/lazygit"
