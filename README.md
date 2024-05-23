@@ -21,7 +21,10 @@ A repo to host a declarative macOS setup
 - Install `homebrew`
 
 ```bash
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" && \
+  (echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> /Users/ipiesh/.zprofile && \
+  eval "$(/opt/homebrew/bin/brew shellenv)" && \
+  brew install just
 ```
 
 ### Clone repo
@@ -40,8 +43,19 @@ A repo to host a declarative macOS setup
 #### with Justfile
 
 ```bash
-  just darwin
-```
+  // first time
+  just build
+
+  // there after
+  just rebuild
+
+  ```
+
+  #### Set fish as default shell
+  ```bash
+  echo /opt/homebrew/bin/fish | sudo tee -a /etc/shells && \
+  chsh -s /opt/homebrew/bin/fish
+  ```
 
 #### References
 - https://davi.sh/blog/2024/01/nix-darwin/
