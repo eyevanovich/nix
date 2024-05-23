@@ -22,20 +22,21 @@
     # the Home Manager release notes for a list of state version
     # changes in each release.
     stateVersion = "23.11";
-  };
 
-  # You can also manage environment variables but you will have to manually
-  # source
-  #
-  #  ~/.nix-profile/etc/profile.d/hm-session-vars.sh
-  #
-  # or
-  #
-  #  /etc/profiles/per-user/davish/etc/profile.d/hm-session-vars.sh
-  #
-  # if you don't want to manage your shell through Home Manager.
-  home.sessionVariables = {
-    EDITOR = "hx";
+    # You can also manage environment variables but you will have to manually
+    # source
+    #
+    #  ~/.nix-profile/etc/profile.d/hm-session-vars.sh
+    #
+    # or
+    #
+    #  /etc/profiles/per-user/davish/etc/profile.d/hm-session-vars.sh
+    #
+    # if you don't want to manage your shell through Home Manager.
+    sessionVariables = {
+      SHELL = "fish";
+      EDITOR = "hx";
+    };
   };
 
   # Let Home Manager install and manage itself.
