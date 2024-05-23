@@ -167,7 +167,7 @@
     pkgs.fish
   ];
 
-  users.defaultUserShell = pkgs.fish;
+  users.nix.defaultUserShell = pkgs.fish;
 
   # Set your time zone.
   # comment this due to the issue:
