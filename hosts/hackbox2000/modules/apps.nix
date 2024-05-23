@@ -64,7 +64,6 @@
       "neofetch"
       "pre-commit"
       "taplo"
-      "fish"
       "tldr"
       "kubectx"
       "direnv"
