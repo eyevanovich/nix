@@ -1,6 +1,7 @@
 {
   pkgs,
   lib,
+  username,
   ...
 }: {
   # enable flakes globally
@@ -18,6 +19,8 @@
   nix.package = pkgs.nix;
 
   programs.fish.enable = true;
+  username = username;
+  users.users.${username}.shell = pkgs.fish;
 
   # do garbage collection weekly to keep disk usage low
   nix.gc = {
