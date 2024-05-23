@@ -47,6 +47,7 @@
           home-manager.useUserPackages = true;
           home-manager.extraSpecialArgs = specialArgs;
           home-manager.users.${username} = import ./hosts/hackbox2000/home/core.nix;
+          home-manager.home.stateVersion = "23.11";
         }
       ];
     };
