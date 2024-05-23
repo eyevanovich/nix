@@ -22,6 +22,7 @@
   environment.systemPackages = with pkgs; [
     git
     just # use Justfile to simplify nix-darwin's commands
+    grc
     fishPlugins.tide
   ];
 
