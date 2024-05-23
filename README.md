@@ -26,7 +26,7 @@ A repo to host a declarative macOS setup
 
 ### Clone repo
 
-- `git clone git@github.com:eyevanovich/nix.git` within `~/.config/`
+- `git clone https://github.com/eyevanovich/nix.git` within `~/.config/`
 
 ### Setup
 
