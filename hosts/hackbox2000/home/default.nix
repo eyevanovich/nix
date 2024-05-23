@@ -24,7 +24,6 @@
     #
     # if you don't want to manage your shell through Home Manager.
     sessionVariables = {
-      SHELL = "fish";
       EDITOR = "hx";
     };
   };
