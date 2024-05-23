@@ -52,6 +52,9 @@
       ];
     };
 
+    programs.fish.enable = true;
+    users.defaultUserShell = nixpkgs.fish;
+
     # nix code formatter
     formatter.${system} = nixpkgs.legacyPackages.${system}.alejandra;
   };
