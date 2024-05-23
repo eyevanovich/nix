@@ -1,17 +1,15 @@
-{ pkgs, ... }:
-
-  ###################################################################################
-  #
-  #  macOS's System configuration
-  #
-  #  All the configuration options are documented here:
-  #    https://daiderd.com/nix-darwin/manual/index.html#sec-options
-  #  Incomplete list of macOS `defaults` commands :
-  #    https://github.com/yannbertrand/macos-defaults
-  #
-  ###################################################################################
+{pkgs, ...}:
+###################################################################################
+#
+#  macOS's System configuration
+#
+#  All the configuration options are documented here:
+#    https://daiderd.com/nix-darwin/manual/index.html#sec-options
+#  Incomplete list of macOS `defaults` commands :
+#    https://github.com/yannbertrand/macos-defaults
+#
+###################################################################################
 {
-
   system = {
     # activationScripts are executed every time you boot the system or run `nixos-rebuild` / `darwin-rebuild`.
     activationScripts.postUserActivation.text = ''
@@ -22,33 +20,33 @@
 
     defaults = {
       menuExtraClock.Show24Hour = true;
-      
+
       # customize dock
       dock = {
         autohide = true;
-        show-recents = false;  # disable recent apps
+        show-recents = false; # disable recent apps
 
         # customize Hot Corners
         # wvous-tl-corner = 2;  # top-left - Mission Control
-        wvous-tr-corner = 5;  # top-right - Screen Saver
+        wvous-tr-corner = 5; # top-right - Screen Saver
         # wvous-bl-corner = 3;  # bottom-left - Application Windows
-        wvous-br-corner = 13;  # bottom-right - Lock Screen
+        wvous-br-corner = 13; # bottom-right - Lock Screen
       };
 
       # customize finder
       finder = {
-        _FXShowPosixPathInTitle = true;  # show full path in finder title
-        AppleShowAllExtensions = true;  # show all file extensions
-        FXEnableExtensionChangeWarning = false;  # disable warning when changing file extension
-        ShowPathbar = true;  # show path bar
-        ShowStatusBar = true;  # show status bar
+        _FXShowPosixPathInTitle = true; # show full path in finder title
+        AppleShowAllExtensions = true; # show all file extensions
+        FXEnableExtensionChangeWarning = false; # disable warning when changing file extension
+        ShowPathbar = true; # show path bar
+        ShowStatusBar = true; # show status bar
       };
 
       # customize trackpad
       trackpad = {
-        Clicking = true;  # enable tap to click
-        TrackpadRightClick = true;  # enable two finger right click
-        TrackpadThreeFingerDrag = true;  # enable three finger drag
+        Clicking = true; # enable tap to click
+        TrackpadRightClick = true; # enable two finger right click
+        TrackpadThreeFingerDrag = true; # enable three finger drag
       };
 
       # customize settings that not supported by nix-darwin directly
@@ -56,32 +54,32 @@
       #   https://github.com/yannbertrand/macos-defaults
       NSGlobalDomain = {
         # `defaults read NSGlobalDomain "xxx"`
-        "com.apple.swipescrolldirection" = false;  # enable natural scrolling
-        "com.apple.sound.beep.feedback" = 0;  # disable beep sound when pressing volume up/down key
-        AppleInterfaceStyle = "Dark";  # dark mode
-        AppleKeyboardUIMode = 3;  # Mode 3 enables full keyboard control.
-        ApplePressAndHoldEnabled = true;  # enable press and hold
+        "com.apple.swipescrolldirection" = false; # enable natural scrolling
+        "com.apple.sound.beep.feedback" = 0; # disable beep sound when pressing volume up/down key
+        AppleInterfaceStyle = "Dark"; # dark mode
+        AppleKeyboardUIMode = 3; # Mode 3 enables full keyboard control.
+        ApplePressAndHoldEnabled = true; # enable press and hold
 
         # If you press and hold certain keyboard keys when in a text area, the key’s character begins to repeat.
         # This is very useful for vim users, they use `hjkl` to move cursor.
         # sets how long it takes before it starts repeating.
-        InitialKeyRepeat = 15;  # normal minimum is 15 (225 ms), maximum is 120 (1800 ms)
-        # sets how fast it repeats once it starts. 
-        KeyRepeat = 3;  # normal minimum is 2 (30 ms), maximum is 120 (1800 ms)
+        InitialKeyRepeat = 15; # normal minimum is 15 (225 ms), maximum is 120 (1800 ms)
+        # sets how fast it repeats once it starts.
+        KeyRepeat = 3; # normal minimum is 2 (30 ms), maximum is 120 (1800 ms)
 
-        NSAutomaticCapitalizationEnabled = false;  # disable auto capitalization(自动大写)
-        NSAutomaticDashSubstitutionEnabled = false;  # disable auto dash substitution(智能破折号替换)
-        NSAutomaticPeriodSubstitutionEnabled = false;  # disable auto period substitution(智能句号替换)
-        NSAutomaticQuoteSubstitutionEnabled = false;  # disable auto quote substitution(智能引号替换)
-        NSAutomaticSpellingCorrectionEnabled = false;  # disable auto spelling correction(自动拼写检查)
-        NSNavPanelExpandedStateForSaveMode = true;  # expand save panel by default(保存文件时的路径选择/文件名输入页)
+        NSAutomaticCapitalizationEnabled = false; # disable auto capitalization(自动大写)
+        NSAutomaticDashSubstitutionEnabled = false; # disable auto dash substitution(智能破折号替换)
+        NSAutomaticPeriodSubstitutionEnabled = false; # disable auto period substitution(智能句号替换)
+        NSAutomaticQuoteSubstitutionEnabled = false; # disable auto quote substitution(智能引号替换)
+        NSAutomaticSpellingCorrectionEnabled = false; # disable auto spelling correction(自动拼写检查)
+        NSNavPanelExpandedStateForSaveMode = true; # expand save panel by default(保存文件时的路径选择/文件名输入页)
         NSNavPanelExpandedStateForSaveMode2 = true;
       };
 
       # Customize settings that not supported by nix-darwin directly
       # see the source code of this project to get more undocumented options:
       #    https://github.com/rgcr/m-cli
-      # 
+      #
       # All custom entries can be found by running `defaults read` command.
       # or `defaults read xxx` to read a specific domain.
       CustomUserPreferences = {
@@ -134,8 +132,8 @@
       };
 
       loginwindow = {
-        GuestEnabled = false;  # disable guest user
-        SHOWFULLNAME = true;  # show full name in login window
+        GuestEnabled = false; # disable guest user
+        SHOWFULLNAME = true; # show full name in login window
       };
     };
 
@@ -143,17 +141,17 @@
     # the most important thing is to remap option key to alt key globally,
     # but it's not supported by macOS yet.
     keyboard = {
-      enableKeyMapping = true;  # enable key mapping so that we can use `option` as `control`
+      enableKeyMapping = true; # enable key mapping so that we can use `option` as `control`
 
       # NOTE: do NOT support remap capslock to both control and escape at the same time
-      remapCapsLockToControl = false;  # remap caps lock to control, useful for emac users
-      remapCapsLockToEscape  = true;   # remap caps lock to escape, useful for vim users
+      remapCapsLockToControl = false; # remap caps lock to control, useful for emac users
+      remapCapsLockToEscape = true; # remap caps lock to escape, useful for vim users
 
-      # swap left command and left alt 
+      # swap left command and left alt
       # so it matches common keyboard layout: `ctrl | command | alt`
       #
       # disabled, caused only problems!
-      swapLeftCommandAndLeftAlt = false;  
+      swapLeftCommandAndLeftAlt = false;
     };
   };
 
@@ -181,7 +179,7 @@
     # will change to `fonts.packages` after this PR is merged:
     #   https://github.com/LnL7/nix-darwin/pull/754
     fonts = with pkgs; [
-    # packages = with pkgs; [
+      # packages = with pkgs; [
       # icon fonts
       material-design-icons
       font-awesome
