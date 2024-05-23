@@ -17,9 +17,6 @@
 
   nix.package = pkgs.nix;
 
-  programs.fish.enable = true;
-  users.defaultUserShell = pkgs.fish;
-
   # do garbage collection weekly to keep disk usage low
   nix.gc = {
     automatic = lib.mkDefault true;
