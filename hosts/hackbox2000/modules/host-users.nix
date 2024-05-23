@@ -19,9 +19,5 @@
     description = username;
   };
 
-  users.knownUsers = [
-    "${username}"
-  ];
-
   nix.settings.trusted-users = [username];
 }
