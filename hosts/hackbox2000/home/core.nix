@@ -28,6 +28,8 @@
     lazygit # git TUI
     direnv
     just # justfile
+    fd # better find
+    eza # better ls
 
     # lsp
     taplo
