@@ -58,6 +58,13 @@
         ##Keep this at the end
         fzf --fish | source
       '';
+      loginShellInit = ". /etc/zprofile\n";
+      shellAliases = {
+          "ls" = "ls -lAF";
+          mkdir = "mkdir -p";
+          ".." = "cd ..";
+          "..." = "cd ../..";
+      };
       plugins = [
         # Enable a plugin (here grc for colorized command output) from nixpkgs
         {

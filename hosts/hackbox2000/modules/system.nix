@@ -194,9 +194,7 @@
           "NerdFontsSymbolsOnly"
           # Characters
           "FiraCode"
-          "JetBrainsMono"
           "Meslo"
-          "Iosevka"
         ];
       })
     ];
