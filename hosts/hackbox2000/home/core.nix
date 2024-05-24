@@ -18,7 +18,6 @@
     fzf
 
     # productivity
-    helix # Terminal editor
     glow # markdown previewer in terminal
     bat # better cat
     btop # better top

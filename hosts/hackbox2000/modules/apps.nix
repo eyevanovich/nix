@@ -73,7 +73,6 @@
       "1password"
       "1password-cli"
       "openlens"
-      "wezterm"
       "arc"
       "karabiner-elements"
       "obsidian"
