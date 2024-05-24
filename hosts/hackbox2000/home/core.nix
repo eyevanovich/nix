@@ -79,7 +79,7 @@
         # Manual packaging and enable a plugin
         {
           name = "fzf";
-          src = pkgs.fishPlugins.fishPlugins.fzf-fish.src;
+          src = pkgs.fishPlugins.fzf-fish.src;
         }
         # Manual packaging and enable a plugin
         {
