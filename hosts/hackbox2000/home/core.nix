@@ -38,6 +38,11 @@
   ];
 
   programs = {
+    git = {
+      enable = true; 
+      userName = "Ivan Miles Piesh";
+      userEmail = "ipiesh@skysound.com";
+    };
     helix = {
       enable = true;
       defaultEditor = true;
@@ -263,7 +268,6 @@
         zj = "zellij";
       };
       plugins = [
-        # Enable a plugin (here grc for colorized command output) from nixpkgs
         {
           name = "grc";
           src = pkgs.fishPlugins.grc.src;
@@ -272,10 +276,13 @@
           name = "tide";
           src = pkgs.fishPlugins.tide.src;
         }
-        # Manual packaging and enable a plugin
         {
           name = "fzf";
           src = pkgs.fishPlugins.fzf-fish.src;
+        }
+        {
+          name = "bass";
+          src = pkgs.fishPlugins.bass.src;
         }
         # Manual packaging and enable a plugin
         {
