@@ -29,6 +29,7 @@
     just # justfile
     fd # better find
     eza # better ls
+    devbox
 
     # misc
     cowsay
