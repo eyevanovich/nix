@@ -23,6 +23,8 @@
     git
   ];
 
+  services.karabiner-elements.enable = true;
+
   # TODO To make this work, homebrew need to be installed manually, see https://brew.sh
   #
   # The apps installed by homebrew are not managed by nix, and not reproducible!
@@ -70,11 +72,12 @@
 
     # `brew install --cask`
     casks = [
+      "iterm2"
       "1password"
       "1password-cli"
       "openlens"
       "arc"
-      "karabiner-elements"
+      # "karabiner-elements"
       "obsidian"
       "rectangle"
       "spotify"
