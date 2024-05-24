@@ -30,6 +30,7 @@
     fd # better find
     eza # better ls
     devbox
+    git-lfs
 
     # misc
     cowsay
