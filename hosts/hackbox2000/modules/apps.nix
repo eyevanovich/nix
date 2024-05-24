@@ -23,7 +23,7 @@
     git
   ];
 
-  # services.karabiner-elements.enable = true;
+  services.karabiner-elements.enable = true;
 
   # TODO To make this work, homebrew need to be installed manually, see https://brew.sh
   #
