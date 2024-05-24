@@ -58,5 +58,6 @@ A repo to host a declarative macOS setup
   ```
 
 #### References
-- https://davi.sh/blog/2024/01/nix-darwin/
-- https://github.com/ryan4yin/nix-darwin-kickstarter/tree/main
+- [A great blog post on how to manage dotfiles with home-manager](https://alex.pearwin.com/2021/07/managing-dotfiles-with-nix/)
+- [home-manager module/programs reference](https://github.com/nix-community/home-manager/tree/master/modules/programs)
+- [A repo I used to mimic my code setup](https://github.com/ryan4yin/nix-darwin-kickstarter/tree/main)
