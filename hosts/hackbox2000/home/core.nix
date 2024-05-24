@@ -244,6 +244,8 @@
 
         alias config='/usr/bin/git --git-dir=/Users/ipiesh/.cfg/.git/ --work-tree=/Users/ipiesh'
 
+        fish_add_path "/opt/homebrew/bin/"
+
         ##Keep this at the end
         fzf --fish | source
       '';
