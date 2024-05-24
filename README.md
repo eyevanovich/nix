@@ -53,8 +53,8 @@ A repo to host a declarative macOS setup
 
   #### Set fish as default shell
   ```bash
-  echo /opt/homebrew/bin/fish | sudo tee -a /etc/shells && \
-  chsh -s /opt/homebrew/bin/fish
+  echo /etc/profiles/per-user/ipiesh/bin/fish | sudo tee -a /etc/shells && \
+  chsh -s /etc/profiles/per-user/ipiesh/bin/fish
   ```
 
 #### References

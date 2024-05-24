@@ -195,6 +195,7 @@
           # Characters
           "FiraCode"
           "JetBrainsMono"
+          "Meslo"
           "Iosevka"
         ];
       })

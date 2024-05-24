@@ -46,7 +46,17 @@
     fish = {
       enable = true;
       interactiveShellInit = ''
-        set fish_greeting # Disable greeting
+        set fish_greeting "SUP BRUH????" # Disable greeting
+        export EDITOR="hx"
+        export GOPRIVATE="gitlab.disney.com/skywalker-sound/*,gitlab.disney.com/skywalker-sound/libraries/golang/*"
+
+        source $HOME/.config/fish/conf.d/abbr.fish
+
+        alias config='/usr/bin/git --git-dir=/Users/ipiesh/.cfg/.git/ --work-tree=/Users/ipiesh'
+        alias codaenv='/usr/bin/git --git-dir=$HOME/Library/Application\ Support/.cfg/.git/ --work-tree=$HOME/Library/Application\ Support/'
+
+        ##Keep this at the end
+        fzf --fish | source
       '';
       plugins = [
         # Enable a plugin (here grc for colorized command output) from nixpkgs
