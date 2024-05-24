@@ -21,9 +21,6 @@
   # Related Discussion: https://discourse.nixos.org/t/darwin-again/29331
   environment.systemPackages = with pkgs; [
     git
-    just # use Justfile to simplify nix-darwin's commands
-    grc
-    fishPlugins.tide
   ];
 
   # TODO To make this work, homebrew need to be installed manually, see https://brew.sh
@@ -56,22 +53,24 @@
 
     # `brew install`
     brews = [
-      "awscli"
-      "helix"
-      "lazygit"
-      "zellij"
-      "marksman"
-      "neofetch"
-      "pre-commit"
-      "taplo"
-      "tldr"
-      "kubectx"
-      "direnv"
-      "yazi"
+      # "awscli"
+      # "helix"
+      # "lazygit"
+      # "zellij"
+      # "marksman"
+      # "neofetch"
+      # "pre-commit"
+      # "taplo"
+      # "fish"
+      # "tldr"
+      # "kubectx"
+      # "direnv"
+      # "yazi"
     ];
 
     # `brew install --cask`
     casks = [
+      "1password"
       "1password-cli"
       "openlens"
       "wezterm"
