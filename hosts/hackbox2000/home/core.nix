@@ -15,6 +15,7 @@
     kubectx
     awscli
     pre-commit
+    fzf
 
     # productivity
     helix # Terminal editor
@@ -74,6 +75,11 @@
         {
           name = "tide";
           src = pkgs.fishPlugins.tide.src;
+        }
+        # Manual packaging and enable a plugin
+        {
+          name = "fzf";
+          src = pkgs.fishPlugins.fishPlugins.fzf-fish.src;
         }
         # Manual packaging and enable a plugin
         {
