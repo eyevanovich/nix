@@ -31,6 +31,7 @@
     eza # better ls
     devbox
     git-lfs
+    go-task
 
     # misc
     cowsay
