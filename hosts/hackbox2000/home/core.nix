@@ -125,7 +125,7 @@
           max-indent-retain = 0;
         };
         ##############################################################################################3
-        # KEYs
+        # KEYS
         ##############################################################################################3
         keys.normal = {
           C-j = ["extend_to_line_bounds" "delete_selection" "paste_after"];
@@ -206,7 +206,7 @@
           {
             name = "go";
             auto-format = true;
-            formatter = {command = "goimports";};
+            formatter.command = "goimports";
             language-servers = ["gopls" "typos" "scls"];
           }
           # RUST ###########################################
@@ -227,7 +227,7 @@
           # NIX ####################################
           {
             name = "nix";
-            formatter = {command = "nixpkgs-fmt";};
+            formatter.command = "nixpkgs-fmt";
           }
           # MARKDOWN ####################################
           {
@@ -264,7 +264,7 @@
         # YAML LANG SERVER ####################################
         language-server.yaml-language-server = {
           config.yaml = {
-            format = {enable = true;};
+            format.enable = true;
             validation = true;
           };
           config.yaml.schema = {
