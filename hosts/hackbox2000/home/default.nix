@@ -2,9 +2,7 @@
   # import sub modules
   imports = [
     ./core.nix
-    ./shell.nix
-    ./programs/git.nix
-    ./programs/eza.nix
+    ./programs
   ];
 
   # Home Manager needs a bit of information about you and the
