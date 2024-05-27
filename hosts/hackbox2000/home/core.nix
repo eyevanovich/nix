@@ -31,7 +31,8 @@
     eza # better ls
     devbox
     git-lfs
-    go-task
+    go-task # taskfile
+    zoxide # better cd
 
     # misc
     cowsay
@@ -266,9 +267,9 @@
           config.yaml = {
             format.enable = true;
             validation = true;
-          };
-          config.yaml.schema = {
-            "https://taskfile.dev/schema.json" = "**/Taskfile.yml";
+            schema = {
+              "https://taskfile.dev/schema.json" = "**/Taskfile.yml";
+            };
           };
         };
       };
