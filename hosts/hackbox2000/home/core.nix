@@ -226,6 +226,12 @@
         #     strider { path "strider"; }
         #     compact-bar { path "compact-bar"; }
         # }
+        plugins = {
+          tab-bar.path = "tab-bar";
+          status-bar.path = "status-bar";
+          strider.path = "strider";
+          compact-bar.path = "compact-bar";
+        };
 
         on_force_close = "quit";
         theme = "catppuccin-mocha";
