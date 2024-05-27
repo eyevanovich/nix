@@ -2,7 +2,7 @@
   # import sub modules
   imports = [
     ./core.nix
-    ./programs/shell.nix
+    ./shell.nix
     ./programs/git.nix
     ./programs/eza.nix
   ];
