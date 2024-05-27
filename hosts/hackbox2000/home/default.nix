@@ -1,9 +1,10 @@
 {username, ...}: {
   # import sub modules
   imports = [
-    ./shell.nix
     ./core.nix
-    ./git.nix
+    ./programs/shell.nix
+    ./programs/git.nix
+    ./programs/eza.nix
   ];
 
   # Home Manager needs a bit of information about you and the

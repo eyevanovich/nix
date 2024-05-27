@@ -286,11 +286,6 @@
       foreach = "submodule foreach";
     };
   };
-  programs.eza = {
-    enable = true;
-    git = true;
-    icons = true;
-  };
   programs.helix = {
     enable = true;
     defaultEditor = true;
