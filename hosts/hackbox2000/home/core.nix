@@ -1087,6 +1087,7 @@
       pkgs.marksman
       pkgs.taplo
       pkgs.typos-lsp
+      pkgs.nil
     ];
     settings = {
       theme = "catppuccin_mocha";
