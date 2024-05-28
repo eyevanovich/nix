@@ -1093,6 +1093,7 @@
       pkgs.nil
       pkgs.vscode-langservers-extracted
       pkgs.nixpkgs-fmt
+      pkgs.yaml-language-server
     ];
     settings = {
       theme = "catppuccin_mocha";
