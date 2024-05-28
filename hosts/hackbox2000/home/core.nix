@@ -38,43 +38,6 @@
     grc # for color command output
   ];
 
-  # home.file.karabiner_modifications = {
-  #   target = ".config/karabiner/assets/complex_modifications/nix.json";
-  #   text = ''
-  #     {
-  #       "title": "Change caps_lock to dual keys, escape and left_control.",
-  #       "rules": [
-  #         {
-  #           "description": "Change caps_lock to left_control if pressed with other keys, change caps_lock to escape if pressed alone.",
-  #           "manipulators": [
-  #             {
-  #               "type": "basic",
-  #               "from": {
-  #                 "key_code": "caps_lock",
-  #                 "modifiers": {
-  #                   "optional": [
-  #                     "any"
-  #                   ]
-  #                 }
-  #               },
-  #               "to": [
-  #                 {
-  #                   "key_code": "left_control"
-  #                 }
-  #               ],
-  #               "to_if_alone": [
-  #                 {
-  #                   "key_code": "escape"
-  #                 }
-  #               ]
-  #             }
-  #           ]
-  #         }
-  #       ]
-  #     }
-  #   '';
-  # };
-
   home.file.karabiner = {
     target = ".config/karabiner/assets/complex_modifications/nix.json";
     text = ''
@@ -702,7 +665,35 @@
   programs.zellij = {
     enable = true;
   };
-  home.file.zellij = {
+  home.file.zellij_hx_layout = {
+    target = ".config/zellij/layouts/hx.kdl";
+    text = ''
+              layout {
+      	default_tab_template {
+              pane size=1 borderless=true {
+                  plugin location="zellij:tab-bar"
+              }
+              children
+              pane size=2 borderless=true {
+                  plugin location="zellij:status-bar"
+              }
+          }
+
+          tab name="Main" focus=true {
+      	    pane {
+      	        // value omitted, will be layed out horizontally
+      	        pane command="hx"
+      	        pane size="10%"
+      	    }
+      	}
+
+          tab name="Yazi" {
+              pane command="yazi"
+          }
+      }
+    '';
+  };
+  home.file.zellij_config = {
     target = ".config/zellij/config.kdl";
     text = ''
       // If you'd like to override the default keybindings completely, be sure to change "keybinds" to "keybinds clear-defaults=true"
@@ -1017,7 +1008,7 @@
 
       // The folder in which Zellij will look for layouts
       //
-      // layout_dir "~/.config/zellij/layouts"
+      layout_dir "~/.config/zellij/layouts"
 
       // The folder in which Zellij will look for themes
       //
