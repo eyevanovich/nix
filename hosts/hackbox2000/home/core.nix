@@ -695,10 +695,7 @@
 
   programs.wezterm = {
     enable = true;
-  };
-  home.file.wezterm = {
-    target = ".config/wezterm/wezterm.lua";
-    text = ''
+    extraConfig = ''
       -- Pull in the wezterm API
       local wezterm = require 'wezterm'
 
@@ -706,9 +703,7 @@
       local config = {}
 
       local mux = wezterm.mux
-      local act = wezterm.action
-
-      wezterm.on('gui-startup', function()
+      local act = wezterm.action wezterm.on('gui-startup', function()
         local tab, pane, window = mux.spawn_window({})
         window:gui_window():maximize()
       end)
@@ -759,7 +754,7 @@
       zoxide init fish | source
     '';
     shellAliases = {
-      "ls" = "ls -lAF";
+      "ls" = "eza -lAF";
       mkdir = "mkdir -p";
       ".." = "cd ..";
       "..." = "cd ../..";
