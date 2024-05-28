@@ -1088,6 +1088,7 @@
       pkgs.taplo
       pkgs.typos-lsp
       pkgs.nil
+      pkgs.vscode-langservers-extracted
     ];
     settings = {
       theme = "catppuccin_mocha";
