@@ -78,6 +78,7 @@
       "openlens"
       "arc"
       "orbstack"
+      "wezterm"
       # "karabiner-elements"
       "obsidian"
       "rectangle"
