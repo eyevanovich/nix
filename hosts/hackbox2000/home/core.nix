@@ -1089,6 +1089,7 @@
       pkgs.typos-lsp
       pkgs.nil
       pkgs.vscode-langservers-extracted
+      pkgs.nixpkgs-fmt
     ];
     settings = {
       theme = "catppuccin_mocha";
