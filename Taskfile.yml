@@ -1,12 +1,11 @@
 version: "3"
+
 vars:
   HOSTNAME: "hackbox2000"
 
 tasks:
 ############################################################################
-#
 #  Darwin related commands
-#
 ############################################################################
   build:
     desc: "First pass build to get everything downloaded and setup"
@@ -25,9 +24,7 @@ tasks:
     - ./result/sw/bin/darwin-rebuild switch --flake .#$HOSTNAME --show-trace --verbose
 
 ############################################################################
-#
 #  nix related commands
-#
 ############################################################################
   update:
     desc: "update flake lock file"
