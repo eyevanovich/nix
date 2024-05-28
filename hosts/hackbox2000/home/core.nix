@@ -17,6 +17,9 @@
     pre-commit
     fzf
 
+    # langs
+    go
+
     # productivity
     glow # markdown previewer in terminal
     bat # better cat
