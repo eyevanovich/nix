@@ -521,9 +521,9 @@
     };
   };
 
-  programs.wezterm = {
-    enable = true;
-    extraConfig = ''
+  home.file.wezterm = {
+    target = ".config/wezterm/wezterm.lua";
+    text = ''
       -- Pull in the wezterm API
       local wezterm = require 'wezterm'
 
@@ -565,8 +565,8 @@
 
       -- and finally, return the configuration to wezterm
       return config
-    '';
-  };
+    '';    
+  }
 
   programs.fish = {
     enable = true;
