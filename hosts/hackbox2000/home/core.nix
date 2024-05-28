@@ -38,44 +38,44 @@
     grc # for color command output
   ];
 
-  home.file.karabiner_modifications = {
-    target = ".config/karabiner/assets/complex_modifications/nix.json";
-    text = ''
-      {
-        "title": "Change caps_lock to dual keys, escape and left_control.",
-        "rules": [
-          {
-            "description": "Change caps_lock to left_control if pressed with other keys, change caps_lock to escape if pressed alone.",
-            "manipulators": [
-              {
-                "type": "basic",
-                "from": {
-                  "key_code": "caps_lock",
-                  "modifiers": {
-                    "optional": [
-                      "any"
-                    ]
-                  }
-                },
-                "to": [
-                  {
-                    "key_code": "left_control"
-                  }
-                ],
-                "to_if_alone": [
-                  {
-                    "key_code": "escape"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      }
-    '';
-  };
+  # home.file.karabiner_modifications = {
+  #   target = ".config/karabiner/assets/complex_modifications/nix.json";
+  #   text = ''
+  #     {
+  #       "title": "Change caps_lock to dual keys, escape and left_control.",
+  #       "rules": [
+  #         {
+  #           "description": "Change caps_lock to left_control if pressed with other keys, change caps_lock to escape if pressed alone.",
+  #           "manipulators": [
+  #             {
+  #               "type": "basic",
+  #               "from": {
+  #                 "key_code": "caps_lock",
+  #                 "modifiers": {
+  #                   "optional": [
+  #                     "any"
+  #                   ]
+  #                 }
+  #               },
+  #               "to": [
+  #                 {
+  #                   "key_code": "left_control"
+  #                 }
+  #               ],
+  #               "to_if_alone": [
+  #                 {
+  #                   "key_code": "escape"
+  #                 }
+  #               ]
+  #             }
+  #           ]
+  #         }
+  #       ]
+  #     }
+  #   '';
+  # };
 
-  home.file.karabiner_config = {
+  home.file.karabiner = {
     target = ".config/karabiner/assets/complex_modifications/nix.json";
     text = ''
             {
