@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
-    nix-darwin = {
+    darwin = {
       url = "github:LnL7/nix-darwin";
       inputs.nixpkgs.follows = "nixpkgs";
     };
@@ -18,7 +18,7 @@
   outputs = inputs @ {
     self,
     nixpkgs,
-    nix-darwin,
+    darwin,
     home-manager,
     ...
   }: let
@@ -32,7 +32,7 @@
         inherit username useremail hostname;
       };
   in {
-    darwinConfigurations."${hostname}" = nix-darwin.lib.darwinSystem {
+    darwinConfigurations."${hostname}" = darwin.lib.darwinSystem {
       inherit system specialArgs;
       modules = [
         ./hosts/hackbox2000/modules/nix-core.nix
