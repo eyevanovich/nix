@@ -668,29 +668,29 @@
   home.file.zellij_hx_layout = {
     target = ".config/zellij/layouts/hx.kdl";
     text = ''
-              layout {
-      	default_tab_template {
-              pane size=1 borderless=true {
-                  plugin location="zellij:tab-bar"
-              }
-              children
-              pane size=2 borderless=true {
-                  plugin location="zellij:status-bar"
-              }
-          }
+      layout {
+        	default_tab_template {
+                pane size=1 borderless=true {
+                    plugin location="zellij:tab-bar"
+                }
+                children
+                pane size=2 borderless=true {
+                    plugin location="zellij:status-bar"
+                }
+            }
 
-          tab name="Main" focus=true {
-      	    pane {
-      	        // value omitted, will be layed out horizontally
-      	        pane command="hx"
-      	        pane size="10%"
-      	    }
-      	}
+            tab name="Main" focus=true {
+        	    pane {
+        	        // value omitted, will be layed out horizontally
+        	        pane command="hx"
+        	        pane size="10%"
+        	    }
+        	}
 
-          tab name="Yazi" {
-              pane command="yazi"
-          }
-      }
+            tab name="Yazi" {
+                pane command="yazi"
+            }
+       }
     '';
   };
   home.file.zellij_config = {
