@@ -31,6 +31,12 @@
         wvous-tr-corner = 5; # top-right - Screen Saver
         # wvous-bl-corner = 3;  # bottom-left - Application Windows
         wvous-br-corner = 13; # bottom-right - Lock Screen
+        persistent-apps = [
+          "Applications/Arc.app"
+          "Applications/Slack.app"
+          "Applications/Orbstack.app"
+          "/System/Applications/System Settings.app"
+        ];
       };
 
       # customize finder
@@ -38,6 +44,7 @@
         _FXShowPosixPathInTitle = true; # show full path in finder title
         AppleShowAllExtensions = true; # show all file extensions
         FXEnableExtensionChangeWarning = false; # disable warning when changing file extension
+        FXPreferredViewStyle = "clmv";
         ShowPathbar = true; # show path bar
         ShowStatusBar = true; # show status bar
       };
