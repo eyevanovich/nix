@@ -1,6 +1,8 @@
 {...}: {
   programs.bat = {
     enable = true;
-    theme = "TwoDark";
+    config = {
+      theme = "Nord";
+    };
   };
 }
