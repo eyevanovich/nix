@@ -48,31 +48,13 @@
 
     taps = [
       "1password/tap"
-      "goreleaser/tap"
-      "hashicorp/tap"
-      "jesseduffield/lazygit"
     ];
 
     # `brew install`
-    brews = [
-      # "awscli"
-      # "helix"
-      # "lazygit"
-      # "zellij"
-      # "marksman"
-      # "neofetch"
-      # "pre-commit"
-      # "taplo"
-      # "fish"
-      # "tldr"
-      # "kubectx"
-      # "direnv"
-      # "yazi"
-    ];
+    brews = [];
 
     # `brew install --cask`
     casks = [
-      "iterm2"
       "1password"
       "1password-cli"
       "openlens"
