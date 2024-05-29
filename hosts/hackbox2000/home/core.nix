@@ -1011,7 +1011,7 @@
 
       // The folder in which Zellij will look for layouts
       //
-      # layout_dir "~/.config/zellij/layouts"
+      // layout_dir "~/.config/zellij/layouts"
 
       // The folder in which Zellij will look for themes
       //
