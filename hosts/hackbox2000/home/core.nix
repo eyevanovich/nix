@@ -42,7 +42,7 @@
   ];
 
   imports = [
-    ./packages
+    ./programs
   ];
 
   home.file.karabiner = {
