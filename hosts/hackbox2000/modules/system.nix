@@ -27,9 +27,7 @@
         show-recents = false; # disable recent apps
 
         # customize Hot Corners
-        # wvous-tl-corner = 2;  # top-left - Mission Control
         wvous-tr-corner = 5; # top-right - Screen Saver
-        # wvous-bl-corner = 3;  # bottom-left - Application Windows
         wvous-br-corner = 13; # bottom-right - Lock Screen
         persistent-apps = [
           "Applications/Arc.app"
@@ -56,10 +54,6 @@
         TrackpadThreeFingerDrag = true; # enable three finger drag
       };
 
-      screencapture = {
-        location = "~/Desktop/Screenshots";
-      };
-
       # customize settings that not supported by nix-darwin directly
       # Incomplete list of macOS `defaults` commands :
       #   https://github.com/yannbertrand/macos-defaults
@@ -67,9 +61,11 @@
         # `defaults read NSGlobalDomain "xxx"`
         "com.apple.swipescrolldirection" = false; # enable natural scrolling
         "com.apple.sound.beep.feedback" = 0; # disable beep sound when pressing volume up/down key
+        "com.apple.keyboard.fnState" = true; # make fn keys act like normal F1, F2, etc...
         AppleInterfaceStyle = "Dark"; # dark mode
         AppleKeyboardUIMode = 3; # Mode 3 enables full keyboard control.
         ApplePressAndHoldEnabled = false; # enable press and hold
+        AppleICUForce24HourTime = true;
 
         # If you press and hold certain keyboard keys when in a text area, the key’s character begins to repeat.
         # This is very useful for vim users, they use `hjkl` to move cursor.
@@ -78,7 +74,6 @@
         # sets how fast it repeats once it starts.
         KeyRepeat = 2; # normal minimum is 2 (30 ms), maximum is 120 (1800 ms)
         
-
         NSAutomaticCapitalizationEnabled = false; # disable auto capitalization
         NSAutomaticDashSubstitutionEnabled = false; # disable auto dash substitution
         NSAutomaticPeriodSubstitutionEnabled = false; # disable auto period substitution
@@ -133,14 +128,13 @@
           askForPasswordDelay = 0;
         };
         "com.apple.screencapture" = {
-          location = "~/Desktop";
+          location = "~/Desktop/Screenshots";
           type = "png";
         };
         "com.apple.AdLib" = {
           allowApplePersonalizedAdvertising = false;
         };
 
-        "com.apple.keyboard".fnState = true;
         # Change behavior of function key to dictation
         "com.apple.HIToolbox".AppleFnUsageType = "3";
 
@@ -152,19 +146,6 @@
         GuestEnabled = false; # disable guest user
         SHOWFULLNAME = true; # show full name in login window
       };
-    };
-
-    # keyboard settings is not very useful on macOS
-    # the most important thing is to remap option key to alt key globally,
-    # but it's not supported by macOS yet.
-    keyboard = {
-      enableKeyMapping = true; # enable key mapping so that we can use `option` as `control`
-
-      # swap left command and left alt
-      # so it matches common keyboard layout: `ctrl | command | alt`
-      #
-      # disabled, caused only problems!
-      swapLeftCommandAndLeftAlt = false;
     };
   };
 
