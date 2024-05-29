@@ -2,7 +2,6 @@
   # import sub modules
   imports = [
     ./core.nix
-    ./packages
   ];
 
   # Home Manager needs a bit of information about you and the
@@ -23,6 +22,7 @@
     # if you don't want to manage your shell through Home Manager.
     sessionVariables = {
       EDITOR = "hx";
+      VISUAL = "hx";
     };
   };
 

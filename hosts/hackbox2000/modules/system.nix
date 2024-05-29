@@ -73,7 +73,7 @@
         InitialKeyRepeat = 15; # normal minimum is 15 (225 ms), maximum is 120 (1800 ms)
         # sets how fast it repeats once it starts.
         KeyRepeat = 2; # normal minimum is 2 (30 ms), maximum is 120 (1800 ms)
-        
+
         NSAutomaticCapitalizationEnabled = false; # disable auto capitalization
         NSAutomaticDashSubstitutionEnabled = false; # disable auto dash substitution
         NSAutomaticPeriodSubstitutionEnabled = false; # disable auto period substitution
