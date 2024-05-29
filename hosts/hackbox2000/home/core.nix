@@ -1158,7 +1158,7 @@
       m = "make";
       t = "task";
       lg = "lazygit";
-      zj = "zellij -l welcome";
+      j = "zellij -l welcome";
     };
     plugins = [
       {
