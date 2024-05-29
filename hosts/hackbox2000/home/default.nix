@@ -2,7 +2,7 @@
   # import sub modules
   imports = [
     ./core.nix
-    ./programs
+    ./packages
   ];
 
   # Home Manager needs a bit of information about you and the

@@ -22,7 +22,7 @@
 
     # productivity
     glow # markdown previewer in terminal
-    bat # better cat
+    # bat # better cat
     btop # better top
     yazi # file explorer
     tealdeer # tldr in rust
