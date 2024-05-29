@@ -56,6 +56,10 @@
         TrackpadThreeFingerDrag = true; # enable three finger drag
       };
 
+      screencapture = {
+        location = "~/Desktop/Screenshots";
+      };
+
       # customize settings that not supported by nix-darwin directly
       # Incomplete list of macOS `defaults` commands :
       #   https://github.com/yannbertrand/macos-defaults
@@ -72,7 +76,7 @@
         # sets how long it takes before it starts repeating.
         InitialKeyRepeat = 15; # normal minimum is 15 (225 ms), maximum is 120 (1800 ms)
         # sets how fast it repeats once it starts.
-        KeyRepeat = 120; # normal minimum is 2 (30 ms), maximum is 120 (1800 ms)
+        KeyRepeat = 2; # normal minimum is 2 (30 ms), maximum is 120 (1800 ms)
         
 
         NSAutomaticCapitalizationEnabled = false; # disable auto capitalization
@@ -136,6 +140,7 @@
           allowApplePersonalizedAdvertising = false;
         };
 
+        "com.apple.keyboard".fnState = true;
         # Change behavior of function key to dictation
         "com.apple.HIToolbox".AppleFnUsageType = "3";
 
