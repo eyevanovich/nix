@@ -6,5 +6,6 @@
     ./git.nix
     ./wezterm.nix
     ./fish.nix
+    ./eza.nix
   ];
 }
