@@ -7,19 +7,17 @@
   # Home Manager needs a bit of information about you and the
   # paths it should manage.
   home = {
+    # This value determines the home Manager release that your
+    # configuration is compatible with. This helps avoid breakage
+    # when a new home Manager release introduces backwards
+    # incompatible changes.
+    #
+    # You can update home Manager without changing this value. See
+    # the home Manager release notes for a list of state version
+    # changes in each release.
+    stateVersion = "23.11";
     username = username;
     homeDirectory = "/Users/${username}";
-
-    # You can also manage environment variables but you will have to manually
-    # source
-    #
-    #  ~/.nix-profile/etc/profile.d/hm-session-vars.sh
-    #
-    # or
-    #
-    #  /etc/profiles/per-user/davish/etc/profile.d/hm-session-vars.sh
-    #
-    # if you don't want to manage your shell through Home Manager.
     sessionVariables = {
       EDITOR = "hx";
       VISUAL = "hx";
