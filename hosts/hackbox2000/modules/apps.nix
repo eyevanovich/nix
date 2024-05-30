@@ -9,7 +9,6 @@
   #  NOTE: Your can find all available options in:
   #    https://daiderd.com/nix-darwin/manual/index.html
   #
-  # TODO Fell free to modify this file to fit your needs.
   #
   ##########################################################################
 
@@ -65,6 +64,7 @@
       "rectangle"
       "spotify"
       "setapp"
+      "flux"
     ];
   };
 }
