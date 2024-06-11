@@ -21,6 +21,7 @@
     awscli
     pre-commit
     fzf
+    nmap
 
     # langs
     go
