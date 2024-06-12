@@ -10,6 +10,14 @@
 #
 ###################################################################################
 {
+  # TODO setup wireguard
+  # networking = {
+  #   wg-quick.interfaces = {
+  #     skysound_full = {
+  #     };
+  #   };
+  # };
+
   system = {
     # activationScripts are executed every time you boot the system or run `nixos-rebuild` / `darwin-rebuild`.
     activationScripts.postUserActivation.text = ''
