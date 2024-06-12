@@ -38,6 +38,7 @@
     devbox
     go-task # taskfile
     zoxide # better cd
+    wireguard-tools
 
     # misc
     cowsay
