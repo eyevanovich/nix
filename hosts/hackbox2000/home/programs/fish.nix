@@ -19,6 +19,8 @@
       mkdir = "mkdir -p";
       ".." = "cd ..";
       "..." = "cd ../..";
+      "w up" = "wg-quick up ~/.config/wireguard/wg0.conf";
+      "w down" = "wg-quick down ~/.config/wireguard/wg0.conf";
     };
     shellAbbrs = {
       g = "git";
