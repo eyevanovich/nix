@@ -24,12 +24,12 @@ A repo to host a declarative macOS setup
 ```bash
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" && \
   (echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> /Users/ipiesh/.zprofile && \
-  eval "$(/opt/homebrew/bin/brew shellenv)" && \
+  eval "$(/opt/homebrew/bin/brew shellenv)"
 ```
 
 ### Clone repo
 
-- `git clone https://github.com/eyevanovich/nix.git` within `~/.config/`
+- `git clone https://github.com/eyevanovich/nix.git ~/.config/nix`
 
 ### Setup
 

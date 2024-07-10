@@ -1,6 +1,6 @@
 {...}: {
   home.file.karabiner = {
-    target = ".config/karabiner/assets/complex_modifications/nix.json";
+    target = ".config/karabiner/karabiner.json";
     text = ''
             {
           "global": {
