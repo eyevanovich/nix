@@ -2,19 +2,24 @@
   description = "macOS configurator";
 
   inputs = {
+    # the source of the nixpkgs input
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
+    # adds the nix-darwin flake as an input
     darwin = {
       url = "github:LnL7/nix-darwin";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # adds the home-manager flake as an input
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
+  # defines the outputs of the flake, making the inputs
+  # (self, nixpkgs, darwin, home-manager, etc.) available for use
   outputs = inputs @ {
     self,
     nixpkgs,
@@ -22,13 +27,16 @@
     home-manager,
     ...
   }: let
+    # variables are defined for use in the configuration
     username = "ipiesh";
     useremail = "macos@ivanpiesh.info";
     system = "aarch64-darwin"; # aarch64-darwin or x86_64-darwin
     hostname = "hackbox2000";
     specialArgs =
+      # includes all the inputs plus the additional variables
       inputs
       // {
+        # `//` operator is used to merge two attribute sets
         inherit username useremail hostname;
       };
   in {

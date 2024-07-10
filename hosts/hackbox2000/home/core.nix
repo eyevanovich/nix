@@ -32,10 +32,8 @@
     yazi # file explorer
     tealdeer # tldr in rust
     lazygit # git TUI
-    direnv
-    just # justfile
     fd # better find
-    devbox
+    devbox # easier declarative dev env
     go-task # taskfile
     zoxide # better cd
     wireguard-tools
