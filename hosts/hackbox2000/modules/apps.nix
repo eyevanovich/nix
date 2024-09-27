@@ -62,7 +62,7 @@
       "raycast"
       "obsidian"
       "rectangle"
-      "spotify"
+      "tidal"
       "setapp"
       "flux"
     ];

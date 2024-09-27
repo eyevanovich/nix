@@ -36,7 +36,6 @@
     devbox # easier declarative dev env
     go-task # taskfile
     zoxide # better cd
-    wireguard-tools
 
     # misc
     cowsay
