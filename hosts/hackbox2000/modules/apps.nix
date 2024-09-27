@@ -64,6 +64,7 @@
       "setapp"
       "flux"
       "karabiner-elements"
+      "wezterm"
     ];
   };
 }
