@@ -12,8 +12,7 @@
       pkgs.yaml-language-server
       pkgs.gopls
     ];
-
-};
+  };
   home.file.".config/helix" = {
     source = ../../../../dotfiles/helix;
     recursive = true;
