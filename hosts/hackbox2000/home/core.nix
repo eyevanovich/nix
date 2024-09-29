@@ -36,6 +36,7 @@
     devbox # easier declarative dev env
     go-task # taskfile
     zoxide # better cd
+    wezterm
 
     # misc
     cowsay
