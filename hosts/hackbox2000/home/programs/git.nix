@@ -6,24 +6,15 @@
     userName = "Ivan Miles Piesh";
     userEmail = "ipiesh@skysound.com";
 
-    # includes = [
-    #   {
-    #     # use diffrent email & name for work
-    #     path = "~/work/.gitconfig";
-    #     condition = "gitdir:~/work/";
-    #   }
-    # ];
-
     extraConfig = {
       init.defaultBranch = "main";
       push.autoSetupRemote = true;
       pull.rebase = true;
     };
 
-    # signing = {
-    #   key = "xxx";
-    #   signByDefault = true;
-    # };
+    ignores = [
+      ".DS_Store"
+    ];
 
     delta = {
       enable = true;
