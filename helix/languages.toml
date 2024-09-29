@@ -1,0 +1,169 @@
+###############################################################
+# TYPOS
+###############################################################
+[language-server.typos]
+command = "typos-lsp"
+
+###############################################################
+# SCLS
+###############################################################
+[language-server.scls]
+command = "simple-completion-language-server"
+
+[language-server.scls.config]
+max_completion_items = 20     # set max completion results len for each group: words, snippets, unicode-input
+snippets_first = true         # completions will return before snippets by default
+feature_words = true          # enable completion by word
+feature_snippets = true       # enable snippets
+feature_unicode_input = true  # enable "unicode input"
+feature_paths = true          # enable path completion
+
+# write logs to /tmp/completion.log
+[language-server.scls.environment]
+RUST_LOG = "info,simple-completion-langauge-server=info"
+LOG_FILE = "/tmp/completion.log"
+
+[[language]]
+name = "stub"
+scope = "text.stub"
+file-types = []
+shebangs = []
+roots = []
+auto-format = false
+language-servers = [ "scls" ]
+
+###############################################################
+# TERRAFORM
+###############################################################
+[[language]]
+name = "hcl"
+language-servers = [ "terraform-ls", "scls", "typos"]
+language-id = "terraform"
+
+[[language]]
+name = "tfvars"
+language-servers = [ "terraform-ls", "scls", "typos"]
+language-id = "terraform-vars"
+
+[language-server.terraform-ls]
+command = "terraform-ls"
+args = ["serve"]
+
+###############################################################
+# GO
+###############################################################
+[language-server.gopls]
+command = "gopls"
+config = { "gofumpt" = true, "local" = "goimports", "semanticTokens" = true, "staticcheck" = true, "verboseOutput" = true, "analyses" = { "fieldalignment" = true, "nilness" = true, unusedparams = true, unusedwrite = true, useany = true }, usePlaceholders = true, completeUnimported = true, hints = { "assignVariableType" = true, "compositeLiteralFields" = true, "compositeLiteralTypes" = true, "constantValues" = true, "functionTypeParameters" = true, "parameterNames" = true, "rangeVariableTypes" = true } }
+
+[[language]]
+name = "go"
+roots = ["go.work", "go.mod"]
+auto-format = true
+comment-token = "//"
+language-servers = [ "gopls", "typos", "scls"]
+
+###############################################################
+# RUST
+###############################################################
+[[language]]
+name = "rust"
+
+[language-server.rust-analyzer.config.check]
+command = "clippy"
+
+###############################################################
+# SQL
+###############################################################
+[[language]]
+name = "sql"
+language-servers = [ "sql-language-server" , "typos", "scls"]
+
+[language-server.sql-language-server]
+command = "sql-language-server"
+args = ["up", "--method", "stdio"]
+
+###############################################################
+# STARLARK
+###############################################################
+[[language]]
+name = "starlark"
+file-types = [{ glob = "Tiltfile" }]
+
+###############################################################
+# ENV
+###############################################################
+[[language]]
+name = "env"
+file-types = [ "env", "tpl" ]
+
+###############################################################
+# NIX
+###############################################################
+[[language]]
+name = "nix"
+formatter = { command = "nixpkgs-fmt" }
+
+###############################################################
+# MARKDOWN
+###############################################################
+[[language]]
+name = "markdown"
+language-servers = [ "marksman", "scls", "typos" ]
+file-types = [ "md", "mdx" ]
+
+###############################################################
+# YAML
+###############################################################
+[language-server.yaml-language-server.config.yaml]
+format = { enable = true }
+validation = true
+
+[language-server.yaml-language-server.config.yaml.schemas]
+"https://taskfile.dev/schema.json" = "**/Taskfile.yml"
+
+###############################################################
+# Javascript
+###############################################################
+[language-server.eslint]
+command = "vscode-eslint-language-server"
+args = ["--stdio"]
+
+[language-server.eslint.config]
+codeActionsOnSave = { mode = "all", "source.fixAll.eslint" = true }
+format = { enable = true }
+nodePath = ""
+quiet = false
+rulesCustomizations = []
+run = "onType"
+validate = "on"
+experimental = {}
+problems = { shortenToSingleLine = false }
+
+[language-server.eslint.config.codeAction]
+disableRuleComment = { enable = true, location = "separateLine" }
+showDocumentation = { enable = false }
+
+[[language]]
+name = "typescript"
+language-servers = [ "typescript-language-server", "eslint", "scls", "typos" ]
+formatter = { command = "dprint", args = [ "fmt", "--stdin", "ts" ] }
+auto-format = true
+
+[[language]]
+name = "tsx"
+language-servers = [ "typescript-language-server", "eslint", "scls", "typos" ]
+formatter = { command = "dprint", args = [ "fmt", "--stdin", "tsx" ] }
+auto-format = true
+
+[[language]]
+name = "javascript"
+language-servers = [ "typescript-language-server", "eslint", "scls", "typos" ]
+formatter = { command = "dprint", args = [ "fmt", "--stdin", "js" ] }
+auto-format = true
+
+[[language]]
+name = "jsx"
+language-servers = [ "typescript-language-server", "eslint", "scls", "typos" ]
+formatter = { command = "dprint", args = [ "fmt", "--stdin", "jsx" ] }
+auto-format = true
