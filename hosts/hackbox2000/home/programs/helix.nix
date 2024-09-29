@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{pkgs, config, ...}: {
   programs.helix = {
     enable = true;
     defaultEditor = true;
@@ -13,8 +13,8 @@
       pkgs.gopls
     ];
   };
-  home.file.".config/helix" = {
-    source = ../../../../dotfiles/helix;
-    recursive = true;
-  };
+
+  ## Make config mutable with mkOutOfStoreSymlink (note: needs absolute path to file)
+  home.file.".config/helix/config.toml".source = config.lib.file.mkOutOfStoreSymlink "${config.xdg.configHome}/nix/dotfiles/helix/config.toml";
+  home.file.".config/helix/languages.toml".source = config.lib.file.mkOutOfStoreSymlink "${config.xdg.configHome}/nix/dotfiles/helix/languages.toml";
 }
