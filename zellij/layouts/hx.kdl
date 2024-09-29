@@ -1,0 +1,28 @@
+layout {
+	default_tab_template {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        children
+        pane size=2 borderless=true {
+            plugin location="zellij:status-bar"
+        }
+    }
+
+    tab name="Main" focus=true {
+	    pane {
+	    	// main hx pain
+	        pane command="hx"
+
+	        // split two terminals at the bottom of the main pain
+	        pane split_direction="vertical" size="10%" {
+		        pane // one on the left
+		        pane // one on the right
+	        }
+	    }
+	}
+
+    tab name="Yazi" {
+        pane command="yazi"
+    }
+}

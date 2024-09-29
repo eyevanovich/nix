@@ -1,0 +1,31 @@
+layout {
+    default_tab_template {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        children
+        pane size=2 borderless=true {
+            plugin location="zellij:status-bar"
+        }
+    }
+
+   tab name="Local AVS Dev" split_direction="horizontal" cwd="~/Documents/_codingLocal/skysound/avs-platform/" focus=true {
+        pane name="avs" command="hx"
+        pane split_direction="vertical" size="15%" {
+            pane command="bash" name="tilt"
+            pane
+        }
+    }
+
+    tab name="Yazi" {
+        pane command="yazi"{
+            args "~/Documents/_codingLocal/skysound/avs-platform/"
+        }
+    }
+
+    tab name="Scale Dev" {
+        pane command="ssh" {
+            args "dev@scaly-1.sprocket.internal" "-p" "22222"
+        }
+    }
+}
