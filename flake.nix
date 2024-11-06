@@ -56,6 +56,8 @@
           ./darwin/modules/apps.nix
           ./darwin/modules/system.nix
           ./darwin/modules/host-users.nix
+          ./darwin/modules/services/aerospace.nix
+          ./darwin/modules/services/sketchybar.nix
 
           # home manager
           home-manager.darwinModules.home-manager

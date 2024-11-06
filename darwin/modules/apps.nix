@@ -45,12 +45,10 @@
 
     taps = [
       "1password/tap"
-      "FelixKratz/formulae"
     ];
 
     # `brew install`
     brews = [
-      "borders"
     ];
 
     # `brew install --cask`
@@ -63,11 +61,11 @@
       "raycast"
       "obsidian"
       "tidal"
+      "font-hack-nerd-font"
       "setapp"
       "flux"
       "karabiner-elements"
       "wezterm"
-      "nikitabobko/tap/aerospace"
     ];
   };
 }
