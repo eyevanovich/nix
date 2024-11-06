@@ -123,6 +123,7 @@ end = "no_op"
 "A-w" = ":buffer-close"
 "A-/" = "repeat_last_motion"
 X = ["extend_line_up", "extend_to_line_bounds"]
+ret = "goto_word"
 
 [keys.normal.space.c]
 r = [":w", ":config-reload"]
