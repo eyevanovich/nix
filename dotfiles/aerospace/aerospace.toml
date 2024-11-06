@@ -1,4 +1,4 @@
-# Place a copy of this config to ~/.aerospace.toml
+# Place a copy of this config to ~/.config/aerospace/aerospace.toml
 # After that, you can edit ~/.aerospace.toml to your liking
 # You can use it to add commands that run after login to macOS user session.
 # 'start-at-login' needs to be 'true' for 'after-login-command' to work
@@ -9,7 +9,7 @@ after-login-command = []
 # 'after-startup-command' is run after 'after-login-command'
 # Available commands : https://nikitabobko.github.io/AeroSpace/commands
 after-startup-command = [
-  'exec-and-forget borders active_color=0xff00ff00 inactive_color=0xff414550 width=5.0 hidpi=on'
+  'exec-and-forget borders active_color=glow(0xff00ffff) inactive_color=0xffff0000 width=5.0 hidpi=on'
 ]
 
 # Start AeroSpace at login
@@ -22,7 +22,7 @@ enable-normalization-opposite-orientation-for-nested-containers = true
 # See: https://nikitabobko.github.io/AeroSpace/guide#layouts
 # The 'accordion-padding' specifies the size of accordion padding
 # You can set 0 to disable the padding feature
-accordion-padding = 10
+accordion-padding = 5
 
 # Possible values: tiles|accordion
 default-root-container-layout = 'tiles'
@@ -99,10 +99,10 @@ alt-slash = 'layout tiles horizontal vertical'
 alt-comma = 'layout accordion horizontal vertical'
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#focus
-alt-h = 'focus left'
-alt-j = 'focus down'
-alt-k = 'focus up'
-alt-l = 'focus right'
+alt-ctrl-h = 'focus left'
+alt-ctrl-j = 'focus down'
+alt-ctrl-k = 'focus up'
+alt-ctrl-l = 'focus right'
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#move
 alt-shift-h = 'move left'
