@@ -7,5 +7,6 @@
     ./wezterm.nix
     ./fish.nix
     ./eza.nix
+    ./sqls.nix
   ];
 }

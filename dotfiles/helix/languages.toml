@@ -77,11 +77,10 @@ command = "clippy"
 ###############################################################
 [[language]]
 name = "sql"
-language-servers = [ "sql-language-server" , "typos", "scls"]
+language-servers = [ "sqls" , "typos", "scls"]
 
-[language-server.sql-language-server]
-command = "sql-language-server"
-args = ["up", "--method", "stdio"]
+[language-server.sqls]
+command = "sqls"
 
 ###############################################################
 # STARLARK

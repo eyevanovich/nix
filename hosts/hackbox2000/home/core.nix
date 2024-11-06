@@ -1,4 +1,8 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  scls,
+  ...
+}: {
   imports = [
     ./programs
   ];
@@ -22,9 +26,15 @@
     pre-commit
     fzf
     nmap
+    revive
 
     # langs
     go
+    cargo
+    rustc
+    rustfmt
+    rust-analyzer
+    clippy
 
     # productivity
     glow # markdown previewer in terminal
@@ -42,5 +52,6 @@
     tree
     neofetch
     grc # for color command output
+    scls.defaultPackage.${pkgs.system} # simple-completion-language-server for use with helix
   ];
 }

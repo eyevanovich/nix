@@ -1,4 +1,8 @@
-{pkgs, config, ...}: {
+{
+  pkgs,
+  config,
+  ...
+}: {
   programs.helix = {
     enable = true;
     defaultEditor = true;
@@ -8,6 +12,10 @@
       pkgs.typos-lsp
       pkgs.nil
       pkgs.vscode-langservers-extracted
+      pkgs.nodePackages.typescript-language-server
+      pkgs.nodePackages.bash-language-server
+      pkgs.dockerfile-language-server-nodejs
+      pkgs.terraform-ls
       pkgs.nixpkgs-fmt
       pkgs.yaml-language-server
       pkgs.gopls

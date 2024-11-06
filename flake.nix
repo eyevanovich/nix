@@ -16,6 +16,12 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # adds simple completion language flake as an input
+    scls = {
+      url = "github:estin/simple-completion-language-server";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   # defines the outputs of the flake, making the inputs
@@ -25,6 +31,7 @@
     nixpkgs,
     darwin,
     home-manager,
+    scls,
     ...
   }: let
     # variables are defined for use in the configuration
