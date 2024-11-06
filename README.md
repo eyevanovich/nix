@@ -9,7 +9,6 @@ A repo to host a declarative macOS setup
 ### User
 
 - create admin user `ipiesh`
-- set hostname to `hackbox2000`
 
 ### Dependencies
 

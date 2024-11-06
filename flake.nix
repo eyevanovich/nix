@@ -38,35 +38,37 @@
     username = "ipiesh";
     useremail = "macos@ivanpiesh.info";
     system = "aarch64-darwin"; # aarch64-darwin or x86_64-darwin
-    hostname = "hackbox2000";
     specialArgs =
       # includes all the inputs plus the additional variables
       inputs
       // {
         # `//` operator is used to merge two attribute sets
-        inherit username useremail hostname;
+        inherit username useremail;
       };
   in {
-    darwinConfigurations."${hostname}" = darwin.lib.darwinSystem {
-      inherit system specialArgs;
-      modules = [
-        ./hosts/hackbox2000/modules/nix-core.nix
-        ./hosts/hackbox2000/modules/apps.nix
-        ./hosts/hackbox2000/modules/system.nix
-        ./hosts/hackbox2000/modules/host-users.nix
+    darwinConfigurations = let
+      inherit (inputs.nix-darwin.lib) darwinSystem;
+    in {
+      machine = darwinSystem {
+        inherit system specialArgs;
+        modules = [
+          ./darwin/modules/nix-core.nix
+          ./darwin/modules/apps.nix
+          ./darwin/modules/system.nix
+          ./darwin/modules/host-users.nix
 
-        # home manager
-        home-manager.darwinModules.home-manager
-        {
-          home-manager.useGlobalPkgs = true;
-          home-manager.useUserPackages = true;
-          home-manager.extraSpecialArgs = specialArgs;
-          home-manager.users.${username} = import ./hosts/hackbox2000/home/core.nix;
-          home-manager.backupFileExtension = "backup";
-        }
-      ];
+          # home manager
+          home-manager.darwinModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.extraSpecialArgs = specialArgs;
+            home-manager.users.${username} = import ./darwin/home/core.nix;
+            home-manager.backupFileExtension = "backup";
+          }
+        ];
+      };
     };
-
     # nix code formatter
     formatter.${system} = nixpkgs.legacyPackages.${system}.alejandra;
   };
