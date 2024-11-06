@@ -3,8 +3,8 @@
     ./bat.nix
     ./helix.nix
     ./zellij.nix
-    ./aerospace.nix
     ./karabiner.nix
+    ./sketchybar.nix
     ./git.nix
     ./wezterm.nix
     ./fish.nix
