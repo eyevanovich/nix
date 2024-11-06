@@ -1,8 +1,5 @@
 version: "3"
 
-vars:
-  HOSTNAME: "hackbox2000"
-
 tasks:
 ############################################################################
 #  Darwin related commands
@@ -20,8 +17,8 @@ tasks:
   darwin-debug:
     desc: "For initial debugging of the build"
     cmds:
-    - nix build .#darwinConfigurations.$HOSTNAME.system --show-trace --verbose --extra-experimental-features 'nix-command flakes'
-    - ./result/sw/bin/darwin-rebuild switch --flake .#$HOSTNAME --show-trace --verbose
+    - nix build .#darwinConfigurations.machine.config.system --show-trace --verbose --extra-experimental-features 'nix-command flakes'
+    - ./result/sw/bin/darwin-rebuild switch --flake . --show-trace --verbose
 
 ############################################################################
 #  nix related commands
