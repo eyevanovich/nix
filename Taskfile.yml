@@ -16,9 +16,12 @@ tasks:
 
   darwin-debug:
     desc: "For initial debugging of the build"
+    vars:
+      HOSTNAME:
+        sh: scutil --get LocalHostName
     cmds:
-    - nix build .#darwinConfigurations.machine.config.system --show-trace --verbose --extra-experimental-features 'nix-command flakes'
-    - ./result/sw/bin/darwin-rebuild switch --flake . --show-trace --verbose
+    - nix build .#darwinConfigurations.{{HOSTNAME}}.system --show-trace --verbose --extra-experimental-features 'nix-command flakes'
+    - ./result/sw/bin/darwin-rebuild switch --flake .#{{HOSTNAME}} --show-trace --verbose
 
 ############################################################################
 #  nix related commands

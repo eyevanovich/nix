@@ -6,29 +6,43 @@ A repo to host a declarative macOS setup
 
 ## Provisioning a new macOS machine from scratch
 
+### Hostname
+
+- Set hostname of machine
+
+```bash
+sudo scutil ––set ComputerName YourComputerName
+sudo scutil ––set HostName YourHostName
+sudo scutil ––set LocalHostName YourLocalHostName
+```
+
 ### User
 
-- create admin user `ipiesh`
+- create admin user and login
 
 ### Dependencies
 
 - Install `nix`
 
 ```bash
-  curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
 ```
 
 - Install `homebrew`
 
 ```bash
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" && \
-  (echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> /Users/ipiesh/.zprofile && \
-  eval "$(/opt/homebrew/bin/brew shellenv)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+(echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> /Users/ipiesh/.zprofile
+eval "$(/opt/homebrew/bin/brew shellenv)"
 ```
 
-### Clone repo
+### Clone repo and set up flake with hostname
 
-- `git clone https://github.com/eyevanovich/nix.git ~/.config/nix`
+```bash
+git clone https://github.com/eyevanovich/nix.git ~/.config/nix && cd ~/.config/nix
+sed -i '' "s/REPLACE_USERNAME/$USER/" flake.nix
+sed -i '' "s/REPLACE_HOSTNAME/$(scutil --get LocalHostName)/" flake.nix
+```
 
 ### Setup
 
@@ -50,7 +64,7 @@ A repo to host a declarative macOS setup
 
 #### Set fish as default shell
 ```bash
-  echo /etc/profiles/per-user/ipiesh/bin/fish | sudo tee -a /etc/shells && \
+  echo /etc/profiles/per-user/ipiesh/bin/fish | sudo tee -a /etc/shells
   chsh -s /etc/profiles/per-user/ipiesh/bin/fish
 ```
 
