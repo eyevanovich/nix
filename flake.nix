@@ -49,12 +49,12 @@
     darwinConfigurations."${hostname}" = darwin.lib.darwinSystem {
       inherit system specialArgs;
       modules = [
-        ./darwin/modules/nix-core.nix
-        ./darwin/modules/apps.nix
-        ./darwin/modules/system.nix
-        ./darwin/modules/host-users.nix
-        ./darwin/modules/services/aerospace.nix
-        ./darwin/modules/services/sketchybar.nix
+        ./modules/nix-core.nix
+        ./modules/apps.nix
+        ./modules/system.nix
+        ./modules/host-users.nix
+        ./modules/services/aerospace.nix
+        ./modules/services/sketchybar.nix
 
         # home manager
         home-manager.darwinModules.home-manager
@@ -62,7 +62,7 @@
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
           home-manager.extraSpecialArgs = specialArgs;
-          home-manager.users.${username} = import ./darwin/home/core.nix;
+          home-manager.users.${username} = import ./home/core.nix;
           home-manager.backupFileExtension = "backup";
         }
       ];
