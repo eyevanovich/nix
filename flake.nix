@@ -35,42 +35,39 @@
     ...
   }: let
     # variables are defined for use in the configuration
-    username = "ipiesh";
-    useremail = "macos@ivanpiesh.info";
+    username = "REPLACE_USERNAME";
     system = "aarch64-darwin"; # aarch64-darwin or x86_64-darwin
+    hostname = "REPLACE_HOSTNAME";
     specialArgs =
       # includes all the inputs plus the additional variables
       inputs
       // {
         # `//` operator is used to merge two attribute sets
-        inherit username useremail;
+        inherit username hostname;
       };
   in {
-    darwinConfigurations = let
-      inherit (inputs.nix-darwin.lib) darwinSystem;
-    in {
-      machine = darwinSystem {
-        inherit system specialArgs;
-        modules = [
-          ./darwin/modules/nix-core.nix
-          ./darwin/modules/apps.nix
-          ./darwin/modules/system.nix
-          ./darwin/modules/host-users.nix
-          ./darwin/modules/services/aerospace.nix
-          ./darwin/modules/services/sketchybar.nix
+    darwinConfigurations."${hostname}" = darwin.lib.darwinSystem {
+      inherit system specialArgs;
+      modules = [
+        ./darwin/modules/nix-core.nix
+        ./darwin/modules/apps.nix
+        ./darwin/modules/system.nix
+        ./darwin/modules/host-users.nix
+        ./darwin/modules/services/aerospace.nix
+        ./darwin/modules/services/sketchybar.nix
 
-          # home manager
-          home-manager.darwinModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = specialArgs;
-            home-manager.users.${username} = import ./darwin/home/core.nix;
-            home-manager.backupFileExtension = "backup";
-          }
-        ];
-      };
+        # home manager
+        home-manager.darwinModules.home-manager
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+          home-manager.extraSpecialArgs = specialArgs;
+          home-manager.users.${username} = import ./darwin/home/core.nix;
+          home-manager.backupFileExtension = "backup";
+        }
+      ];
     };
+
     # nix code formatter
     formatter.${system} = nixpkgs.legacyPackages.${system}.alejandra;
   };
