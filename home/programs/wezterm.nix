@@ -4,7 +4,7 @@
   };
 
   home.file.".config/wezterm" = {
-    source = ../../../../dotfiles/wezterm;
+    source = ../../dotfiles/wezterm;
     recursive = true;
   };
 }
