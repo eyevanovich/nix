@@ -40,8 +40,6 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 
 ```bash
 git clone https://github.com/eyevanovich/nix.git ~/.config/nix && cd ~/.config/nix
-sed -i '' "s/REPLACE_USERNAME/$USER/" flake.nix
-sed -i '' "s/REPLACE_HOSTNAME/$(scutil --get LocalHostName)/" flake.nix
 ```
 
 ### Setup
@@ -49,7 +47,7 @@ sed -i '' "s/REPLACE_HOSTNAME/$(scutil --get LocalHostName)/" flake.nix
 #### First run
 
 ```bash
-  nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --flake ~/.config/nix
+  nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --flake ~/.config/nix --impure
 ```
 
 #### with Taskfile thereafter
