@@ -1,6 +1,6 @@
-{...}: {
+{config, ...}: {
   home.file.".config/karabiner" = {
-    source = ../../dotfiles/karabiner;
+    source = "${config.xdg.configHome}/nix/dotfiles/karabiner";
     recursive = true;
   };
 }
