@@ -8,7 +8,6 @@
     ./git.nix
     ./wezterm.nix
     ./fish.nix
-    ./aerospace.nix
     ./eza.nix
     ./sqls.nix
   ];
