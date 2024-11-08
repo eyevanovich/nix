@@ -35,9 +35,9 @@
     ...
   }: let
     # variables are defined for use in the configuration
-    username = "REPLACE_USERNAME";
+    username = "ipiesh";
+    hostname = "WFH-DEV-IPIESH-TEST";
     system = "aarch64-darwin"; # aarch64-darwin or x86_64-darwin
-    hostname = "REPLACE_HOSTNAME";
     specialArgs =
       # includes all the inputs plus the additional variables
       inputs
@@ -49,21 +49,19 @@
     darwinConfigurations."${hostname}" = darwin.lib.darwinSystem {
       inherit system specialArgs;
       modules = [
-        ./modules/nix-core.nix
-        ./modules/apps.nix
-        ./modules/system.nix
-        ./modules/host-users.nix
-        ./modules/services/aerospace.nix
-        ./modules/services/sketchybar.nix
+        # nix-darwin
+        ./modules/darwin
 
         # home manager
         home-manager.darwinModules.home-manager
         {
-          home-manager.useGlobalPkgs = true;
-          home-manager.useUserPackages = true;
-          home-manager.extraSpecialArgs = specialArgs;
-          home-manager.users.${username} = import ./home/core.nix;
-          home-manager.backupFileExtension = "backup";
+          home-manager = {
+            useGlobalPkgs = true;
+            useUserPackages = true;
+            extraSpecialArgs = specialArgs;
+            backupFileExtension = ".nixbackup";
+            users.${username} = import ./modules/home-manager;
+          };
         }
       ];
     };
