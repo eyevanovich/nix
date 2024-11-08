@@ -59,7 +59,7 @@
             useGlobalPkgs = true;
             useUserPackages = true;
             extraSpecialArgs = specialArgs;
-            backupFileExtension = ".nixbackup";
+            backupFileExtension = "nixbackup";
             users.${username} = import ./modules/home-manager;
           };
         }
