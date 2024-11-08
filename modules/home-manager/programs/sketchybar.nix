@@ -1,6 +1,6 @@
-{...}: {
+{config, ...}: {
   home.file.".config/sketchybar" = {
-    source = ../../../dotfiles/sketchybar;
+    source = "${config.xdg.configHome}/nix/dotfiles/sketchybar";
     recursive = true;
   };
 }

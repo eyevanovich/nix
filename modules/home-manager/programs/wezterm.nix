@@ -1,10 +1,10 @@
-{...}: {
+{config, ...}: {
   programs.wezterm = {
     enable = true;
   };
 
   home.file.".config/wezterm" = {
-    source = ../../dotfiles/wezterm;
+    source = "${config.xdg.configHome}/nix/dotfiles/wezterm";
     recursive = true;
   };
 }
