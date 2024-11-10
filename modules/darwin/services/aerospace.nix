@@ -58,7 +58,7 @@
         inner.vertical = 10;
         outer.left = 10;
         outer.bottom = 10;
-        outer.top = 5;
+        outer.top = 35;
         outer.right = 10;
       };
 
