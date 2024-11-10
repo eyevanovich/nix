@@ -4,7 +4,7 @@
     enable = true;
     active_color = "0xffffd700";
     inactive_color = "0xff000000";
-    width = 8.0;
+    width = 3.0;
     hidpi = false;
   };
 }
