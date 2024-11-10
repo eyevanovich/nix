@@ -58,7 +58,7 @@
         inner.vertical = 10;
         outer.left = 10;
         outer.bottom = 10;
-        outer.top = 35;
+        outer.top = 5;
         outer.right = 10;
       };
 
@@ -114,8 +114,8 @@
 
         # See: https://nikitabobko.github.io/AeroSpace/commands#workspace
         alt-1 = "workspace 1";
-        alt-2 = "workspace 2";
-        alt-3 = "workspace 3";
+        # alt-2 = "workspace 2";
+        # alt-3 = "workspace 3";
         # alt-4 = "workspace 4";
         # alt-5 = "workspace 5";
         # alt-6 = "workspace 6";
@@ -123,7 +123,7 @@
         # alt-8 = "workspace 8";
         # alt-9 = "workspace 9";
         # alt-a = "workspace A" # In your config, you can drop workspace bindings that you don"t need;
-        # alt-b = "workspace B";
+        alt-b = "workspace B";
         # alt-c = "workspace C";
         # alt-d = "workspace D";
         # alt-e = "workspace E";
@@ -136,8 +136,8 @@
         # alt-p = "workspace P";
         # alt-q = "workspace Q";
         # alt-r = "workspace R";
-        # alt-s = "workspace S";
-        # alt-t = "workspace T";
+        alt-s = "workspace S";
+        alt-t = "workspace T";
         # alt-u = "workspace U";
         # alt-v = "workspace V";
         # alt-w = "workspace W";
@@ -147,8 +147,8 @@
 
         # See: https://nikitabobko.github.io/AeroSpace/commands#move-node-to-workspace
         alt-shift-1 = "move-node-to-workspace 1";
-        alt-shift-2 = "move-node-to-workspace 2";
-        alt-shift-3 = "move-node-to-workspace 3";
+        # alt-shift-2 = "move-node-to-workspace 2";
+        # alt-shift-3 = "move-node-to-workspace 3";
         # alt-shift-4 = "move-node-to-workspace 4";
         # alt-shift-5 = "move-node-to-workspace 5";
         # alt-shift-6 = "move-node-to-workspace 6";
@@ -156,7 +156,7 @@
         # alt-shift-8 = "move-node-to-workspace 8";
         # alt-shift-9 = "move-node-to-workspace 9";
         # alt-shift-a = "move-node-to-workspace A";
-        # alt-shift-b = "move-node-to-workspace B";
+        alt-shift-b = "move-node-to-workspace B";
         # alt-shift-c = "move-node-to-workspace C";
         # alt-shift-d = "move-node-to-workspace D";
         # alt-shift-e = "move-node-to-workspace E";
@@ -169,8 +169,8 @@
         # alt-shift-p = "move-node-to-workspace P";
         # alt-shift-q = "move-node-to-workspace Q";
         # alt-shift-r = "move-node-to-workspace R";
-        # alt-shift-s = "move-node-to-workspace S";
-        # alt-shift-t = "move-node-to-workspace T";
+        alt-shift-s = "move-node-to-workspace S";
+        alt-shift-t = "move-node-to-workspace T";
         # alt-shift-u = "move-node-to-workspace U";
         # alt-shift-v = "move-node-to-workspace V";
         # alt-shift-w = "move-node-to-workspace W";
