@@ -10,5 +10,6 @@
     ./fish.nix
     ./eza.nix
     ./sqls.nix
+    ./ghostty.nix
   ];
 }

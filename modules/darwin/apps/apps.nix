@@ -66,6 +66,7 @@
       "flux"
       "karabiner-elements"
       "wezterm"
+      "ghostty"
     ];
   };
 }
