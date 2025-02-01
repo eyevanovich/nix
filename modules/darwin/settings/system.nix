@@ -28,7 +28,6 @@
 
         # customize Hot Corners
         wvous-tr-corner = 5; # top-right - Screen Saver
-        wvous-br-corner = 13; # bottom-right - Lock Screen
         persistent-apps = [
           "Applications/Arc.app"
           "Applications/Slack.app"
@@ -167,23 +166,11 @@
   # time.timeZone = "Asia/shanghai";
 
   # Fonts
-  fonts = {
-    packages = with pkgs; [
+  fonts.packages = with pkgs; [
       # icon fonts
       material-design-icons
       font-awesome
-
-      # nerdfonts
-      # https://github.com/NixOS/nixpkgs/blob/nixos-23.11/pkgs/data/fonts/nerdfonts/shas.nix
-      (nerdfonts.override {
-        fonts = [
-          # symbols icon only
-          "NerdFontsSymbolsOnly"
-          # Characters
-          "FiraCode"
-          "Meslo"
-        ];
-      })
+      nerd-fonts.fira-code
+      nerd-fonts.symbols-only
     ];
-  };
 }
