@@ -3,7 +3,6 @@ theme = "catppuccin_mocha"
 ###############################################################################################
 # EDITOR
 ###############################################################################################
-
 [editor]
 # line-number = "relative"
 true-color = true
@@ -12,7 +11,11 @@ color-modes = true
 bufferline = "multiple"
 scrolloff = 10
 gutters = ["diagnostics", "spacer", "line-numbers", "spacer", "diff"]
+end-of-line-diagnostics = "hint"
 # rulers = [80]
+
+[editor.inline-diagnostics]
+cursor-line = "warning" # show warnings and errors on the cursorline inline
 
 # [editor.whitespace]
 # render = "all"
@@ -104,6 +107,7 @@ pagedown = "no_op"
 home = "no_op"
 end = "no_op"
 X = ["extend_line_up", "extend_to_line_bounds"]
+ret = "goto_word"
 
 [keys.normal]
 a = ["append_mode", "collapse_selection"]
@@ -144,4 +148,3 @@ l = ":sh zellij run -d right -- revive -formatter stylish ./..."
 
 [keys.normal.space]
 W = ":write"
-

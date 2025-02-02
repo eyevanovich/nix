@@ -1,8 +1,7 @@
-{pkgs,...}: 
-let
+{pkgs, ...}: let
   ghostty-mock = pkgs.writeShellScriptBin "gostty-mock" ''
     true
-    '';
+  '';
 in {
   programs.ghostty = {
     package = ghostty-mock;
@@ -13,7 +12,7 @@ in {
       theme = "catppuccin-mocha";
       font-size = 10;
       font-family = "FiraCode Nerd Font Mono";
+      macos-titlebar-style = "tabs";
     };
   };
 }
-

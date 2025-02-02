@@ -130,7 +130,7 @@
         # alt-f = "workspace F";
         # alt-g = "workspace G";
         # alt-i = "workspace I";
-        # alt-m = "workspace M";
+        alt-m = "workspace M";
         # alt-n = "workspace N";
         # alt-o = "workspace O";
         # alt-p = "workspace P";
@@ -203,6 +203,41 @@
         alt-shift-k = ["join-with up" "mode main"];
         alt-shift-l = ["join-with right" "mode main"];
       };
+
+      on-window-detected = [
+        {
+          "if".app-id = "com.github.wez.wezterm";
+          run = ["move-node-to-workspace T"];
+        }
+        {
+          # FIX: this is a workaround for https://github.com/nikitabobko/AeroSpace/issues/68
+          # this was also observed in:
+          # - https://github.com/ghostty-org/ghostty/issues/1840
+          # - https://github.com/ghostty-org/ghostty/issues/2006
+          "if".app-id = "com.mitchellh.ghostty";
+          run = ["layout floating" "move-node-to-workspace T"];
+        }
+        {
+          "if".app-id = "com.tidal.desktop";
+          run = ["move-node-to-workspace M"];
+        }
+        {
+          "if".app-id = "company.thebrowser.Browser";
+          run = ["move-node-to-workspace B"];
+        }
+        {
+          "if".app-id = "com.tinyspeck.slackmacgap";
+          run = ["move-node-to-workspace S"];
+        }
+        {
+          "if".app-id = "com.1password.1password";
+          run = ["layout floating"];
+        }
+        {
+          "if".app-id = "com.p5sys.jump.mac.viewer.web";
+          run = ["layout floating"];
+        }
+      ];
     };
   };
 }
