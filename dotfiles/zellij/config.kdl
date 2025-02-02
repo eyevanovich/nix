@@ -299,7 +299,7 @@ default_mode "locked"
 // Path to the default editor to use to edit pane scrollbuffer
 // Default: $EDITOR or $VISUAL
 //
-scrollback_editor "/opt/homebrew/bin/hx"
+// scrollback_editor "/etc/profiles/per-user/ipiesh/bin/hx"
 
 // When attaching to an existing session with other users,
 // should the session be mirrored (true)

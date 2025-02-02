@@ -5,6 +5,7 @@
       set fish_greeting # Disable greeting
       export EDITOR="hx"
       export GOPRIVATE="gitlab.disney.com/skywalker-sound/*,gitlab.disney.com/skywalker-sound/libraries/golang/*"
+      export STARSHIP_CONFIG="$HOME/.config/starship/starship.toml"
 
       alias config='/usr/bin/git --git-dir=/Users/ipiesh/.cfg/.git/ --work-tree=/Users/ipiesh'
 
@@ -33,10 +34,6 @@
       {
         name = "grc";
         src = pkgs.fishPlugins.grc.src;
-      }
-      {
-        name = "tide";
-        src = pkgs.fishPlugins.tide.src;
       }
       {
         name = "fzf";
