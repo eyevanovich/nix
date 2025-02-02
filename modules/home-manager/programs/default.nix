@@ -11,5 +11,6 @@
     ./eza.nix
     ./sqls.nix
     ./ghostty.nix
+    ./starship.nix
   ];
 }

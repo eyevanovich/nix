@@ -63,6 +63,7 @@
       "tidal"
       "font-hack-nerd-font"
       "setapp"
+      "betterdisplay"
       "flux"
       "karabiner-elements"
       "wezterm"
