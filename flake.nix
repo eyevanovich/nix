@@ -11,8 +11,21 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # homebrew
     nix-homebrew = {
       url = "github:zhaofengli-wip/nix-homebrew";
+    };
+    homebrew-core = {
+      url = "github:homebrew/homebrew-core";
+      flake = false;
+    };
+    homebrew-cask = {
+      url = "github:homebrew/homebrew-cask";
+      flake = false;
+    };
+    homebrew-bundle = {
+      url = "github:homebrew/homebrew-bundle";
+      flake = false;
     };
 
     # adds the home-manager flake as an input
@@ -35,6 +48,9 @@
     nixpkgs,
     darwin,
     home-manager,
+    homebrew-core,
+    homebrew-cask,
+    homebrew-bundle,
     nix-homebrew,
     scls,
     ...
@@ -65,6 +81,12 @@
             #
             # With mutableTaps disabled, taps can no longer be added imperatively with `brew tap`.
             mutableTaps = false;
+            # Optional: Declarative tap management
+            taps = {
+              "homebrew/homebrew-core" = homebrew-core;
+              "homebrew/homebrew-cask" = homebrew-cask;
+              "homebrew/homebrew-bundle" = homebrew-bundle;
+            };
           };
         }
 
