@@ -67,6 +67,7 @@
         inherit username hostname;
       };
   in {
+    config.nix.channel.enable = false;
     darwinConfigurations."${hostname}" = darwin.lib.darwinSystem {
       inherit system specialArgs;
       modules = [
