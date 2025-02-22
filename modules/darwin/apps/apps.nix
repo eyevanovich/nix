@@ -40,7 +40,9 @@
     # otherwise Apple Store will refuse to install them.
     # For details, see https://github.com/mas-cli/mas
     masApps = {
-      # Xcode = 497799835;
+      "Notability: Smarter AI Notes" = 360593530;
+      "Tailscale" = 1475387142;
+      "Pixelmator Pro" = 1289583905;
     };
 
     taps = [
@@ -57,6 +59,8 @@
       "1password-cli"
       "openlens"
       "arc"
+      "orion"
+      "easyfind"
       "orbstack"
       "raycast"
       "obsidian"
@@ -68,6 +72,16 @@
       "karabiner-elements"
       "wezterm"
       "ghostty"
+      "mac-mouse-fix"
+      "arq"
+      "lm-studio"
+      "odrive"
+      "private-internet-access"
+      "signal"
+      "splice"
+      "steam"
+      "the-unarchiver"
+      "utm"
     ];
   };
 }
