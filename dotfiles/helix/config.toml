@@ -13,7 +13,7 @@ scrolloff = 10
 gutters = ["diagnostics", "spacer", "line-numbers", "spacer", "diff"]
 end-of-line-diagnostics = "hint"
 # rulers = [80]
-
+ 
 [editor.inline-diagnostics]
 cursor-line = "warning" # show warnings and errors on the cursorline inline
 
@@ -148,3 +148,4 @@ l = ":sh zellij run -d right -- revive -formatter stylish ./..."
 
 [keys.normal.space]
 W = ":write"
+

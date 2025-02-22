@@ -11,6 +11,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nix-homebrew = {
+      url = "github:zhaofengli-wip/nix-homebrew";
+    };
+
     # adds the home-manager flake as an input
     home-manager = {
       url = "github:nix-community/home-manager";
@@ -31,12 +35,13 @@
     nixpkgs,
     darwin,
     home-manager,
+    nix-homebrew,
     scls,
     ...
   }: let
     # variables are defined for use in the configuration
     username = "ipiesh";
-    hostname = "WFH-DEV-IPIESH-TEST";
+    hostname = "hackbox2000";
     system = "aarch64-darwin"; # aarch64-darwin or x86_64-darwin
     specialArgs =
       # includes all the inputs plus the additional variables
@@ -49,6 +54,20 @@
     darwinConfigurations."${hostname}" = darwin.lib.darwinSystem {
       inherit system specialArgs;
       modules = [
+        # nix-homebrew
+        nix-homebrew.darwinModules.nix-homebrew
+        {
+          nix-homebrew = {
+            enable = true;
+            enableRosetta = true;
+            user = "ipiesh";
+            # Optional: Enable fully-declarative tap management
+            #
+            # With mutableTaps disabled, taps can no longer be added imperatively with `brew tap`.
+            mutableTaps = false;
+          };
+        }
+
         # nix-darwin
         ./modules/darwin
 
