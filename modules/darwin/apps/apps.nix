@@ -46,7 +46,6 @@
     };
 
     taps = [
-      "1password/tap"
     ];
 
     # `brew install`

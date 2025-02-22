@@ -228,6 +228,22 @@
         "type": "github"
       }
     },
+    "onepass-homebrew-tap": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1730999540,
+        "narHash": "sha256-WRlqwxbfyGuFlsG9xzY6QJAJMICuW5r0+ep7ZXPxCBM=",
+        "owner": "1Password",
+        "repo": "homebrew-tap",
+        "rev": "419c3d3243ccb68c5584993efabd0026d60f3454",
+        "type": "github"
+      },
+      "original": {
+        "owner": "1Password",
+        "repo": "homebrew-tap",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "darwin": "darwin",
@@ -237,6 +253,7 @@
         "homebrew-core": "homebrew-core",
         "nix-homebrew": "nix-homebrew",
         "nixpkgs": "nixpkgs_3",
+        "onepass-homebrew-tap": "onepass-homebrew-tap",
         "scls": "scls"
       }
     },
