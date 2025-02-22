@@ -9,6 +9,9 @@
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
+  # Set this to false since determinite systems nix will manage it for us
+  nix.enable = false;
+
   nix.package = pkgs.nix;
 
   # do garbage collection weekly to keep disk usage low
