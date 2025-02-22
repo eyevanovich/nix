@@ -52,11 +52,13 @@ git clone https://github.com/eyevanovich/nix.git ~/.config/nix && cd ~/.config/n
   // there after
   task rebuild
 ```
-
-#### Set fish as default shell
+#### Wezterm terminfo install
 ```bash
-  echo /etc/profiles/per-user/ipiesh/bin/fish | sudo tee -a /etc/shells
-  chsh -s /etc/profiles/per-user/ipiesh/bin/fish
+  ## run a shell in bash then do the following
+  tempfile=$(mktemp) \
+    && curl -o $tempfile https://raw.githubusercontent.com/wezterm/wezterm/main/termwiz/data/wezterm.terminfo \
+    && tic -x -o ~/.terminfo $tempfile \
+    && rm $tempfile
 ```
 
 #### References
