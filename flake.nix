@@ -27,6 +27,10 @@
       url = "github:homebrew/homebrew-bundle";
       flake = false;
     };
+    onepass-homebrew-tap = {
+      url = "github:1Password/homebrew-tap";
+      flake = false;
+    };
 
     # adds the home-manager flake as an input
     home-manager = {
@@ -51,6 +55,7 @@
     homebrew-core,
     homebrew-cask,
     homebrew-bundle,
+    onepass-homebrew-tap,
     nix-homebrew,
     scls,
     ...
@@ -87,6 +92,7 @@
               "homebrew/homebrew-core" = homebrew-core;
               "homebrew/homebrew-cask" = homebrew-cask;
               "homebrew/homebrew-bundle" = homebrew-bundle;
+              "1password/tap" = onepass-homebrew-tap;
             };
           };
         }
