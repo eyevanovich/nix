@@ -25,15 +25,8 @@ sudo scutil ––set LocalHostName YourLocalHostName
 - Install `nix`
 
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
-```
-
-- Install `homebrew`
-
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-(echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> /Users/ipiesh/.zprofile
-eval "$(/opt/homebrew/bin/brew shellenv)"
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | \
+  sh -s -- install --determinate
 ```
 
 ### Clone repo and set up flake with hostname
