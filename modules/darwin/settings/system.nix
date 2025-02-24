@@ -28,11 +28,23 @@
 
         # customize Hot Corners
         wvous-tr-corner = 5; # top-right - Screen Saver
+
         persistent-apps = [
           "Applications/Arc.app"
-          "Applications/Slack.app"
+          "Applications/Orion.app"
+          "Applications/1password.app"
+          "Applications/WezTerm.app"
           "Applications/Orbstack.app"
+          "Applications/LM Studio.app"
+          "Applications/AnythingLLM.app"
+          "Applications/Obsidian.app"
+          "Applications/Pixelmator Pro.app"
+          "Applications/Bitwig Studio.app"
+          "Applications/Tidal.app"
+          "Applications/Steam.app"
+          "/System/Applications/Messages.app"
           "/System/Applications/System Settings.app"
+          "/System/Applications/iPhone Mirroring.app"
         ];
       };
 
