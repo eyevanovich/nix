@@ -96,17 +96,17 @@
         alt-ctrl-comma = "layout accordion horizontal vertical";
 
         # See: https://nikitabobko.github.io/AeroSpace/commands#focus
-        alt-ctrl-h = "focus left";
-        alt-ctrl-j = "focus down";
-        alt-ctrl-k = "focus up";
-        alt-ctrl-l = "focus right";
+        alt-shift-h = "focus left";
+        alt-shift-j = "focus down";
+        alt-shift-k = "focus up";
+        alt-shift-l = "focus right";
+        alt-shift-f = "fullscreen";
 
         # See: https://nikitabobko.github.io/AeroSpace/commands#move
-        alt-shift-h = "move left";
-        alt-shift-j = "move down";
-        alt-shift-k = "move up";
-        alt-shift-l = "move right";
-        alt-shift-f = "fullscreen";
+        alt-ctrl-h = "move left";
+        alt-ctrl-j = "move down";
+        alt-ctrl-k = "move up";
+        alt-ctrl-l = "move right";
 
         # See: https://nikitabobko.github.io/AeroSpace/commands#resize
         alt-shift-minus = "resize smart -50";
@@ -226,8 +226,8 @@
           run = ["move-node-to-workspace B"];
         }
         {
-          "if".app-id = "com.tinyspeck.slackmacgap";
-          run = ["move-node-to-workspace S"];
+          "if".app-id = "com.kagi.kagimacOS";
+          run = ["move-node-to-workspace B"];
         }
         {
           "if".app-id = "com.1password.1password";
