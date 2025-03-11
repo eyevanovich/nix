@@ -55,60 +55,74 @@
     scls,
     ...
   }: let
-    # variables are defined for use in the configuration
-    username = "ipiesh";
-    hostname = "hackbox2000";
-    system = "aarch64-darwin"; # aarch64-darwin or x86_64-darwin
-    specialArgs =
-      # includes all the inputs plus the additional variables
-      inputs
-      // {
-        # `//` operator is used to merge two attribute sets
-        inherit username hostname;
+    # Import host configurations
+    hosts = import ./hosts;
+
+    # Function to create a Darwin configuration for a specific host
+    mkDarwinConfig = {
+      hostname,
+      username,
+      system,
+    }:
+      darwin.lib.darwinSystem {
+        inherit system;
+        specialArgs = inputs // {inherit username hostname;};
+        modules = [
+          # nix-homebrew
+          nix-homebrew.darwinModules.nix-homebrew
+          {
+            nix-homebrew = {
+              enable = true;
+              enableRosetta = true;
+              user = username;
+              # Optional: Enable fully-declarative tap management
+              #
+              # With mutableTaps disabled, taps can no longer be added imperatively with `brew tap`.
+              mutableTaps = false;
+              # Optional: Declarative tap management
+              taps = {
+                "homebrew/homebrew-core" = homebrew-core;
+                "homebrew/homebrew-cask" = homebrew-cask;
+                "homebrew/homebrew-bundle" = homebrew-bundle;
+              };
+            };
+          }
+
+          # nix-darwin
+          ./modules/darwin
+
+          # home manager
+          home-manager.darwinModules.home-manager
+          {
+            home-manager = {
+              useGlobalPkgs = true;
+              useUserPackages = true;
+              extraSpecialArgs = inputs // {inherit username hostname;};
+              backupFileExtension = "nixbackup";
+              users.${username} = import ./modules/home-manager;
+            };
+          }
+        ];
       };
+
+    # Generate configurations for all hosts
+    darwinConfigurations =
+      builtins.mapAttrs
+      (hostname: hostConfig:
+        mkDarwinConfig {
+          inherit hostname;
+          username = hostConfig.username;
+          system = hostConfig.system;
+        })
+      hosts;
+
+    # Define default system for formatter
+    defaultSystem = "aarch64-darwin";
   in {
     config.nix.channel.enable = false;
-    darwinConfigurations."${hostname}" = darwin.lib.darwinSystem {
-      inherit system specialArgs;
-      modules = [
-        # nix-homebrew
-        nix-homebrew.darwinModules.nix-homebrew
-        {
-          nix-homebrew = {
-            enable = true;
-            enableRosetta = true;
-            user = username;
-            # Optional: Enable fully-declarative tap management
-            #
-            # With mutableTaps disabled, taps can no longer be added imperatively with `brew tap`.
-            mutableTaps = false;
-            # Optional: Declarative tap management
-            taps = {
-              "homebrew/homebrew-core" = homebrew-core;
-              "homebrew/homebrew-cask" = homebrew-cask;
-              "homebrew/homebrew-bundle" = homebrew-bundle;
-            };
-          };
-        }
-
-        # nix-darwin
-        ./modules/darwin
-
-        # home manager
-        home-manager.darwinModules.home-manager
-        {
-          home-manager = {
-            useGlobalPkgs = true;
-            useUserPackages = true;
-            extraSpecialArgs = specialArgs;
-            backupFileExtension = "nixbackup";
-            users.${username} = import ./modules/home-manager;
-          };
-        }
-      ];
-    };
+    inherit darwinConfigurations;
 
     # nix code formatter
-    formatter.${system} = nixpkgs.legacyPackages.${system}.alejandra;
+    formatter.${defaultSystem} = nixpkgs.legacyPackages.${defaultSystem}.alejandra;
   };
 }
