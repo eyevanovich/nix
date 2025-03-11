@@ -46,6 +46,7 @@
     devbox # easier declarative dev env
     go-task # taskfile
     zoxide # better cd
+    aider-chat #ai in the terminal
 
     # misc
     cowsay
