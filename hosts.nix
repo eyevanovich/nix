@@ -2,7 +2,7 @@
 #
 # This file defines the different host configurations for your machines.
 # Each entry represents a separate machine with its specific settings.
- 
+
 {
   # Format:
   # "hostname" = {
@@ -18,9 +18,9 @@
     system = "aarch64-darwin";
   };
 
-  # Example of an Intel Mac with Username override
+  # Example of an Intel Mac with username override
   # "old-mac-mini" = {
-  #   username = "different-user";  # Override the default username
+  #   username = "different-user";  # Override the default username from flake.nix
   #   system = "x86_64-darwin";
   # };
 }
