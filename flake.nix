@@ -56,7 +56,7 @@
     ...
   }: let
     # Import host configurations
-    hosts = import ./hosts;
+    hosts = import ./hosts.nix;
 
     # Default username for all machines
     defaultUsername = "ipiesh";
