@@ -58,10 +58,13 @@
     # Import host configurations
     hosts = import ./hosts;
 
+    # Default username for all machines
+    defaultUsername = "ipiesh";
+
     # Function to create a Darwin configuration for a specific host
     mkDarwinConfig = {
       hostname,
-      username,
+      username ? defaultUsername,
       system,
     }:
       darwin.lib.darwinSystem {
@@ -111,7 +114,8 @@
       (hostname: hostConfig:
         mkDarwinConfig {
           inherit hostname;
-          username = hostConfig.username;
+          # Username will use the default value from mkDarwinConfig unless explicitly overridden
+          username = hostConfig.username or defaultUsername;
           system = hostConfig.system;
         })
       hosts;
