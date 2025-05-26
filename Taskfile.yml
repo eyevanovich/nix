@@ -51,7 +51,7 @@ tasks:
   fmt:
     desc: "Format all nix files in repo"
     cmds:
-      - nix fmt
+      - nix fmt .
 
   clean:
     desc: "Removes ./reuslt folder"

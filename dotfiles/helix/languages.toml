@@ -101,7 +101,10 @@ file-types = [ "env", "tpl" ]
 ###############################################################
 [[language]]
 name = "nix"
-formatter = { command = "nixpkgs-fmt" }
+language-servers = ["nixd"]
+
+[language-server.nixd]
+command = "nixd"
 
 ###############################################################
 # MARKDOWN

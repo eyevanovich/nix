@@ -19,6 +19,7 @@
       pkgs.nixpkgs-fmt
       pkgs.yaml-language-server
       pkgs.gopls
+      pkgs.nixd
     ];
   };
 
