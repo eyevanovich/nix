@@ -18,6 +18,10 @@
     system = "aarch64-darwin";
   };
 
+  "WFH-DEV-MBAX-PIESH" = {
+    system = "aarch64-darwin";
+  };
+
   # Example of an Intel Mac with username override
   # "old-mac-mini" = {
   #   username = "different-user";  # Override the default username from flake.nix
