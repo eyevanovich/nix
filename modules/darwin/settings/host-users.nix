@@ -13,6 +13,7 @@
   networking.hostName = hostname;
   networking.computerName = hostname;
   system.defaults.smb.NetBIOSName = hostname;
+  system.primaryUser = "${username}";
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.knownUsers = ["${username}"];
