@@ -33,7 +33,7 @@ tasks:
   update:
     desc: "update flake lock file"
     cmds:
-    - nix flake update
+    - nix flake update --extra-experimental-features nix-command --extra-experimental-features flakes
 
   history:
     desc: "View nix system history"
