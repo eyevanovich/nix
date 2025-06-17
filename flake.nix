@@ -78,6 +78,7 @@
               enable = true;
               enableRosetta = true;
               user = username;
+              autoMigrate = true;
               # Optional: Enable fully-declarative tap management
               #
               # With mutableTaps disabled, taps can no longer be added imperatively with `brew tap`.
