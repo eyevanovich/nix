@@ -42,9 +42,9 @@
           "Applications/Bitwig Studio.app"
           "Applications/Tidal.app"
           "Applications/Steam.app"
+          "Applications/Crossover.app"
           "/System/Applications/Messages.app"
           "/System/Applications/System Settings.app"
-          "/System/Applications/iPhone Mirroring.app"
         ];
       };
 
