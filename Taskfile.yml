@@ -16,7 +16,7 @@ tasks:
         sh: '{{if .CLI_ARGS}}echo {{.CLI_ARGS}}{{else}}scutil --get LocalHostName{{end}}'
     cmds:
     - echo "Rebuilding for host {{.HOSTNAME}}"
-    - sudo darwin-rebuild switch --flake ~/.config/nix#{{.HOSTNAME}} --impure
+    - darwin-rebuild switch --flake ~/.config/nix#{{.HOSTNAME}} --impure
 
   darwin-debug:
     desc: "For initial debugging of the build"
