@@ -23,7 +23,6 @@
     yq-go # yaml processer https://github.com/mikefarah/yq
     kubectx
     awscli
-    pre-commit
     fzf
     nmap
     revive
