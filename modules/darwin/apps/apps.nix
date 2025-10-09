@@ -63,7 +63,7 @@
       "font-hack-nerd-font"
       "setapp"
       "betterdisplay"
-      "flux"
+      "flux-app"
       "karabiner-elements"
       "wezterm"
       "ghostty"
