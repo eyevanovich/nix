@@ -7,14 +7,14 @@
     enable = true;
     defaultEditor = true;
     extraPackages = [
-      pkgs.marksman
+      pkgs.markdown-oxide
       pkgs.taplo
       pkgs.typos-lsp
       pkgs.nil
       pkgs.vscode-langservers-extracted
       pkgs.nodePackages.typescript-language-server
       pkgs.nodePackages.bash-language-server
-      pkgs.dockerfile-language-server-nodejs
+      pkgs.dockerfile-language-server
       pkgs.terraform-ls
       pkgs.nixpkgs-fmt
       pkgs.yaml-language-server
