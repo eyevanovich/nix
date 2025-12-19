@@ -31,6 +31,7 @@
 
         persistent-apps = [
           "Applications/Arc.app"
+          "Applications/Zen.app"
           "Applications/Orion.app"
           "Applications/1password.app"
           "Applications/WezTerm.app"

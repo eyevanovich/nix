@@ -69,6 +69,7 @@
       "ghostty"
       "mac-mouse-fix"
       "arq"
+      "zen"
       "lm-studio"
       "anythingllm"
       "odrive"

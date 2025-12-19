@@ -218,6 +218,10 @@
           run = ["layout floating" "move-node-to-workspace T"];
         }
         {
+          "if".app-id = "com.bitwig.studio";
+          run = ["layout floating" "move-node-to-workspace 1"];
+        }
+        {
           "if".app-id = "com.tidal.desktop";
           run = ["move-node-to-workspace M"];
         }
