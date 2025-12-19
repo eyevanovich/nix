@@ -2,7 +2,6 @@
 #
 # This file defines the different host configurations for your machines.
 # Each entry represents a separate machine with its specific settings.
-
 {
   # Format:
   # "hostname" = {

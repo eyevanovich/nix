@@ -15,7 +15,7 @@
   # "error: cannot link '/nix/store/.tmp-link-xxxxx-xxxxx' to '/nix/store/.links/xxxx': File exists"
   nix.settings = {
     auto-optimise-store = false;
-    download-buffer-size = 134217728;  # 128 MB (default is 64 MB)
+    download-buffer-size = 134217728; # 128 MB (default is 64 MB)
   };
 
   # Used for backwards compatibility. please read the changelog
