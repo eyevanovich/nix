@@ -70,8 +70,6 @@
       "mac-mouse-fix"
       "arq"
       "zen"
-      "lm-studio"
-      "anythingllm"
       "odrive"
       "private-internet-access"
       "signal"
