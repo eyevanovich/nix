@@ -7,18 +7,18 @@ theme = "catppuccin_mocha"
 # line-number = "relative"
 true-color = true
 cursorline = true
-color-modes = true
 bufferline = "multiple"
 scrolloff = 10
 gutters = ["diagnostics", "spacer", "line-numbers", "spacer", "diff"]
 end-of-line-diagnostics = "hint"
-# rulers = [80]
- 
+rulers = [120]
+completion-replace = true
+trim-trailing-whitespace = true
+color-modes = true
+# rainbow-brackets = true # SOMEDAY...
+
 [editor.inline-diagnostics]
 cursor-line = "warning" # show warnings and errors on the cursorline inline
-
-# [editor.whitespace]
-# render = "all"
 
 [editor.whitespace.characters]
 space = "·"
@@ -36,6 +36,10 @@ insert = "bar"
 normal = "block"
 select = "underline"
 
+[editor.auto-save]
+focus-lost  = true
+after-delay.enable = true
+after-delay.timeout = 300000
 
 [editor.lsp]
 display-messages = true
@@ -135,7 +139,7 @@ o = ":config-open"
 l = ":o ~/.config/helix/languages.toml"
 
 [keys.normal.space.o]
-g = ":sh zellij run -fc --height 100% --width 100% -x 0 -y 0 -- lazygit"
+g = ":sh zellij run -fc --height 100%% --width 100%% -x 0 -y 0 -- lazygit"
 f = ":sh zellij run -fc -- yazi"
 m = ":sh zellij run -fc -- glow -p ./README.md"
 r = ":set whitespace.render none"
@@ -143,9 +147,8 @@ w = ":set whitespace.render all"
 
 [keys.normal.space.a]
 g =[":sh go mod tidy", ":reload-all", ":lsp-restart"]
-r = [":reload-all", ":lsp-restart"]
+r = [":reload-all"]
 l = ":sh zellij run -d right -- revive -formatter stylish ./..."
 
 [keys.normal.space]
 W = ":write"
-
