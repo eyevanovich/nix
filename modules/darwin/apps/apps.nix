@@ -75,7 +75,7 @@
       "postman"
       "redis-insight"
       "jetbrains-toolbox"
-      "cursor"
+      "claude-code"
       "hex-fiend"
       "quakenotch"
     ] ++ lib.optionals (profile == "personal") [
@@ -83,6 +83,8 @@
       "splice"
       "private-internet-access"
       "signal"
+    ] ++ lib.optionals (profile == "work") [
+      "cursor"
     ];
   };
 }
