@@ -39,6 +39,8 @@
       "Notability: Smarter AI Notes" = 360593530;
       "Tailscale" = 1475387142;
       "Pixelmator Pro" = 1289583905;
+      "SnippetsLab" = 1006087419;
+      "Boop" = 1518425043;
     };
 
     taps = [
@@ -68,13 +70,19 @@
       "arq"
       "zen"
       "odrive"
-      "private-internet-access"
-      "signal"
       "the-unarchiver"
       "utm"
+      "postman"
+      "redisinsight"
+      "jetbrains-toolbox"
+      "cursor"
+      "hex-fiend"
+      "quakenotch"
     ] ++ lib.optionals (profile == "personal") [
       "steam"
       "splice"
+      "private-internet-access"
+      "signal"
     ];
   };
 }
