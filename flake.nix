@@ -39,6 +39,9 @@
       url = "github:estin/simple-completion-language-server";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # pinned nixpkgs for localstack (python3.13-plux test broken on unstable)
+    nixpkgs-localstack.url = "github:NixOS/nixpkgs/16c7794d0a28b5a37904d55bcca36003b9109aaa";
   };
 
   # defines the outputs of the flake, making the inputs
@@ -72,6 +75,14 @@
         specialArgs = inputs // {inherit username hostname profile;};
         modules = [
           {nixpkgs.hostPlatform = system;}
+          # overlay: pin localstack to working nixpkgs rev
+          {
+            nixpkgs.overlays = [
+              (final: prev: {
+                localstack = (import inputs.nixpkgs-localstack {system = final.stdenv.hostPlatform.system;}).localstack;
+              })
+            ];
+          }
           # nix-homebrew
           nix-homebrew.darwinModules.nix-homebrew
           {

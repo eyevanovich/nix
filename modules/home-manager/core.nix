@@ -84,6 +84,6 @@
     tree
     neofetch
     grc
-    scls.defaultPackage.${pkgs.system}
+    scls.defaultPackage.${pkgs.stdenv.hostPlatform.system}
   ];
 }
