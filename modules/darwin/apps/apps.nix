@@ -73,7 +73,7 @@
       "the-unarchiver"
       "utm"
       "postman"
-      "redisinsight"
+      "redis-insight"
       "jetbrains-toolbox"
       "cursor"
       "hex-fiend"

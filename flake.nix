@@ -69,9 +69,9 @@
       profile ? "personal",
     }:
       darwin.lib.darwinSystem {
-        inherit system;
         specialArgs = inputs // {inherit username hostname profile;};
         modules = [
+          {nixpkgs.hostPlatform = system;}
           # nix-homebrew
           nix-homebrew.darwinModules.nix-homebrew
           {
@@ -126,7 +126,6 @@
     # Define default system for formatter
     defaultSystem = "aarch64-darwin";
   in {
-    config.nix.channel.enable = false;
     inherit darwinConfigurations;
 
     # nix code formatter

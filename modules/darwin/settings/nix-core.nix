@@ -5,6 +5,9 @@
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
+  # Disable channels — we use flakes exclusively
+  nix.channel.enable = false;
+
   # Set this to false since determinite systems nix will manage it for us
   nix.enable = false;
 
