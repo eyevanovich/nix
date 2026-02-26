@@ -26,7 +26,7 @@
       user.email =
         if profile == "work"
         then "ipiesh@skysound.com"
-        else "ipiesh@skysound.com";
+        else "ivan@ivanpiesh.info";
 
       alias = {
         # common aliases
