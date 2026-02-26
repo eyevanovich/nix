@@ -6,9 +6,13 @@ tasks:
 ############################################################################
   build:
     desc: "First pass build to get everything downloaded and setup"
+    vars:
+      HOSTNAME:
+        sh: '{{if .CLI_ARGS}}echo {{.CLI_ARGS}}{{else}}scutil --get LocalHostName{{end}}'
     cmds:
-    - sudo nix run nix-darwin --extra-experimental-features nix-command --extra-experimental-features flakes -- switch --flake ~/.config/nix --impure
-  
+    - echo "Building for host {{.HOSTNAME}}"
+    - sudo nix run nix-darwin -- switch --flake ~/.config/nix#{{.HOSTNAME}} --impure
+
   rebuild:
     desc: "Rebuild the environment for a specific host (defaults to current hostname)"
     vars:
@@ -24,8 +28,8 @@ tasks:
       HOSTNAME:
         sh: scutil --get LocalHostName
     cmds:
-    - nix build .#darwinConfigurations.{{HOSTNAME}}.system --show-trace --verbose --extra-experimental-features 'nix-command flakes'
-    - ./result/sw/bin/darwin-rebuild switch --flake .#{{HOSTNAME}} --show-trace --verbose
+    - nix build .#darwinConfigurations.{{.HOSTNAME}}.system --show-trace --verbose --impure
+    - ./result/sw/bin/darwin-rebuild switch --flake .#{{.HOSTNAME}} --show-trace --verbose --impure
 
 ############################################################################
 #  nix related commands
@@ -33,7 +37,7 @@ tasks:
   update:
     desc: "update flake lock file"
     cmds:
-    - nix flake update --extra-experimental-features nix-command --extra-experimental-features flakes
+    - nix flake update
 
   history:
     desc: "View nix system history"
@@ -54,6 +58,6 @@ tasks:
       - nix fmt .
 
   clean:
-    desc: "Removes ./reuslt folder"
+    desc: "Removes ./result folder"
     cmds:
       - rm -rf result
