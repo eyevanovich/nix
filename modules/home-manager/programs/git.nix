@@ -25,7 +25,7 @@
       user.name = "Ivan Miles Piesh";
       user.email =
         if profile == "work"
-        then "WORK_EMAIL_PLACEHOLDER"
+        then "ipiesh@skysound.com"
         else "ipiesh@skysound.com";
 
       alias = {
