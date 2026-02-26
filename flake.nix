@@ -75,14 +75,7 @@
         specialArgs = inputs // {inherit username hostname profile;};
         modules = [
           {nixpkgs.hostPlatform = system;}
-          # overlay: pin localstack to working nixpkgs rev
-          {
-            nixpkgs.overlays = [
-              (final: prev: {
-                localstack = (import inputs.nixpkgs-localstack {system = final.stdenv.hostPlatform.system;}).localstack;
-              })
-            ];
-          }
+          {nixpkgs.overlays = import ./overlays {inherit inputs;};}
           # nix-homebrew
           nix-homebrew.darwinModules.nix-homebrew
           {
