@@ -33,6 +33,23 @@ auto-format = false
 language-servers = [ "scls" ]
 
 ###############################################################
+# BASH
+###############################################################
+[[language]]
+name = "bash"
+indent = { tab-width = 4, unit = "\t" }
+formatter = { command = "shfmt" }
+auto-format = true
+language-servers = [ "bash-language-server", "scls" ]
+
+###############################################################
+# TOML
+###############################################################
+[[language]]
+name = "toml"
+formatter = { command = "taplo", args = ["fmt", "-"] }
+
+###############################################################
 # TERRAFORM
 ###############################################################
 [[language]]
@@ -54,7 +71,7 @@ args = ["serve"]
 ###############################################################
 [language-server.gopls]
 command = "gopls"
-config = { "gofumpt" = true, "local" = "goimports", "semanticTokens" = true, "staticcheck" = true, "verboseOutput" = true, "analyses" = { "fieldalignment" = true, "nilness" = true, unusedparams = true, unusedwrite = true, useany = true }, usePlaceholders = true, completeUnimported = true, hints = { "assignVariableType" = true, "compositeLiteralFields" = true, "compositeLiteralTypes" = true, "constantValues" = true, "functionTypeParameters" = true, "parameterNames" = true, "rangeVariableTypes" = true } }
+config = { "gofumpt" = true, "local" = "goimports", "semanticTokens" = true, "staticcheck" = true, "verboseOutput" = true, "analyses" = {"nilness" = true, unusedparams = true, unusedwrite = true, useany = true, assign = true }, usePlaceholders = true, completeUnimported = true, hints = { "assignVariableType" = true, "compositeLiteralFields" = true, "compositeLiteralTypes" = true, "constantValues" = true, "functionTypeParameters" = true, "parameterNames" = true, "rangeVariableTypes" = true } }
 
 [[language]]
 name = "go"
@@ -62,6 +79,73 @@ roots = ["go.work", "go.mod"]
 auto-format = true
 comment-token = "//"
 language-servers = [ "gopls", "typos", "scls"]
+
+# ###############################################################
+# # PYTHON
+# ###############################################################
+
+[language-server.ty]
+command = "ty"
+args = ["server"]
+
+[[language]]
+name = "python"
+scope = "source.python"
+injection-regex = "python"
+file-types = ["py","pyi","py3","pyw",".pythonstartup",".pythonrc"]
+shebangs = ["python"]
+roots = [".", "pyproject.toml"]
+comment-token = "#"
+language-servers = ["ty"]
+indent = { tab-width = 4, unit = "    " }
+auto-format = true
+
+# [[language]]
+# name = "python"
+# roots = ["pyproject.toml", "requirements.txt", ".venv/"]
+# language-servers = [ "basedpyright", "ruff", "slcs" ]
+# comment-token = "#"
+# shebangs = ["python"]
+# file-types = ["py", "ipynb"]
+# formatter = { command = "ruff", args = ["format", "-" ] }
+# auto-format = false
+
+# [language-server.basedpyright]
+# command = "basedpyright-langserver"
+# args = ["--stdio"]
+# except-features = ["format", "code-action"]
+
+# [language-server.basedpyright.config.basedpyright.analysis]
+# autoSearchPaths = true
+# autoImportCompletion = true
+# typeCheckingMode = "basic"
+# diagnosticMode = "workspace"
+# diagnosticSeverityOverrides.reportArgumentType = "warning"
+# diagnosticSeverityOverrides.reportGeneralTypeIssues = "warning"
+# diagnosticSeverityOverrides.reportOperatorIssue = "warning"
+# diagnosticSeverityOverrides.reportOptionalIterable = "warning"
+# diagnosticSeverityOverrides.reportOptionalMemberAccess = "warning"
+# diagnosticSeverityOverrides.reportOptionalOperand = "warning"
+# diagnosticSeverityOverrides.reportOptionalSubscript = "warning"
+
+# [language-server.ruff]
+# command = "ruff"
+# args = ["server"]
+# environment = { "RUFF_TRACE" = "messages" }
+
+# [language-server.ruff.config.settings]
+# lineLength = 120
+# logLevel = "debug"
+
+# [language-server.ruff.config.settings.lint]
+# select = ["E", "F", "W", "B", "I", "RUF", "N", "LOG", "ERA", "W", "D", "UP", "ANN", "ASYNC", "S", "RET", "TCH", "ARG", "PTH", "DOC"]
+# preview = true
+
+# [language-server.ruff.config.settings.format]
+# preview = true
+# quote-style = "double"
+# docstring-code-format = true
+# indent-style = "space"
 
 ###############################################################
 # RUST
@@ -77,10 +161,11 @@ command = "clippy"
 ###############################################################
 [[language]]
 name = "sql"
-language-servers = [ "sqls" , "typos", "scls"]
+language-servers = [ "sql-language-server" , "typos", "scls"]
 
-[language-server.sqls]
-command = "sqls"
+[language-server.sql-language-server]
+command = "sql-language-server"
+args = ["up", "--method", "stdio"]
 
 ###############################################################
 # STARLARK
@@ -101,17 +186,14 @@ file-types = [ "env", "tpl" ]
 ###############################################################
 [[language]]
 name = "nix"
-language-servers = ["nixd"]
-
-[language-server.nixd]
-command = "nixd"
+formatter = { command = "nixpkgs-fmt" }
 
 ###############################################################
 # MARKDOWN
 ###############################################################
 [[language]]
 name = "markdown"
-language-servers = [ "markdown-oxide", "scls", "typos" ]
+language-servers = [ "marksman", "scls", "typos" ]
 file-types = [ "md", "mdx" ]
 
 ###############################################################

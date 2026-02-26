@@ -1,4 +1,4 @@
-{...}: {
+{profile, ...}: {
   programs.delta = {
     enableGitIntegration = true;
     enable = true;
@@ -23,7 +23,10 @@
       push.autoSetupRemote = true;
       pull.rebase = true;
       user.name = "Ivan Miles Piesh";
-      user.email = "ipiesh@skysound.com";
+      user.email =
+        if profile == "work"
+        then "WORK_EMAIL_PLACEHOLDER"
+        else "ipiesh@skysound.com";
 
       alias = {
         # common aliases

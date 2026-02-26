@@ -66,10 +66,11 @@
       hostname,
       username ? defaultUsername,
       system,
+      profile ? "personal",
     }:
       darwin.lib.darwinSystem {
         inherit system;
-        specialArgs = inputs // {inherit username hostname;};
+        specialArgs = inputs // {inherit username hostname profile;};
         modules = [
           # nix-homebrew
           nix-homebrew.darwinModules.nix-homebrew
@@ -101,7 +102,7 @@
             home-manager = {
               useGlobalPkgs = true;
               useUserPackages = true;
-              extraSpecialArgs = inputs // {inherit username hostname;};
+              extraSpecialArgs = inputs // {inherit username hostname profile;};
               backupFileExtension = "nixbackup";
               users.${username} = import ./modules/home-manager;
             };
@@ -118,6 +119,7 @@
           # Username will use the default value from mkDarwinConfig unless explicitly overridden
           username = hostConfig.username or defaultUsername;
           system = hostConfig.system;
+          profile = hostConfig.profile or "personal";
         })
       hosts;
 
