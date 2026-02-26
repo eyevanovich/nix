@@ -19,13 +19,36 @@
 
   home.packages = with pkgs; [
     # utils
-    jq # A lightweight and flexible command-line JSON processor
-    yq-go # yaml processer https://github.com/mikefarah/yq
+    jq
+    yq-go
     kubectx
     awscli
     fzf
     nmap
     revive
+    wget
+
+    # devops
+    terraform
+    terraform-docs
+    packer
+    kubectl
+    kustomize
+    k9s
+    dive
+    docker-slim
+    glab
+    tilt
+    localstack
+    git-lfs
+
+    # dev tools
+    direnv
+    pre-commit
+    shellcheck
+    bat
+    eza
+    ripgrep
 
     # langs
     go
@@ -35,23 +58,32 @@
     rust-analyzer
     clippy
 
+    # database
+    redis
+    mysql80
+
     # productivity
-    glow # markdown previewer in terminal
-    btop # better top
-    yazi # file explorer
-    tealdeer # tldr in rust
-    lazygit # git TUI
-    fd # better find
-    devbox # easier declarative dev env
-    go-task # taskfile
-    zoxide # better cd
-    aider-chat #ai in the terminal
+    glow
+    btop
+    yazi
+    tealdeer
+    lazygit
+    fd
+    devbox
+    go-task
+    zoxide
+    aider-chat
+    navi
+    _7zz # 7-Zip
+
+    # media
+    ffmpeg
 
     # misc
     cowsay
     tree
     neofetch
-    grc # for color command output
-    scls.defaultPackage.${pkgs.system} # simple-completion-language-server for use with helix
+    grc
+    scls.defaultPackage.${pkgs.system}
   ];
 }

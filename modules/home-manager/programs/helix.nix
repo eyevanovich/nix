@@ -20,6 +20,10 @@
       pkgs.yaml-language-server
       pkgs.gopls
       pkgs.nixd
+      pkgs.shfmt
+      pkgs.marksman
+      pkgs.dprint
+      pkgs.ty
     ];
   };
 
