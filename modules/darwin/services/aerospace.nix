@@ -2,13 +2,6 @@
   services.aerospace = {
     enable = true;
     settings = {
-      # Notify Sketchybar about workspace change
-      exec-on-workspace-change = [
-        "/bin/bash"
-        "-c"
-        "sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE"
-      ];
-
       # Start AeroSpace at login
       start-at-login = false;
 
@@ -58,7 +51,7 @@
         inner.vertical = 10;
         outer.left = 10;
         outer.bottom = 10;
-        outer.top = 33;
+        outer.top = 10;
         outer.right = 10;
       };
 

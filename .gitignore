@@ -1,2 +1,6 @@
 .DS_Store
 .aider*
+secrets.nix
+*.secret
+.env
+.env.*

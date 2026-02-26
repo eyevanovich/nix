@@ -7,23 +7,26 @@
   # "hostname" = {
   #   username = "your-username";  # Optional: defaults to global defaultUsername if not specified
   #   system = "architecture";     # Either "aarch64-darwin" (Apple Silicon) or "x86_64-darwin" (Intel)
+  #   profile = "personal|work";   # Optional: defaults to "personal" if not specified
   # };
 
   "hackbox2000" = {
     system = "aarch64-darwin";
+    profile = "personal";
   };
 
   "WFH-DEV-MBPX-PIESH" = {
     system = "aarch64-darwin";
+    profile = "work";
   };
 
   "WFH-DEV-MBAX-PIESH" = {
     system = "aarch64-darwin";
+    profile = "work";
   };
 
-  # Example of an Intel Mac with username override
-  # "old-mac-mini" = {
-  #   username = "different-user";  # Override the default username from flake.nix
-  #   system = "x86_64-darwin";
-  # };
+  "DEV-MBPX-PIESH" = {
+    system = "aarch64-darwin";
+    profile = "work";
+  };
 }

@@ -18,14 +18,14 @@ end
 
 -- This is where you actually apply your config choices
 config.color_scheme = 'Catppuccin Mocha'
-config.font = wezterm.font 'FiraCode Nerd Font Mono'
+config.font = wezterm.font('FiraCode Nerd Font Mono', { weight = 'Regular', italic = false })
 config.font_size = 13
 config.window_decorations = "RESIZE"
 config.hide_tab_bar_if_only_one_tab = true
 config.window_frame = {
  font = wezterm.font { family = 'FiraCode Nerd Font Mono', weight = 'Regular' },
 }
-config.term = "wezterm"
+config.term = "xterm-256color"
 
 config.keys = {
   {

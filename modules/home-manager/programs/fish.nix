@@ -1,11 +1,13 @@
-{pkgs, ...}: {
+{pkgs, lib, profile, ...}: {
   programs.fish = {
     enable = true;
     interactiveShellInit = ''
       set fish_greeting # Disable greeting
       export EDITOR="hx"
-      export GOPRIVATE="gitlab.disney.com/skywalker-sound/*,gitlab.disney.com/skywalker-sound/libraries/golang/*"
       export STARSHIP_CONFIG="$HOME/.config/starship/starship.toml"
+    '' + lib.optionalString (profile == "work") ''
+      export GOPRIVATE="gitlab.disney.com/skywalker-sound/*,gitlab.disney.com/skywalker-sound/libraries/golang/*"
+    '' + ''
 
       alias config='/usr/bin/git --git-dir=/Users/ipiesh/.cfg/.git/ --work-tree=/Users/ipiesh'
 

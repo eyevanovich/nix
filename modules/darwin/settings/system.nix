@@ -1,4 +1,4 @@
-{pkgs, ...}:
+{pkgs, lib, profile, ...}:
 ###################################################################################
 #
 #  macOS's System configuration
@@ -38,13 +38,14 @@
           "Applications/Orbstack.app"
           "Applications/Obsidian.app"
           "Applications/Pixelmator Pro.app"
-          "Applications/Bitwig Studio.app"
           "Applications/Tidal.app"
+          "/System/Applications/Messages.app"
+          "/System/Applications/System Settings.app"
+        ] ++ lib.optionals (profile == "personal") [
+          "Applications/Bitwig Studio.app"
           "Applications/Steam.app"
           "Applications/Crossover.app"
           "Applications/Pro Tools.app"
-          "/System/Applications/Messages.app"
-          "/System/Applications/System Settings.app"
         ];
       };
 

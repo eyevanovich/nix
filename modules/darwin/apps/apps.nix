@@ -1,4 +1,4 @@
-{pkgs, ...}: {
+{pkgs, lib, profile, ...}: {
   environment.variables.HOMEBREW_NO_ANALYTICS = "1";
   environment.variables.EDITOR = "hx";
 
@@ -70,10 +70,11 @@
       "odrive"
       "private-internet-access"
       "signal"
-      "splice"
-      "steam"
       "the-unarchiver"
       "utm"
+    ] ++ lib.optionals (profile == "personal") [
+      "steam"
+      "splice"
     ];
   };
 }
