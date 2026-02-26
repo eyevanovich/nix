@@ -28,7 +28,6 @@
       # See https://nikitabobko.github.io/AeroSpace/commands#move-mouse
       # Fallback value (if you omit the key): on-focused-monitor-changed = []
       on-focused-monitor-changed = ["move-mouse monitor-lazy-center"];
-      on-focus-changed = ["move-mouse window-lazy-center"];
 
       # You can effectively turn off macOS "Hide application" (cmd-h) feature by toggling this flag
       # Useful if you don't use this macOS feature, but accidentally hit cmd-h or cmd-alt-h key
@@ -221,6 +220,14 @@
         {
           "if".app-id = "company.thebrowser.Browser";
           run = ["move-node-to-workspace B"];
+        }
+        {
+          "if".app-id = "app.zen-browser.zen";
+          run = ["move-node-to-workspace B"];
+        }
+        {
+          "if".app-id = "com.tinyspeck.slackmacgap";
+          run = ["move-node-to-workspace S"];
         }
         {
           "if".app-id = "com.kagi.kagimacOS";
