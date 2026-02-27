@@ -37,6 +37,8 @@ curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix 
   sh -s -- install --determinate
 ```
 
+Open a new terminal (or run `exec $SHELL`) so that `nix` is on your path before continuing.
+
 ### 4. Clone Repository
 
 ```bash
@@ -51,10 +53,11 @@ Edit `hosts.nix` and add an entry for your machine:
 "YourLocalHostName" = {
   system = "aarch64-darwin";   # or "x86_64-darwin" for Intel
   profile = "personal";        # or "work"
+  uid = 501;                   # run `id -u` to find yours
 };
 ```
 
-The hostname must match `scutil --get LocalHostName`. The default username (`ipiesh`) can be overridden per-host with `username = "someone-else";`.
+The hostname must match `scutil --get LocalHostName`. The default username (`ipiesh`) can be overridden per-host with `username = "someone-else";`. The `uid` must match your macOS user ID (`id -u`); most first-user setups are `501`.
 
 ### 6. First Build
 

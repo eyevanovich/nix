@@ -2,6 +2,7 @@
   pkgs,
   username,
   hostname,
+  uid,
   ...
 }:
 #############################################################
@@ -18,7 +19,7 @@
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.knownUsers = ["${username}"];
   users.users."${username}" = {
-    uid = 501;
+    uid = uid;
     home = "/Users/${username}";
     description = username;
     shell = pkgs.fish;

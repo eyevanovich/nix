@@ -11,7 +11,7 @@ tasks:
         sh: '{{if .CLI_ARGS}}echo {{.CLI_ARGS}}{{else}}scutil --get LocalHostName{{end}}'
     cmds:
     - echo "Building for host {{.HOSTNAME}}"
-    - sudo nix run nix-darwin -- switch --flake ~/.config/nix#{{.HOSTNAME}} --impure
+    - nix run nix-darwin -- switch --flake ~/.config/nix#{{.HOSTNAME}} --impure
 
   rebuild:
     desc: "Rebuild the environment for a specific host (defaults to current hostname)"

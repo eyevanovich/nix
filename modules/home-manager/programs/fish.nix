@@ -1,22 +1,30 @@
-{pkgs, lib, profile, ...}: {
+{
+  pkgs,
+  lib,
+  profile,
+  ...
+}: {
   programs.fish = {
     enable = true;
-    interactiveShellInit = ''
-      set fish_greeting # Disable greeting
-      export EDITOR="hx"
-      export STARSHIP_CONFIG="$HOME/.config/starship/starship.toml"
-    '' + lib.optionalString (profile == "work") ''
-      export GOPRIVATE="gitlab.disney.com/skywalker-sound/*,gitlab.disney.com/skywalker-sound/libraries/golang/*"
-    '' + ''
+    interactiveShellInit =
+      ''
+        set fish_greeting # Disable greeting
+        export EDITOR="hx"
+        export STARSHIP_CONFIG="$HOME/.config/starship/starship.toml"
+      ''
+      + lib.optionalString (profile == "work") ''
+        export GOPRIVATE="gitlab.disney.com/skywalker-sound/*,gitlab.disney.com/skywalker-sound/libraries/golang/*"
+      ''
+      + ''
 
-      alias config='/usr/bin/git --git-dir=/Users/ipiesh/.cfg/.git/ --work-tree=/Users/ipiesh'
+        alias config='/usr/bin/git --git-dir=/Users/ipiesh/.cfg/.git/ --work-tree=/Users/ipiesh'
 
-      fish_add_path "/opt/homebrew/bin/"
+        fish_add_path "/opt/homebrew/bin/"
 
-      ##Keep this at the end
-      fzf --fish | source
-      zoxide init fish | source
-    '';
+        ##Keep this at the end
+        fzf --fish | source
+        zoxide init fish | source
+      '';
     shellAliases = {
       "ls" = "eza -lAF";
       mkdir = "mkdir -p";

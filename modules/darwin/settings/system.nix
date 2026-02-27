@@ -1,4 +1,9 @@
-{pkgs, lib, profile, ...}:
+{
+  pkgs,
+  lib,
+  profile,
+  ...
+}:
 ###################################################################################
 #
 #  macOS's System configuration
@@ -29,22 +34,24 @@
         # customize Hot Corners
         wvous-tr-corner = 5; # top-right - Screen Saver
 
-        persistent-apps = [
-          "Applications/Zen.app"
-          "Applications/1password.app"
-          "Applications/WezTerm.app"
-          "Applications/Orbstack.app"
-          "Applications/Obsidian.app"
-          "Applications/Pixelmator Pro.app"
-          "Applications/Tidal.app"
-          "/System/Applications/Messages.app"
-          "/System/Applications/System Settings.app"
-        ] ++ lib.optionals (profile == "personal") [
-          "Applications/Bitwig Studio.app"
-          "Applications/Steam.app"
-          "Applications/Crossover.app"
-          "Applications/Pro Tools.app"
-        ];
+        persistent-apps =
+          [
+            "Applications/Zen.app"
+            "Applications/1password.app"
+            "Applications/WezTerm.app"
+            "Applications/Orbstack.app"
+            "Applications/Obsidian.app"
+            "Applications/Pixelmator Pro.app"
+            "Applications/Tidal.app"
+            "/System/Applications/Messages.app"
+            "/System/Applications/System Settings.app"
+          ]
+          ++ lib.optionals (profile == "personal") [
+            "Applications/Bitwig Studio.app"
+            "Applications/Steam.app"
+            "Applications/Crossover.app"
+            "Applications/Pro Tools.app"
+          ];
       };
 
       # customize finder

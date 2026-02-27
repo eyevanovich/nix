@@ -70,9 +70,10 @@
       username ? defaultUsername,
       system,
       profile ? "personal",
+      uid ? 501,
     }:
       darwin.lib.darwinSystem {
-        specialArgs = inputs // {inherit username hostname profile;};
+        specialArgs = inputs // {inherit username hostname profile uid;};
         modules = [
           {nixpkgs.hostPlatform = system;}
           {nixpkgs.overlays = import ./overlays {inherit inputs;};}
@@ -106,7 +107,7 @@
             home-manager = {
               useGlobalPkgs = true;
               useUserPackages = true;
-              extraSpecialArgs = inputs // {inherit username hostname profile;};
+              extraSpecialArgs = inputs // {inherit username hostname profile uid;};
               backupFileExtension = "nixbackup";
               users.${username} = import ./modules/home-manager;
             };
@@ -124,6 +125,7 @@
           username = hostConfig.username or defaultUsername;
           system = hostConfig.system;
           profile = hostConfig.profile or "personal";
+          uid = hostConfig.uid or 501;
         })
       hosts;
 
