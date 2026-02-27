@@ -1,4 +1,9 @@
-{pkgs, lib, profile, ...}: {
+{
+  pkgs,
+  lib,
+  profile,
+  ...
+}: {
   environment.variables.HOMEBREW_NO_ANALYTICS = "1";
   environment.variables.EDITOR = "hx";
 
@@ -51,40 +56,43 @@
     ];
 
     # `brew install --cask`
-    casks = [
-      "1password"
-      "1password-cli"
-      "openlens"
-      "easyfind"
-      "orbstack"
-      "raycast"
-      "obsidian"
-      "tidal"
-      "font-hack-nerd-font"
-      "setapp"
-      "betterdisplay"
-      "flux-app"
-      "karabiner-elements"
-      "wezterm"
-      "mac-mouse-fix"
-      "arq"
-      "zen"
-      "odrive"
-      "the-unarchiver"
-      "utm"
-      "postman"
-      "redis-insight"
-      "jetbrains-toolbox"
-      "claude-code"
-      "hex-fiend"
-      "quakenotch"
-    ] ++ lib.optionals (profile == "personal") [
-      "steam"
-      "splice"
-      "private-internet-access"
-      "signal"
-    ] ++ lib.optionals (profile == "work") [
-      "cursor"
-    ];
+    casks =
+      [
+        "1password"
+        "1password-cli"
+        "openlens"
+        "easyfind"
+        "orbstack"
+        "raycast"
+        "obsidian"
+        "tidal"
+        "font-hack-nerd-font"
+        "setapp"
+        "betterdisplay"
+        "flux-app"
+        "karabiner-elements"
+        "wezterm"
+        "mac-mouse-fix"
+        "arq"
+        "zen"
+        "odrive"
+        "the-unarchiver"
+        "utm"
+        "postman"
+        "redis-insight"
+        "jetbrains-toolbox"
+        "claude-code"
+        "hex-fiend"
+        "quakenotch"
+      ]
+      ++ lib.optionals (profile == "personal") [
+        "steam"
+        "splice"
+        "private-internet-access"
+        "signal"
+      ]
+      ++ lib.optionals (profile == "work") [
+        "cursor"
+      ];
   };
 }
