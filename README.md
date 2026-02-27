@@ -160,19 +160,6 @@ Both `build` and `rebuild` accept an optional hostname argument: `task rebuild -
 1. Add an entry to `hosts.nix` (hostname, system, profile)
 2. Run `task build` on the new machine
 
-## Post-Install
-
-### Wezterm Terminfo
-
-To properly configure Wezterm terminal:
-
-```bash
-tempfile=$(mktemp) \
-  && curl -o $tempfile https://raw.githubusercontent.com/wezterm/wezterm/main/termwiz/data/wezterm.terminfo \
-  && tic -x -o ~/.terminfo $tempfile \
-  && rm $tempfile
-```
-
 ## References
 
 - [Managing dotfiles with home-manager](https://alex.pearwin.com/2021/07/managing-dotfiles-with-nix/)
