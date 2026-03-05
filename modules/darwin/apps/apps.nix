@@ -84,6 +84,7 @@
         "claude-code"
         "hex-fiend"
         "quakenotch"
+        "fastmail"
       ]
       ++ lib.optionals (profile == "personal") [
         "steam"
