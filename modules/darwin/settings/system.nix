@@ -41,7 +41,6 @@
             "Applications/WezTerm.app"
             "Applications/Orbstack.app"
             "Applications/Obsidian.app"
-            "Applications/Pixelmator Pro.app"
             "Applications/Tidal.app"
             "/System/Applications/Messages.app"
             "/System/Applications/System Settings.app"
@@ -51,6 +50,9 @@
             "Applications/Steam.app"
             "Applications/Crossover.app"
             "Applications/Pro Tools.app"
+          ]
+          ++ lib.optionals (profile == "work") [
+            "/Applications/Slack.app"
           ];
       };
 
@@ -167,7 +169,7 @@
   };
 
   # Add ability to used TouchID for sudo authentication
-  security.pam.services.sudo_local.touchIdAuth = true;
+  security.pam.services.sudo_local.text = "auth sufficient pam_tid.so.2";
 
   # Create /etc/zshrc that loads the nix-darwin environment.
   # this is required if you want to use darwin's default shell - zsh
