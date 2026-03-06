@@ -1,5 +1,7 @@
 {
   pkgs,
+  lib,
+  profile,
   scls,
   ...
 }: {
@@ -37,7 +39,6 @@
     k9s
     dive
     docker-slim
-    glab
     tilt
     localstack
     git-lfs
@@ -86,5 +87,8 @@
     neofetch
     grc
     scls.defaultPackage.${pkgs.stdenv.hostPlatform.system}
-  ];
+  ]
+  ++ lib.optionals (profile == "work") (with pkgs; [
+    glab
+  ]);
 }
