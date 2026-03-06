@@ -105,7 +105,7 @@
         alt-shift-equal = "resize smart +50";
 
         # See: https://nikitabobko.github.io/AeroSpace/commands#workspace
-        alt-1 = "workspace 1";
+        alt-0 = "workspace Scratch";
         # alt-2 = "workspace 2";
         # alt-3 = "workspace 3";
         # alt-4 = "workspace 4";
@@ -115,21 +115,21 @@
         # alt-8 = "workspace 8";
         # alt-9 = "workspace 9";
         # alt-a = "workspace A" # In your config, you can drop workspace bindings that you don"t need;
-        alt-b = "workspace B";
+        alt-b = "workspace Browser";
         # alt-c = "workspace C";
         # alt-d = "workspace D";
         # alt-e = "workspace E";
         # alt-f = "workspace F";
         # alt-g = "workspace G";
         # alt-i = "workspace I";
-        alt-m = "workspace M";
+        alt-m = "workspace Music";
         # alt-n = "workspace N";
         # alt-o = "workspace O";
         # alt-p = "workspace P";
         # alt-q = "workspace Q";
         # alt-r = "workspace R";
-        alt-s = "workspace S";
-        alt-t = "workspace T";
+        alt-s = "workspace Slack";
+        alt-t = "workspace Term";
         # alt-u = "workspace U";
         # alt-v = "workspace V";
         # alt-w = "workspace W";
@@ -138,7 +138,7 @@
         # alt-z = "workspace Z";
 
         # See: https://nikitabobko.github.io/AeroSpace/commands#move-node-to-workspace
-        alt-shift-1 = "move-node-to-workspace 1";
+        alt-shift-0 = "move-node-to-workspace Scratch";
         # alt-shift-2 = "move-node-to-workspace 2";
         # alt-shift-3 = "move-node-to-workspace 3";
         # alt-shift-4 = "move-node-to-workspace 4";
@@ -148,7 +148,7 @@
         # alt-shift-8 = "move-node-to-workspace 8";
         # alt-shift-9 = "move-node-to-workspace 9";
         # alt-shift-a = "move-node-to-workspace A";
-        alt-shift-b = "move-node-to-workspace B";
+        alt-shift-b = "move-node-to-workspace Browser";
         # alt-shift-c = "move-node-to-workspace C";
         # alt-shift-d = "move-node-to-workspace D";
         # alt-shift-e = "move-node-to-workspace E";
@@ -161,8 +161,8 @@
         # alt-shift-p = "move-node-to-workspace P";
         # alt-shift-q = "move-node-to-workspace Q";
         # alt-shift-r = "move-node-to-workspace R";
-        alt-shift-s = "move-node-to-workspace S";
-        alt-shift-t = "move-node-to-workspace T";
+        alt-shift-s = "move-node-to-workspace Slack";
+        alt-shift-t = "move-node-to-workspace Term";
         # alt-shift-u = "move-node-to-workspace U";
         # alt-shift-v = "move-node-to-workspace V";
         # alt-shift-w = "move-node-to-workspace W";
@@ -199,39 +199,31 @@
       on-window-detected = [
         {
           "if".app-id = "com.github.wez.wezterm";
-          run = ["move-node-to-workspace T"];
-        }
-        {
-          # FIX: this is a workaround for https://github.com/nikitabobko/AeroSpace/issues/68
-          # this was also observed in:
-          # - https://github.com/ghostty-org/ghostty/issues/1840
-          # - https://github.com/ghostty-org/ghostty/issues/2006
-          "if".app-id = "com.mitchellh.ghostty";
-          run = ["layout floating" "move-node-to-workspace T"];
+          run = ["move-node-to-workspace Term"];
         }
         {
           "if".app-id = "com.bitwig.studio";
-          run = ["layout floating" "move-node-to-workspace 1"];
+          run = ["layout floating" "move-node-to-workspace Scratch"];
         }
         {
           "if".app-id = "com.tidal.desktop";
-          run = ["move-node-to-workspace M"];
+          run = ["move-node-to-workspace Music"];
         }
         {
           "if".app-id = "company.thebrowser.Browser";
-          run = ["move-node-to-workspace B"];
+          run = ["move-node-to-workspace Browser"];
         }
         {
           "if".app-id = "app.zen-browser.zen";
-          run = ["move-node-to-workspace B"];
-        }
-        {
-          "if".app-id = "com.tinyspeck.slackmacgap";
-          run = ["move-node-to-workspace S"];
+          run = ["move-node-to-workspace Browser"];
         }
         {
           "if".app-id = "com.kagi.kagimacOS";
-          run = ["move-node-to-workspace B"];
+          run = ["move-node-to-workspace Browser"];
+        }
+        {
+          "if".app-id = "com.tinyspeck.slackmacgap";
+          run = ["move-node-to-workspace Slack"];
         }
         {
           "if".app-id = "com.1password.1password";

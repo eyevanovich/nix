@@ -19,76 +19,77 @@
   # changes in each release.
   home.stateVersion = "23.11";
 
-  home.packages = with pkgs; [
-    # utils
-    jq
-    yq-go
-    kubectx
-    awscli
-    fzf
-    nmap
-    revive
-    wget
+  home.packages = with pkgs;
+    [
+      # utils
+      jq
+      yq-go
+      kubectx
+      awscli
+      fzf
+      nmap
+      revive
+      wget
 
-    # devops
-    terraform
-    terraform-docs
-    packer
-    kubectl
-    kustomize
-    k9s
-    dive
-    docker-slim
-    tilt
-    localstack
-    git-lfs
+      # devops
+      terraform
+      terraform-docs
+      packer
+      kubectl
+      kustomize
+      k9s
+      dive
+      docker-slim
+      tilt
+      localstack
+      git-lfs
 
-    # dev tools
-    direnv
-    pre-commit
-    shellcheck
-    bat
-    eza
-    ripgrep
-    fnm
+      # dev tools
+      direnv
+      pre-commit
+      shellcheck
+      bat
+      eza
+      ripgrep
+      fnm
 
-    # langs
-    go
-    cargo
-    rustc
-    rustfmt
-    rust-analyzer
-    clippy
+      # langs
+      go
+      cargo
+      rustc
+      rustfmt
+      rust-analyzer
+      clippy
 
-    # database
-    redis
-    mysql80
+      # database
+      redis
+      mysql80
 
-    # productivity
-    glow
-    btop
-    yazi
-    tealdeer
-    lazygit
-    fd
-    devbox
-    go-task
-    zoxide
-    aider-chat
-    navi
-    _7zz # 7-Zip
+      # productivity
+      glow
+      btop
+      yazi
+      tealdeer
+      lazygit
+      fd
+      devbox
+      go-task
+      zoxide
+      aider-chat
+      navi
+      _7zz # 7-Zip
 
-    # media
-    ffmpeg
+      # media
+      ffmpeg
 
-    # misc
-    cowsay
-    tree
-    neofetch
-    grc
-    scls.defaultPackage.${pkgs.stdenv.hostPlatform.system}
-  ]
-  ++ lib.optionals (profile == "work") (with pkgs; [
-    glab
-  ]);
+      # misc
+      cowsay
+      tree
+      neofetch
+      grc
+      scls.defaultPackage.${pkgs.stdenv.hostPlatform.system}
+    ]
+    ++ lib.optionals (profile == "work") (with pkgs; [
+      glab
+    ]);
 }
