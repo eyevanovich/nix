@@ -53,6 +53,7 @@
 
     # `brew install`
     brews = [
+      "beads"
     ];
 
     # `brew install --cask`
