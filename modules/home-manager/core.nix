@@ -49,6 +49,7 @@
     bat
     eza
     ripgrep
+    fnm
 
     # langs
     go

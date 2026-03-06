@@ -21,6 +21,8 @@
 
         fish_add_path "/opt/homebrew/bin/"
 
+        fnm env --shell fish | source
+
         ##Keep this at the end
         fzf --fish | source
         zoxide init fish | source
