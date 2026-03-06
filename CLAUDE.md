@@ -45,17 +45,26 @@ casks = [ "shared-app" ]
 The `profile` arg flows from `hosts.nix` → `flake.nix` → `specialArgs`/`extraSpecialArgs`
 into every module via the function argument.
 
-### Dotfile Management — Mutable Symlinks
-For configs that need live editing (helix, wezterm, etc.), use `mkOutOfStoreSymlink` so the
-symlink points back into this repo rather than into the read-only Nix store:
+### Dotfile Management — Two Approaches
+
+**`mkOutOfStoreSymlink` (helix only):** Symlinks point back into this repo — edits take
+effect immediately, no rebuild needed:
 ```nix
 home.file.".config/helix/config.toml".source =
   config.lib.file.mkOutOfStoreSymlink
     "${config.xdg.configHome}/nix/dotfiles/helix/config.toml";
 ```
-Editing `dotfiles/helix/config.toml` takes effect immediately without a rebuild.
 
-For configs fully managed by home-manager options (git, starship, etc.), use the standard
+**Plain `source` with `recursive = true` (wezterm, zellij, karabiner, starship):** Files
+are copied into the Nix store at build time — edits require a rebuild to take effect:
+```nix
+home.file.".config/wezterm" = {
+  source = "${config.xdg.configHome}/nix/dotfiles/wezterm";
+  recursive = true;
+};
+```
+
+For configs fully managed by home-manager options (git, etc.), use the standard
 `programs.<name>.settings` / inline config approach (files end up in the Nix store).
 
 ### Overlays
@@ -70,3 +79,22 @@ Currently used to pin `localstack` to a specific nixpkgs rev where its tests pas
 ### Special Args Available in All Modules
 `username`, `hostname`, `profile`, `uid` — passed via `specialArgs` (darwin) and
 `extraSpecialArgs` (home-manager).
+
+All flake `inputs` are also spread in (`specialArgs = inputs // {...}`), so `nixpkgs`,
+`darwin`, `scls`, etc. are directly available as module arguments too.
+
+## Gotchas
+
+### Homebrew `cleanup = "zap"` removes unlisted packages
+`onActivation.cleanup = "zap"` in `apps.nix` means any brew/cask not declared in the
+config will be **uninstalled on rebuild**. Always declare packages in `apps.nix` rather
+than installing them manually with `brew`.
+
+### Both build commands use `--impure`
+`task build` and `task rebuild` both pass `--impure` to nix. This is intentional (needed
+for hostname detection and Determinate Nix compatibility).
+
+### Determinate Nix manages the nix daemon, not nix-darwin
+`nix.enable = false` in `nix-core.nix` tells nix-darwin to leave the nix installation
+alone. The Determinate Systems installer owns `/nix` and manages the daemon — don't
+remove this setting or nix-darwin will conflict with it.
