@@ -4,7 +4,16 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:discourse.nixos.org)"
+      "WebFetch(domain:discourse.nixos.org)",
+      "WebFetch(domain:apple.stackexchange.com)",
+      "WebFetch(domain:superuser.com)",
+      "WebFetch(domain:www.reddit.com)",
+      "WebFetch(domain:blog.adriankwiatkowski.eu)",
+      "WebFetch(domain:discussions.apple.com)",
+      "WebFetch(domain:keith.github.io)",
+      "WebFetch(domain:sixcolors.com)",
+      "WebFetch(domain:eclecticlight.co)",
+      "WebFetch(domain:news.ycombinator.com)"
     ]
   }
 }
