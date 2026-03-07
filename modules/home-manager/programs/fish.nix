@@ -26,6 +26,7 @@
         ##Keep this at the end
         fzf --fish | source
         zoxide init fish | source
+        atuin init fish | source
       '';
     shellAliases = {
       "ls" = "eza -lAF";
@@ -64,5 +65,12 @@
       #   };
       # }
     ];
+    functions.fish_user_key_bindings = ''
+      bind ctrl-r _atuin_search
+      bind -M insert ctrl-r _atuin_search
+      bind -M default ctrl-r _atuin_search
+      bind -M visual ctrl-r _atuin_search
+      bind -M insert up _atuin_bind_up
+    '';
   };
 }

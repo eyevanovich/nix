@@ -11,5 +11,6 @@
     ./sqls.nix
     ./ghostty.nix
     ./starship.nix
+    ./atuin.nix
   ];
 }
