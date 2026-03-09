@@ -86,6 +86,10 @@
         "hex-fiend"
         "quakenotch"
         "fastmail"
+        "cryptomator"
+        "megasync"
+        "mountain-duck"
+        "jump-desktop"
       ]
       ++ lib.optionals (profile == "personal") [
         "steam"

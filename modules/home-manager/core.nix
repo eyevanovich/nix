@@ -75,7 +75,7 @@
       devbox
       go-task
       zoxide
-      aider-chat
+      opencode
       navi
       _7zz # 7-Zip
 
