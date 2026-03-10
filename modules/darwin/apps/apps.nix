@@ -54,6 +54,7 @@
     # `brew install`
     brews = [
       "beads"
+      "codanna"
     ];
 
     # `brew install --cask`

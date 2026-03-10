@@ -14,6 +14,7 @@
       ''
       + lib.optionalString (profile == "work") ''
         export GOPRIVATE="gitlab.disney.com/skywalker-sound/*,gitlab.disney.com/skywalker-sound/libraries/golang/*"
+        export NODE_EXTRA_CA_CERTS="/etc/ssl/certs/all_certs.pem"
       ''
       + ''
 
