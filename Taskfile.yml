@@ -31,6 +31,11 @@ tasks:
     - nix build .#darwinConfigurations.{{.HOSTNAME}}.system --show-trace --verbose --impure
     - ./result/sw/bin/darwin-rebuild switch --flake .#{{.HOSTNAME}} --show-trace --verbose --impure
 
+  update-homebrew:
+    cmds:
+      - nix flake update homebrew-cask
+      - task: rebuild
+
 ############################################################################
 #  nix related commands
 ############################################################################
