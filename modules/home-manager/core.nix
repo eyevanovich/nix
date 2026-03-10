@@ -60,6 +60,7 @@
       rustfmt
       rust-analyzer
       clippy
+      python313
 
       # database
       redis
