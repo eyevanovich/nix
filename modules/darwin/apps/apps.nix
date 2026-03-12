@@ -100,6 +100,7 @@
         "signal"
       ]
       ++ lib.optionals (profile == "work") [
+        "imazing-profile-editor"
         "cursor"
       ];
   };
