@@ -65,6 +65,7 @@
       # database
       redis
       mysql80
+      dolt
 
       # productivity
       glow
