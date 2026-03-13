@@ -94,11 +94,11 @@
     "homebrew-cask": {
       "flake": false,
       "locked": {
-        "lastModified": 1773355257,
-        "narHash": "sha256-CBDSW1T4r+NOnpDIikUjy+2qLyKfYyVASkqyRf06SXg=",
+        "lastModified": 1773419960,
+        "narHash": "sha256-2Qo5S5+OrJdeaRCXEYfI3/OeyQ/g6K29cQMWW3WjlTY=",
         "owner": "homebrew",
         "repo": "homebrew-cask",
-        "rev": "4ff3e479c00ef32d937a7420f283b86b3aabb8cb",
+        "rev": "07d76c8766f8195d098640d639cd407c83ae965b",
         "type": "github"
       },
       "original": {
