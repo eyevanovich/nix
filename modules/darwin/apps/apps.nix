@@ -54,7 +54,6 @@
 
     # `brew install`
     brews = [
-      "beads"
       "codanna"
     ];
 
