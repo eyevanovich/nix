@@ -7,6 +7,7 @@
 }: {
   imports = [
     ./programs
+    ./beads.nix
   ];
 
   # This value determines the home Manager release that your
