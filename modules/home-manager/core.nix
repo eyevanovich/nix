@@ -91,6 +91,13 @@
       fastfetch
       grc
       scls.defaultPackage.${pkgs.stdenv.hostPlatform.system}
+
+      # nushell
+      nushell
+      nushellPlugins.gstat
+      nushellPlugins.skim
+      nushellPlugins.formats
+      nushellPlugins.semver
     ]
     ++ lib.optionals (profile == "work") (with pkgs; [
       glab
