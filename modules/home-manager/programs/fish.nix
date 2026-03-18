@@ -26,7 +26,6 @@
 
         ##Keep this at the end
         fzf --fish | source
-        zoxide init fish | source
         atuin init fish | source
       '';
     shellAliases = {

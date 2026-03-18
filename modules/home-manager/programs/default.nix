@@ -13,5 +13,6 @@
     ./starship.nix
     ./atuin.nix
     ./nushell.nix
+    ./zoxide.nix
   ];
 }
