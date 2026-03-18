@@ -35,6 +35,7 @@
       $env.PATH = ($env.PATH | split row (char esep) | append "/opt/homebrew/bin" | str join (char esep))
       def .. [] { cd .. }
       def ... [] { cd ../.. }
+      def jn [name: string] { zellij --session $name --layout hx }
     '';
     plugins = [
       pkgs.nushellPlugins.gstat
