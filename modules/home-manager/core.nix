@@ -88,7 +88,7 @@
       # misc
       cowsay
       tree
-      neofetch
+      fastfetch
       grc
       scls.defaultPackage.${pkgs.stdenv.hostPlatform.system}
     ]
