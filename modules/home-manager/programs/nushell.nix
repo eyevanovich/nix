@@ -1,11 +1,9 @@
-{
-  pkgs,
-  lib,
-  profile,
-  ...
-}: {
+{pkgs, ...}: {
   programs.nushell = {
     enable = true;
+    environmentVariables = {
+      EDITOR = "hx";
+    };
     settings = {
       show_banner = false;
       completions.external = {
@@ -25,19 +23,19 @@
         }
       ];
     };
-    extraEnv = ''
-      $env.EDITOR = "hx"
-      $env.STARSHIP_CONFIG = $"($env.HOME)/.config/starship/starship.toml"
-    '';
+    shellAliases = {
+      ls = "eza -lAF";
+      g = "git";
+      m = "make";
+      t = "task";
+      lg = "lazygit";
+      j = "zellij -l welcome";
+    };
     extraConfig = ''
       $env.PATH = ($env.PATH | split row (char esep) | append "/opt/homebrew/bin" | str join (char esep))
-      mkdir ~/.cache/starship
-      starship init nu | save -f ~/.cache/starship/init.nu
-      mkdir ~/.cache/zoxide
-      zoxide init nushell | save -f ~/.cache/zoxide/init.nu
-      mkdir ~/.cache/atuin
-      mkdir ~/.local/share/atuin
-      atuin init nu | save -f ~/.cache/atuin/init.nu    '';
+      def .. [] { cd .. }
+      def ... [] { cd ../.. }
+    '';
     plugins = [
       pkgs.nushellPlugins.gstat
       pkgs.nushellPlugins.skim

@@ -2,6 +2,7 @@
   programs.starship = {
     enable = true;
     enableFishIntegration = true;
+    enableNushellIntegration = true;
   };
 
   home.file.".config/starship" = {
