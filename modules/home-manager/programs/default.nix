@@ -12,5 +12,6 @@
     ./ghostty.nix
     ./starship.nix
     ./atuin.nix
+    ./nushell.nix
   ];
 }
