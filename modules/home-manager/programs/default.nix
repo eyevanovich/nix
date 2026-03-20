@@ -14,5 +14,6 @@
     ./atuin.nix
     ./nushell.nix
     ./zoxide.nix
+    ./carapace.nix
   ];
 }

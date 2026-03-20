@@ -24,7 +24,6 @@
       ];
     };
     shellAliases = {
-      ls = "eza -lAF";
       g = "git";
       m = "make";
       t = "task";
@@ -35,7 +34,7 @@
       $env.PATH = ($env.PATH | split row (char esep) | append "/opt/homebrew/bin" | str join (char esep))
       def .. [] { cd .. }
       def ... [] { cd ../.. }
-      def jn [name: string] { zellij --session $name --layout hx }
+      def jn [name: string] { zellij --session $name --new-session-with-layout hx }
     '';
     plugins = [
       pkgs.nushellPlugins.gstat

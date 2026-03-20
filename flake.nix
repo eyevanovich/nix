@@ -27,6 +27,10 @@
       url = "github:homebrew/homebrew-bundle";
       flake = false;
     };
+    homebrew-macos-cross-toolchains = {
+      url = "github:messense/homebrew-macos-cross-toolchains";
+      flake = false;
+    };
 
     # adds the home-manager flake as an input
     home-manager = {
@@ -54,6 +58,7 @@
     homebrew-core,
     homebrew-cask,
     homebrew-bundle,
+    homebrew-macos-cross-toolchains,
     nix-homebrew,
     scls,
     ...
@@ -90,11 +95,17 @@
               # With mutableTaps disabled, taps can no longer be added imperatively with `brew tap`.
               mutableTaps = false;
               # Optional: Declarative tap management
-              taps = {
-                "homebrew/homebrew-core" = homebrew-core;
-                "homebrew/homebrew-cask" = homebrew-cask;
-                "homebrew/homebrew-bundle" = homebrew-bundle;
-              };
+              taps =
+                {
+                  "homebrew/homebrew-core" = homebrew-core;
+                  "homebrew/homebrew-cask" = homebrew-cask;
+                  "homebrew/homebrew-bundle" = homebrew-bundle;
+                }
+                // (
+                  if profile == "work"
+                  then {"messense/homebrew-macos-cross-toolchains" = homebrew-macos-cross-toolchains;}
+                  else {}
+                );
             };
           }
 

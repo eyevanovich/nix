@@ -70,7 +70,7 @@
         echo "Usage: jn <session-name>"
         return 1
       end
-      zellij --session $argv[1] --layout hx
+      zellij --session $argv[1] --new-session-with-layout hx
     '';
     functions.fish_user_key_bindings = ''
       bind ctrl-r _atuin_search
