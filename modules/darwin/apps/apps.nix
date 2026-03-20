@@ -49,12 +49,17 @@
       "Boop" = 1518425043;
     };
 
-    taps = [
+    taps = lib.optionals (profile == "work") [
+      "messense/macos-cross-toolchains"
     ];
 
     # `brew install`
     brews = [
       "codanna"
+    ]
+    ++ lib.optionals (profile == "work") [
+      "messense/macos-cross-toolchains/aarch64-unknown-linux-gnu"
+      "awscli-local"
     ];
 
     # `brew install --cask`
@@ -82,7 +87,6 @@
         "utm"
         "postman"
         "redis-insight"
-        "jetbrains-toolbox"
         "claude-code"
         "hex-fiend"
         "quakenotch"
@@ -91,6 +95,7 @@
         "megasync"
         "mountain-duck"
         "jump-desktop"
+        "suspicious-package"
       ]
       ++ lib.optionals (profile == "personal") [
         "steam"
@@ -99,6 +104,8 @@
         "signal"
       ]
       ++ lib.optionals (profile == "work") [
+        "packages"
+        "jetbrains-toolbox"
         "imazing-profile-editor"
         "cursor"
       ];

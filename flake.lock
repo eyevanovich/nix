@@ -123,6 +123,22 @@
         "type": "github"
       }
     },
+    "homebrew-macos-cross-toolchains": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1771152123,
+        "narHash": "sha256-n9uQNueFY+W5jsJfd5m+2x7p3HFw7nu2BcW+M1RaOuY=",
+        "owner": "messense",
+        "repo": "homebrew-macos-cross-toolchains",
+        "rev": "a76e79b487badebb6f70814bef72a7e969d33834",
+        "type": "github"
+      },
+      "original": {
+        "owner": "messense",
+        "repo": "homebrew-macos-cross-toolchains",
+        "type": "github"
+      }
+    },
     "naersk": {
       "inputs": {
         "nixpkgs": [
@@ -202,6 +218,7 @@
         "homebrew-bundle": "homebrew-bundle",
         "homebrew-cask": "homebrew-cask",
         "homebrew-core": "homebrew-core",
+        "homebrew-macos-cross-toolchains": "homebrew-macos-cross-toolchains",
         "nix-homebrew": "nix-homebrew",
         "nixpkgs": "nixpkgs",
         "nixpkgs-localstack": "nixpkgs-localstack",
