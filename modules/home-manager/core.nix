@@ -62,6 +62,7 @@
       rust-analyzer
       clippy
       python313
+      bun
 
       # database
       redis
