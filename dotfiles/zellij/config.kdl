@@ -148,6 +148,7 @@ keybinds clear-defaults=true {
         bind "Alt 1" { GoToTab 1; SwitchToMode "locked"; }
         bind "Alt 2" { GoToTab 2; SwitchToMode "locked"; }
         bind "Alt 3" { GoToTab 3; SwitchToMode "locked"; }
+        bind "Alt 4" { GoToTab 4; SwitchToMode "locked"; }
     }
     shared_except "locked" {
         bind "Alt f" { ToggleFloatingPanes; }
