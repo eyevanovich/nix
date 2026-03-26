@@ -100,6 +100,7 @@
         "steam"
         "splice"
         "private-internet-access"
+        "lm-studio"
         "signal"
       ]
       ++ lib.optionals (profile == "work") [

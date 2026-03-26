@@ -63,6 +63,7 @@
       clippy
       python313
       bun
+      nodejs
 
       # database
       redis
