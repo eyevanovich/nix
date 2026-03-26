@@ -26,6 +26,10 @@ layout {
         }
     }
 
+    tab name="Git" {
+        pane command="lazygit"
+    }
+
     tab name="Yazi" {
         pane command="yazi"
     }
