@@ -21,7 +21,9 @@
       "WebFetch(domain:docs.rs)",
       "WebFetch(domain:wezfurlong.org)",
       "mcp__plugin_context7_context7__resolve-library-id",
-      "mcp__plugin_context7_context7__query-docs"
+      "mcp__plugin_context7_context7__query-docs",
+      "Bash(nix search:*)",
+      "Bash(brew search:*)"
     ]
   },
   "prompt": "Before starting any work, run 'bd onboard' to understand the current project state and available issues."

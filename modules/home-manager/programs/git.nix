@@ -14,6 +14,8 @@
     # extraConfig = {
     # };
 
+    signing.format = null;
+
     ignores = [
       ".DS_Store"
     ];
