@@ -51,6 +51,8 @@
 
     taps = lib.optionals (profile == "work") [
       "messense/macos-cross-toolchains"
+    ] ++ lib.optionals (profile == "personal") [
+      "gentleman-programming/tap"
     ];
 
     # `brew install`
@@ -60,6 +62,9 @@
     ++ lib.optionals (profile == "work") [
       "messense/macos-cross-toolchains/aarch64-unknown-linux-gnu"
       "awscli-local"
+    ]
+    ++ lib.optionals (profile == "personal") [
+      "gentleman-programming/tap/engram"
     ];
 
     # `brew install --cask`
@@ -82,12 +87,13 @@
         "mac-mouse-fix"
         "arq"
         "zen"
+        "google-chrome"
         "odrive"
         "the-unarchiver"
         "utm"
         "postman"
         "redis-insight"
-        "claude-code"
+        "claude"
         "hex-fiend"
         "quakenotch"
         "fastmail"

@@ -31,6 +31,10 @@
       url = "github:messense/homebrew-macos-cross-toolchains";
       flake = false;
     };
+    homebrew-gentleman-programming = {
+      url = "github:gentleman-programming/homebrew-tap";
+      flake = false;
+    };
 
     # adds the home-manager flake as an input
     home-manager = {
@@ -59,6 +63,7 @@
     homebrew-cask,
     homebrew-bundle,
     homebrew-macos-cross-toolchains,
+    homebrew-gentleman-programming,
     nix-homebrew,
     scls,
     ...
@@ -104,6 +109,11 @@
                 // (
                   if profile == "work"
                   then {"messense/homebrew-macos-cross-toolchains" = homebrew-macos-cross-toolchains;}
+                  else {}
+                )
+                // (
+                  if profile == "personal"
+                  then {"gentleman-programming/homebrew-tap" = homebrew-gentleman-programming;}
                   else {}
                 );
             };

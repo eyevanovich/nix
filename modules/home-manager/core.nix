@@ -79,7 +79,6 @@
       fd
       devbox
       go-task
-      opencode
       navi
       _7zz # 7-Zip
 
