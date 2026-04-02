@@ -61,6 +61,7 @@
     ]
     ++ lib.optionals (profile == "work") [
       "messense/macos-cross-toolchains/aarch64-unknown-linux-gnu"
+      "xmlstarlet"
       "awscli-local"
     ]
     ++ lib.optionals (profile == "personal") [

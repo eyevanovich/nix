@@ -1,4 +1,4 @@
-{profile, ...}: {
+{profile, lib, ...}: {
   programs.delta = {
     enableGitIntegration = true;
     enable = true;
@@ -15,6 +15,10 @@
     # };
 
     signing.format = null;
+
+    includes = lib.optionals (profile == "work") [
+      {path = "~/.config/git/local.conf";}
+    ];
 
     ignores = [
       ".DS_Store"
