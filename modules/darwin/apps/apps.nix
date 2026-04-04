@@ -109,6 +109,7 @@
         "private-internet-access"
         "lm-studio"
         "signal"
+        "termius"
       ]
       ++ lib.optionals (profile == "work") [
         "packages"
