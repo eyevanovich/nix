@@ -3,6 +3,20 @@
     enable = true;
 
     settings = lib.optionalAttrs (profile == "personal") {
+      provider = {
+        lmstudio = {
+          npm = "@ai-sdk/openai-compatible";
+          name = "LM Studio (local)";
+          options = {
+            baseURL = "http://localhost:1234/v1";
+          };
+          models = {
+            "google/gemma-4-26b-a4b" = {
+              name = "gemma-4-26b-a4b";
+            };
+          };
+        };
+      };
       mcp = {
         context7 = {
           type = "local";
