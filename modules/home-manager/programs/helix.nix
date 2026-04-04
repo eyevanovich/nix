@@ -12,8 +12,8 @@
       pkgs.typos-lsp
       pkgs.nil
       pkgs.vscode-langservers-extracted
-      pkgs.nodePackages.typescript-language-server
-      pkgs.nodePackages.bash-language-server
+      pkgs.typescript-language-server
+      pkgs.bash-language-server
       pkgs.dockerfile-language-server
       pkgs.terraform-ls
       pkgs.nixpkgs-fmt
