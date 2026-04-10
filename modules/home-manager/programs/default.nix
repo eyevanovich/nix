@@ -15,7 +15,7 @@
     ./nushell.nix
     ./zoxide.nix
     ./carapace.nix
-    ./claude-code.nix
     ./opencode.nix
+    ./claude-code.nix
   ];
 }

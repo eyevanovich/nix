@@ -9,5 +9,4 @@
     CARAPACE_BRIDGES = "fish,zsh,bash,inshellisense";
     CARAPACE_MATCH = "CASE_INSENSITIVE";
   };
-
 }

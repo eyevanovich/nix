@@ -49,24 +49,28 @@
       "Boop" = 1518425043;
     };
 
-    taps = lib.optionals (profile == "work") [
-      "messense/macos-cross-toolchains"
-    ] ++ lib.optionals (profile == "personal") [
-      "gentleman-programming/tap"
-    ];
+    taps =
+      lib.optionals (profile == "work") [
+        "messense/macos-cross-toolchains"
+      ]
+      ++ lib.optionals (profile == "personal") [
+        "gentleman-programming/tap"
+      ];
 
     # `brew install`
-    brews = [
-      "codanna"
-    ]
-    ++ lib.optionals (profile == "work") [
-      "messense/macos-cross-toolchains/aarch64-unknown-linux-gnu"
-      "xmlstarlet"
-      "awscli-local"
-    ]
-    ++ lib.optionals (profile == "personal") [
-      "gentleman-programming/tap/engram"
-    ];
+    brews =
+      [
+        "beads"
+        "codanna"
+      ]
+      ++ lib.optionals (profile == "work") [
+        "messense/macos-cross-toolchains/aarch64-unknown-linux-gnu"
+        "xmlstarlet"
+        "awscli-local"
+      ]
+      ++ lib.optionals (profile == "personal") [
+        "gentleman-programming/tap/engram"
+      ];
 
     # `brew install --cask`
     casks =
