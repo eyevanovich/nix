@@ -66,7 +66,7 @@
 
       # database
       redis
-      mysql80
+      mysql84
       dolt
 
       # productivity
