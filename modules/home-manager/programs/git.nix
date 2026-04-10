@@ -1,4 +1,8 @@
-{profile, lib, ...}: {
+{
+  profile,
+  lib,
+  ...
+}: {
   programs.delta = {
     enableGitIntegration = true;
     enable = true;

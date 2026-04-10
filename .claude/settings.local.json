@@ -24,7 +24,12 @@
       "mcp__plugin_context7_context7__query-docs",
       "Bash(nix search:*)",
       "Bash(brew search:*)",
-      "mcp__plugin_claude-code-home-manager_context7__query-docs"
+      "mcp__plugin_claude-code-home-manager_context7__query-docs",
+      "Read(//Users/ipiesh/.claude/**)",
+      "Read(//Users/ipiesh/.config/opencode/**)",
+      "Bash(ls ~/.claude/*.json)",
+      "Bash(cat ~/.claude/mcp/*.json)",
+      "Bash(cat ~/.claude/plugins/data/claude-code-home-manager-inline/*.json)"
     ]
   },
   "prompt": "Before starting any work, run 'bd onboard' to understand the current project state and available issues."

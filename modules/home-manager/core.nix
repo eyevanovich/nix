@@ -90,7 +90,6 @@
       fastfetch
       grc
       scls.defaultPackage.${pkgs.stdenv.hostPlatform.system}
-      beads
     ]
     ++ lib.optionals (profile == "work") (with pkgs; [
       glab
