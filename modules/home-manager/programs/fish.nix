@@ -16,6 +16,8 @@
         export GOPRIVATE="gitlab.disney.com/skywalker-sound/*,gitlab.disney.com/skywalker-sound/libraries/golang/*"
         export NODE_EXTRA_CA_CERTS="/etc/ssl/certs/all_certs.pem"
       ''
+      + lib.optionalString (profile == "personal") ''
+        set -x SSH_AUTH_SOCK /Users/ipiesh/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh      ''
       + ''
 
         alias config='/usr/bin/git --git-dir=/Users/ipiesh/.cfg/.git/ --work-tree=/Users/ipiesh'
