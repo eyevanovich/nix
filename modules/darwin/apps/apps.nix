@@ -95,6 +95,7 @@
         "google-chrome"
         "odrive"
         "the-unarchiver"
+        "secretive"
         "utm"
         "postman"
         "redis-insight"
