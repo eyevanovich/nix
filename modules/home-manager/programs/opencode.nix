@@ -1,4 +1,8 @@
-{profile, lib, ...}: {
+{
+  profile,
+  lib,
+  ...
+}: {
   programs.opencode = {
     enable = true;
 
@@ -13,6 +17,9 @@
           models = {
             "google/gemma-4-26b-a4b" = {
               name = "gemma-4-26b-a4b";
+            };
+            "zai-org/glm-4.7-flash" = {
+              name = "glm-4.7-flash";
             };
           };
         };

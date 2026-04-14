@@ -15,7 +15,8 @@ in {
   };
 
   # MCP servers — merged into ~/.claude.json on every rebuild
-  home.activation.claudeMcpServers = lib.mkIf (profile == "personal")
+  home.activation.claudeMcpServers =
+    lib.mkIf (profile == "personal")
     (lib.hm.dag.entryAfter ["writeBoundary"] ''
       if [ -f "${claudeJson}" ] && [ -f "${dotfiles}/mcp-servers.json" ]; then
         tmp=$(${pkgs.coreutils}/bin/mktemp)
