@@ -61,6 +61,7 @@
       rust-analyzer
       clippy
       python313
+      uv
       bun
       nodejs
 
