@@ -29,7 +29,12 @@
       "Read(//Users/ipiesh/.config/opencode/**)",
       "Bash(ls ~/.claude/*.json)",
       "Bash(cat ~/.claude/mcp/*.json)",
-      "Bash(cat ~/.claude/plugins/data/claude-code-home-manager-inline/*.json)"
+      "Bash(cat ~/.claude/plugins/data/claude-code-home-manager-inline/*.json)",
+      "mcp__plugin_claude-mem_mcp-search__smart_outline",
+      "Bash(nix fmt:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   },
   "prompt": "Before starting any work, run 'bd onboard' to understand the current project state and available issues."
