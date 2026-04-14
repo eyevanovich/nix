@@ -100,6 +100,7 @@
         "postman"
         "redis-insight"
         "claude"
+        "claude-code@latest"
         "hex-fiend"
         "quakenotch"
         "fastmail"
