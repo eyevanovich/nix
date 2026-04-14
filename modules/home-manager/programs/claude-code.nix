@@ -1,13 +1,12 @@
-{profile, lib, ...}: {
-  programs.claude-code = {
-    enable = true;
-    package = null;
-
-    mcpServers = lib.optionalAttrs (profile == "personal") {
-      context7 = {
-        command = "npx";
-        args = ["-y" "@upstash/context7-mcp@latest"];
-      };
-    };
+{
+  config,
+  profile,
+  lib,
+  ...
+}: {
+  home.file.".claude/settings.local.json" = lib.mkIf (profile == "personal") {
+    source =
+      config.lib.file.mkOutOfStoreSymlink
+      "${config.xdg.configHome}/nix/dotfiles/claude-code/settings.local.json";
   };
 }
