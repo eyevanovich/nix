@@ -15,7 +15,6 @@
     ],
     "defaultMode": "plan"
   },
-  "model": "opusplan",
   "hooks": {
     "PostToolUse": [
       {
@@ -90,6 +89,7 @@
       }
     }
   },
+  "skipDangerousModePermissionPrompt": true,
   "voiceEnabled": true,
-  "skipDangerousModePermissionPrompt": true
+  "tui": "fullscreen"
 }
