@@ -13,7 +13,7 @@
       "mcp__plugin_engram_engram__mem_suggest_topic_key",
       "mcp__plugin_engram_engram__mem_update"
     ],
-    "defaultMode": "plan"
+    "defaultMode": "auto"
   },
   "hooks": {
     "PostToolUse": [
@@ -89,7 +89,9 @@
       }
     }
   },
+  "effortLevel": "high",
+  "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
-  "voiceEnabled": true,
-  "tui": "fullscreen"
+  "skipAutoPermissionPrompt": true,
+  "voiceEnabled": true
 }
