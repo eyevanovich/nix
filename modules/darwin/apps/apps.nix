@@ -122,6 +122,7 @@
         "jetbrains-toolbox"
         "imazing-profile-editor"
         "cursor"
+        "packages"
       ];
   };
 }
