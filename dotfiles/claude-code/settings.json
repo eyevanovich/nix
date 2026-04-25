@@ -90,9 +90,10 @@
       }
     }
   },
-  "effortLevel": "high",
+  "effortLevel": "xhigh",
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true,
-  "voiceEnabled": true
+  "voiceEnabled": true,
+  "model": "sonnet"
 }
