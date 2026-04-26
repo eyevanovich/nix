@@ -15,6 +15,7 @@
     ],
     "defaultMode": "auto"
   },
+  "model": "opus",
   "hooks": {
     "PostToolUse": [
       {
@@ -94,6 +95,5 @@
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true,
-  "voiceEnabled": true,
-  "model": "sonnet"
+  "voiceEnabled": true
 }

@@ -40,7 +40,7 @@
       pkgs.nushellPlugins.gstat
       pkgs.nushellPlugins.skim
       pkgs.nushellPlugins.formats
-      pkgs.nushellPlugins.semver
+      # semver: pinned to nushell 0.111.0 in nixpkgs unstable while nushell itself is 0.112.2 — re-enable once upstream syncs
     ];
   };
 }
