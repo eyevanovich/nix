@@ -123,7 +123,6 @@
         "imazing-profile-editor"
         "cursor"
         "openlens"
-        "packages"
       ];
   };
 }
