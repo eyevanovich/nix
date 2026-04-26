@@ -77,7 +77,7 @@
       [
         "1password"
         "1password-cli"
-        "openlens"
+        "headlamp"
         "easyfind"
         "orbstack"
         "raycast"
