@@ -37,6 +37,7 @@
       packer
       kubectl
       kustomize
+      gh
       k9s
       dive
       docker-slim
