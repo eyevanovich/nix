@@ -13,7 +13,15 @@
 
     # homebrew
     nix-homebrew = {
-      url = "github:zhaofengli-wip/nix-homebrew";
+      url = "github:zhaofengli/nix-homebrew";
+      inputs.brew-src.follows = "brew-src";
+    };
+    # Pin the brew binary directly so we control its version (not nix-homebrew's).
+    # Without this, nix-homebrew's internal pin lags behind cask DSL changes
+    # and casks like `depends_on :macos` crash the parser.
+    brew-src = {
+      url = "github:Homebrew/brew";
+      flake = false;
     };
     homebrew-core = {
       url = "github:homebrew/homebrew-core";

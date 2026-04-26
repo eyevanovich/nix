@@ -34,7 +34,7 @@ tasks:
   update-homebrew:
     desc: "Bump all homebrew inputs together (brew binary + every tap), then rebuild"
     cmds:
-      - nix flake update nix-homebrew homebrew-core homebrew-cask homebrew-bundle homebrew-macos-cross-toolchains homebrew-gentleman-programming
+      - nix flake update nix-homebrew brew-src homebrew-core homebrew-cask homebrew-bundle homebrew-macos-cross-toolchains homebrew-gentleman-programming
       - task: rebuild
 
 ############################################################################
