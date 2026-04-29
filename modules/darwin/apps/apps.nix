@@ -55,6 +55,7 @@
       ]
       ++ lib.optionals (profile == "personal") [
         "gentleman-programming/tap"
+        "jundot/omlx"
       ];
 
     # `brew install`
@@ -70,6 +71,10 @@
       ]
       ++ lib.optionals (profile == "personal") [
         "gentleman-programming/tap/engram"
+        {
+          name = "jundot/omlx/omlx";
+          start_service = true;
+        }
       ];
 
     # `brew install --cask`
