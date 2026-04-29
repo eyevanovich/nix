@@ -44,6 +44,7 @@
       tilt
       localstack
       git-lfs
+      supabase-cli
 
       # dev tools
       direnv

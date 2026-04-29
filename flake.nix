@@ -43,6 +43,10 @@
       url = "github:gentleman-programming/homebrew-tap";
       flake = false;
     };
+    homebrew-jundot-omlx = {
+      url = "github:jundot/omlx";
+      flake = false;
+    };
 
     # adds the home-manager flake as an input
     home-manager = {
@@ -72,6 +76,7 @@
     homebrew-bundle,
     homebrew-macos-cross-toolchains,
     homebrew-gentleman-programming,
+    homebrew-jundot-omlx,
     nix-homebrew,
     scls,
     ...
@@ -121,7 +126,10 @@
                 )
                 // (
                   if profile == "personal"
-                  then {"gentleman-programming/homebrew-tap" = homebrew-gentleman-programming;}
+                  then {
+                    "gentleman-programming/homebrew-tap" = homebrew-gentleman-programming;
+                    "jundot/homebrew-omlx" = homebrew-jundot-omlx;
+                  }
                   else {}
                 );
             };
