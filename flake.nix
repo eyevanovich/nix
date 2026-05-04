@@ -47,6 +47,10 @@
       url = "github:jundot/omlx";
       flake = false;
     };
+    homebrew-docker-tap = {
+      url = "github:docker/homebrew-tap";
+      flake = false;
+    };
 
     # adds the home-manager flake as an input
     home-manager = {
@@ -77,6 +81,7 @@
     homebrew-macos-cross-toolchains,
     homebrew-gentleman-programming,
     homebrew-jundot-omlx,
+    homebrew-docker-tap,
     nix-homebrew,
     scls,
     ...
@@ -118,6 +123,7 @@
                   "homebrew/homebrew-core" = homebrew-core;
                   "homebrew/homebrew-cask" = homebrew-cask;
                   "homebrew/homebrew-bundle" = homebrew-bundle;
+                  "docker/homebrew-tap" = homebrew-docker-tap;
                 }
                 // (
                   if profile == "work"

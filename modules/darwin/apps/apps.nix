@@ -50,10 +50,7 @@
     };
 
     taps =
-      [
-        "docker/tap"
-      ]
-      ++ lib.optionals (profile == "work") [
+      lib.optionals (profile == "work") [
         "messense/macos-cross-toolchains"
       ]
       ++ lib.optionals (profile == "personal") [
@@ -66,7 +63,6 @@
       [
         "beads"
         "codanna"
-        "docker/tap/sbx"
       ]
       ++ lib.optionals (profile == "work") [
         "messense/macos-cross-toolchains/aarch64-unknown-linux-gnu"
@@ -110,6 +106,7 @@
         "redis-insight"
         "claude"
         "claude-code@latest"
+        "docker/tap/sbx"
         "hex-fiend"
         "quakenotch"
         "fastmail"
