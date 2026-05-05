@@ -114,6 +114,7 @@
         "mountain-duck"
         "jump-desktop"
         "suspicious-package"
+        "zed"
       ]
       ++ lib.optionals (profile == "personal") [
         "steam"
