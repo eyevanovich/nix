@@ -122,6 +122,7 @@
         "private-internet-access"
         "lm-studio"
         "signal"
+        "telegram"
         "termius"
       ]
       ++ lib.optionals (profile == "work") [
