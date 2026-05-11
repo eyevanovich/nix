@@ -166,6 +166,15 @@
     };
   };
 
+  # Remove macOS caps_lock activation delay so Karabiner gets the event immediately
+  launchd.user.agents.disable-capslock-delay = {
+    serviceConfig = {
+      Label = "org.nixos.disable-capslock-delay";
+      ProgramArguments = [ "/usr/bin/hidutil" "property" "--set" "{\"CapsLockDelayOverride\":-1}" ];
+      RunAtLoad = true;
+    };
+  };
+
   # Add ability to used TouchID for sudo authentication
   security.pam.services.sudo_local.text = "auth sufficient pam_tid.so.2";
 
