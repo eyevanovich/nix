@@ -4,7 +4,7 @@
     enable = true;
     active_color = "0xffff69b4";
     inactive_color = "0xff000000";
-    width = 5.0;
+    width = 10.0;
     hidpi = false;
     blacklist = [ "OpenWhispr" ];
   };
