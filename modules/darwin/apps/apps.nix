@@ -63,6 +63,7 @@
       [
         "beads"
         "codanna"
+        "pi-coding-agent"
       ]
       ++ lib.optionals (profile == "work") [
         "messense/macos-cross-toolchains/aarch64-unknown-linux-gnu"
@@ -114,7 +115,6 @@
         "suspicious-package"
         "claude"
         "claude-code@latest"
-        "pi-coding-agent"
         "zed"
       ]
       ++ lib.optionals (profile == "personal") [
