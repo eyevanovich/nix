@@ -54,7 +54,6 @@
       eza
       ripgrep
       fnm
-      pi-coding-agent
 
       # langs
       go
