@@ -15,6 +15,7 @@
       + lib.optionalString (profile == "work") ''
         export GOPRIVATE="gitlab.disney.com/skywalker-sound/*,gitlab.disney.com/skywalker-sound/libraries/golang/*"
         export NODE_EXTRA_CA_CERTS="/etc/ssl/certs/all_certs.pem"
+        export GIT_TERMINAL_PROMPT=0
       ''
       + lib.optionalString (profile == "personal") ''
         set -x SSH_AUTH_SOCK /Users/ipiesh/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh      ''
