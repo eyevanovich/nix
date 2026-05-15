@@ -6,6 +6,6 @@
     inactive_color = "0xff000000";
     width = 10.0;
     hidpi = false;
-    blacklist = [ "OpenWhispr" ];
+    blacklist = ["OpenWhispr"];
   };
 }

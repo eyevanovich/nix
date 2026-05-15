@@ -170,7 +170,7 @@
   launchd.user.agents.disable-capslock-delay = {
     serviceConfig = {
       Label = "org.nixos.disable-capslock-delay";
-      ProgramArguments = [ "/usr/bin/hidutil" "property" "--set" "{\"CapsLockDelayOverride\":-1}" ];
+      ProgramArguments = ["/usr/bin/hidutil" "property" "--set" "{\"CapsLockDelayOverride\":-1}"];
       RunAtLoad = true;
     };
   };

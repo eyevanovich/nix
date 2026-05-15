@@ -49,10 +49,11 @@
       "Boop" = 1518425043;
     };
 
-    taps = [
-      "gentleman-programming/tap"
+    taps =
+      [
+        "gentleman-programming/tap"
       ]
-      ++lib.optionals (profile == "work") [
+      ++ lib.optionals (profile == "work") [
         "messense/macos-cross-toolchains"
       ]
       ++ lib.optionals (profile == "personal") [
