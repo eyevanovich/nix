@@ -49,12 +49,13 @@
       "Boop" = 1518425043;
     };
 
-    taps =
-      lib.optionals (profile == "work") [
+    taps = [
+      "gentleman-programming/tap"
+      ]
+      ++lib.optionals (profile == "work") [
         "messense/macos-cross-toolchains"
       ]
       ++ lib.optionals (profile == "personal") [
-        "gentleman-programming/tap"
         "jundot/omlx"
       ];
 
@@ -64,6 +65,7 @@
         "beads"
         "codanna"
         "pi-coding-agent"
+        "gentleman-programming/tap/engram"
       ]
       ++ lib.optionals (profile == "work") [
         "messense/macos-cross-toolchains/aarch64-unknown-linux-gnu"
@@ -71,7 +73,6 @@
         "awscli-local"
       ]
       ++ lib.optionals (profile == "personal") [
-        "gentleman-programming/tap/engram"
         {
           name = "jundot/omlx/omlx";
           start_service = true;
