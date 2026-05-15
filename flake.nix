@@ -124,6 +124,7 @@
                   "homebrew/homebrew-cask" = homebrew-cask;
                   "homebrew/homebrew-bundle" = homebrew-bundle;
                   "docker/homebrew-tap" = homebrew-docker-tap;
+                  "gentleman-programming/homebrew-tap" = homebrew-gentleman-programming;
                 }
                 // (
                   if profile == "work"
@@ -133,7 +134,6 @@
                 // (
                   if profile == "personal"
                   then {
-                    "gentleman-programming/homebrew-tap" = homebrew-gentleman-programming;
                     "jundot/homebrew-omlx" = homebrew-jundot-omlx;
                   }
                   else {}
