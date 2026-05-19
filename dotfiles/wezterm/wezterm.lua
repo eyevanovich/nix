@@ -26,10 +26,11 @@ config.window_frame = {
  font = wezterm.font { family = 'FiraCode Nerd Font Mono', weight = 'Regular' },
 }
 config.term = "xterm-256color"
+config.enable_kitty_keyboard = true
 
 config.keys = {
   {
-    -- disable this because I constantly fat finger 
+    -- disable this because I constantly fat finger
     -- tab and caps lock (CTRL) at the same time
     key = 'Tab',
     mods = 'CTRL',
