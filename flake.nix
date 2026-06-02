@@ -51,6 +51,10 @@
       url = "github:docker/homebrew-tap";
       flake = false;
     };
+    homebrew-skyhook-io = {
+      url = "github:skyhook-io/homebrew-tap";
+      flake = false;
+    };
 
     # adds the home-manager flake as an input
     home-manager = {
@@ -82,6 +86,7 @@
     homebrew-gentleman-programming,
     homebrew-jundot-omlx,
     homebrew-docker-tap,
+    homebrew-skyhook-io,
     nix-homebrew,
     scls,
     ...
@@ -128,7 +133,10 @@
                 }
                 // (
                   if profile == "work"
-                  then {"messense/homebrew-macos-cross-toolchains" = homebrew-macos-cross-toolchains;}
+                  then {
+                    "messense/homebrew-macos-cross-toolchains" = homebrew-macos-cross-toolchains;
+                    "skyhook-io/homebrew-tap" = homebrew-skyhook-io;
+                  }
                   else {}
                 )
                 // (
