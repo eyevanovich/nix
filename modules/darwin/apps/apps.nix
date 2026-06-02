@@ -35,6 +35,19 @@
       upgrade = true;
       # 'zap': uninstalls all formulae(and related files) not listed here.
       cleanup = "zap";
+      # Homebrew Bundle now requires explicit confirmation for cleanup;
+      # --force-cleanup makes `brew bundle --cleanup` non-interactive during activation.
+      extraFlags = ["--force-cleanup"];
+      # Homebrew 5.1+ (brew PR #20414) sets HOMEBREW_FORBID_PACKAGES_FROM_PATHS=true
+      # unless HOMEBREW_DEVELOPER is set, and rejects any formula/cask whose realpath
+      # escapes the prefix. nix-homebrew symlinks the whole Taps/ dir into /nix/store,
+      # so every formula realpaths to /nix/store/...-source and gets rejected
+      # ("Homebrew requires formulae to be in a tap, rejecting"). The internal opt-out
+      # HOMEBREW_INTERNAL_ALLOW_PACKAGES_FROM_PATHS is unset by brew.sh, so set
+      # HOMEBREW_DEVELOPER instead. Remove once nix-homebrew handles this upstream.
+      extraEnv = {
+        HOMEBREW_DEVELOPER = "1";
+      };
     };
 
     # Applications to install from Mac App Store using mas.
@@ -129,11 +142,13 @@
         "termius"
       ]
       ++ lib.optionals (profile == "work") [
+        "gcloud-cli"
         "packages"
         "jetbrains-toolbox"
         "imazing-profile-editor"
         "cursor"
         "openlens"
+        "radar-desktop"
       ];
   };
 }
