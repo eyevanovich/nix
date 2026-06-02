@@ -167,11 +167,15 @@
   };
 
   # Remove macOS caps_lock activation delay so Karabiner gets the event immediately
+  # CapsLockDelayOverride:10 sets a minimal 10ms delay (vs the default ~300ms)
   launchd.user.agents.disable-capslock-delay = {
     serviceConfig = {
       Label = "org.nixos.disable-capslock-delay";
-      ProgramArguments = ["/usr/bin/hidutil" "property" "--set" "{\"CapsLockDelayOverride\":-1}"];
+      ProgramArguments = ["/usr/bin/hidutil" "property" "--set" "{\"CapsLockDelayOverride\":10}"];
       RunAtLoad = true;
+      KeepAlive = false;
+      StandardOutPath = "/tmp/disable-capslock-delay.log";
+      StandardErrorPath = "/tmp/disable-capslock-delay.log";
     };
   };
 
