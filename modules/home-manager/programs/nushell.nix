@@ -38,9 +38,9 @@
     '';
     plugins = [
       pkgs.nushellPlugins.gstat
-      pkgs.nushellPlugins.skim
       pkgs.nushellPlugins.formats
-      # semver: pinned to nushell 0.111.0 in nixpkgs unstable while nushell itself is 0.112.2 — re-enable once upstream syncs
+      # semver: nu_plugin_skim 0.27.0 in nixpkgs is compiled for nushell 0.112.1, incompatible with nushell 0.113.0 — re-enable once upstream syncs
+      # pkgs.nushellPlugins.skim
     ];
   };
 }
