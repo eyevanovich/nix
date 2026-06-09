@@ -2,10 +2,29 @@
   pkgs,
   lib,
   profile,
+  username,
   ...
-}: {
+}: let
+  trustedHomebrewTaps =
+    ["gentleman-programming/tap"]
+    ++ lib.optionals (profile == "work") ["messense/macos-cross-toolchains"];
+in {
   environment.variables.HOMEBREW_NO_ANALYTICS = "1";
   environment.variables.EDITOR = "hx";
+
+  # Homebrew 5.1+ requires explicit trust for non-official taps before it will
+  # load their formulae during `brew bundle`. nix-homebrew sets up declarative
+  # taps in this activation script; append trust commands after tap setup and
+  # before nix-darwin runs Homebrew Bundle.
+  system.activationScripts.setup-homebrew.text = lib.mkAfter ''
+    if [ -x /opt/homebrew/bin/brew ]; then
+      sudo \
+        --user=${lib.escapeShellArg username} \
+        --set-home \
+        env HOMEBREW_DEVELOPER=1 \
+        /opt/homebrew/bin/brew trust --tap ${lib.concatMapStringsSep " " lib.escapeShellArg trustedHomebrewTaps}
+    fi
+  '';
 
   ##########################################################################
   #
@@ -33,11 +52,10 @@
     onActivation = {
       autoUpdate = true;
       upgrade = true;
-      # 'zap': uninstalls all formulae(and related files) not listed here.
-      cleanup = "zap";
-      # Homebrew Bundle now requires explicit confirmation for cleanup;
-      # --force-cleanup makes `brew bundle --cleanup` non-interactive during activation.
-      extraFlags = ["--force-cleanup"];
+      # Homebrew Bundle removed the `brew bundle --cleanup` switch that nix-darwin
+      # still emits for cleanup = "uninstall"/"zap". Keep activation cleanup
+      # disabled until nix-darwin migrates to `brew bundle cleanup --force`.
+      cleanup = "none";
       # Homebrew 5.1+ (brew PR #20414) sets HOMEBREW_FORBID_PACKAGES_FROM_PATHS=true
       # unless HOMEBREW_DEVELOPER is set, and rejects any formula/cask whose realpath
       # escapes the prefix. nix-homebrew symlinks the whole Taps/ dir into /nix/store,
@@ -54,13 +72,18 @@
     # You need to install all these Apps manually first so that your apple account have records for them.
     # otherwise Apple Store will refuse to install them.
     # For details, see https://github.com/mas-cli/mas
-    masApps = {
-      "Notability: Smarter AI Notes" = 360593530;
-      "Tailscale" = 1475387142;
-      "Pixelmator Pro" = 1289583905;
-      "SnippetsLab" = 1006087419;
-      "Boop" = 1518425043;
-    };
+    masApps =
+      {
+        "Notability: Smarter AI Notes" = 360593530;
+        "Tailscale" = 1475387142;
+        "Pixelmator Pro" = 1289583905;
+        "SnippetsLab" = 1006087419;
+        "Boop" = 1518425043;
+      }
+      // lib.optionalAttrs (profile == "personal") {
+        "Pages" = 409201541;
+        "Mattermost Desktop" = 1614666244;
+      };
 
     taps =
       [
@@ -68,9 +91,6 @@
       ]
       ++ lib.optionals (profile == "work") [
         "messense/macos-cross-toolchains"
-      ]
-      ++ lib.optionals (profile == "personal") [
-        "jundot/omlx"
       ];
 
     # `brew install`
@@ -85,12 +105,6 @@
         "messense/macos-cross-toolchains/aarch64-unknown-linux-gnu"
         "xmlstarlet"
         "awscli-local"
-      ]
-      ++ lib.optionals (profile == "personal") [
-        {
-          name = "jundot/omlx/omlx";
-          start_service = true;
-        }
       ];
 
     # `brew install --cask`

@@ -43,10 +43,6 @@
       url = "github:gentleman-programming/homebrew-tap";
       flake = false;
     };
-    homebrew-jundot-omlx = {
-      url = "github:jundot/omlx";
-      flake = false;
-    };
     homebrew-docker-tap = {
       url = "github:docker/homebrew-tap";
       flake = false;
@@ -84,7 +80,6 @@
     homebrew-bundle,
     homebrew-macos-cross-toolchains,
     homebrew-gentleman-programming,
-    homebrew-jundot-omlx,
     homebrew-docker-tap,
     homebrew-skyhook-io,
     nix-homebrew,
@@ -136,13 +131,6 @@
                   then {
                     "messense/homebrew-macos-cross-toolchains" = homebrew-macos-cross-toolchains;
                     "skyhook-io/homebrew-tap" = homebrew-skyhook-io;
-                  }
-                  else {}
-                )
-                // (
-                  if profile == "personal"
-                  then {
-                    "jundot/homebrew-omlx" = homebrew-jundot-omlx;
                   }
                   else {}
                 );
