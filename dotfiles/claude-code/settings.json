@@ -15,7 +15,6 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "opus",
   "hooks": {
     "PreCompact": [
       {
