@@ -144,6 +144,7 @@ in {
         "suspicious-package"
         "claude"
         "claude-code@latest"
+        "codex"
         "zed"
       ]
       ++ lib.optionals (profile == "personal") [
