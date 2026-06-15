@@ -45,6 +45,7 @@
       localstack
       git-lfs
       supabase-cli
+      tea
 
       # dev tools
       direnv
