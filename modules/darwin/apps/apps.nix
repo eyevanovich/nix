@@ -81,7 +81,7 @@ in {
         "Boop" = 1518425043;
       }
       // lib.optionalAttrs (profile == "personal") {
-        "Pages" = 409201541;
+        "Pages" = 361309726;
         "Mattermost Desktop" = 1614666244;
       };
 
