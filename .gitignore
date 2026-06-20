@@ -9,3 +9,4 @@ secrets.nix
 .dolt/
 *.db
 .beads-credential-key
+/.pi/hindsight

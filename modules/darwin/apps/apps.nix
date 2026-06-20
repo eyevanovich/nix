@@ -3,6 +3,7 @@
   lib,
   profile,
   username,
+  hostname,
   ...
 }: let
   trustedHomebrewTaps =
@@ -83,6 +84,9 @@ in {
       // lib.optionalAttrs (profile == "personal") {
         "Pages" = 361309726;
         "Mattermost Desktop" = 1614666244;
+      }
+      // lib.optionalAttrs (hostname == "hackbox-air") {
+        "Amphetamine" = 937984704;
       };
 
     taps =

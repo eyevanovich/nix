@@ -17,6 +17,12 @@
     uid = 501;
   };
 
+  "hackbox-air" = {
+    system = "aarch64-darwin";
+    profile = "personal";
+    uid = 501;
+  };
+
   "WFH-DEV-MBPX-PIESH" = {
     system = "aarch64-darwin";
     profile = "work";
