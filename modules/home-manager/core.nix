@@ -46,6 +46,7 @@
       git-lfs
       supabase-cli
       tea
+      glab
 
       # dev tools
       direnv
@@ -94,8 +95,5 @@
       fastfetch
       grc
       scls.defaultPackage.${pkgs.stdenv.hostPlatform.system}
-    ]
-    ++ lib.optionals (profile == "work") (with pkgs; [
-      glab
-    ]);
+    ];
 }
