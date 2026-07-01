@@ -8,7 +8,7 @@
 }: let
   trustedHomebrewTaps =
     ["gentleman-programming/tap"]
-    ++ lib.optionals (profile == "work") ["messense/macos-cross-toolchains"];
+    ++ lib.optionals (profile == "work") ["messense/macos-cross-toolchains" "skyhook-io/tap"];
 in {
   environment.variables.HOMEBREW_NO_ANALYTICS = "1";
   environment.variables.EDITOR = "hx";
@@ -95,6 +95,7 @@ in {
       ]
       ++ lib.optionals (profile == "work") [
         "messense/macos-cross-toolchains"
+        "skyhook-io/tap"
       ];
 
     # `brew install`
@@ -167,7 +168,7 @@ in {
         "imazing-profile-editor"
         "cursor"
         "openlens"
-        "radar-desktop"
+        "skyhook-io/tap/radar-desktop"
       ];
   };
 }
