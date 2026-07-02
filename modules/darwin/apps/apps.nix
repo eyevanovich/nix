@@ -117,7 +117,6 @@ in {
       [
         "1password"
         "1password-cli"
-        "headlamp"
         "easyfind"
         "orbstack"
         "raycast"
