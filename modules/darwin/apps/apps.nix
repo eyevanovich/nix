@@ -163,7 +163,6 @@ in {
       ++ lib.optionals (profile == "work") [
         "gcloud-cli"
         "packages"
-        "jetbrains-toolbox"
         "imazing-profile-editor"
         "cursor"
         "openlens"
