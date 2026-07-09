@@ -80,8 +80,6 @@
   workFiles = lib.optionalAttrs (profile == "work") {
     "${piDir}/extensions/mysql-connector" =
       link "${dotfiles}/work/extensions/mysql-connector";
-    "${piDir}/extensions/litellm-spend.ts" =
-      link "${dotfiles}/work/extensions/litellm-spend.ts";
   };
 
   homeFiles = commonFiles // personalFiles // workFiles // profileAppendSystem;
