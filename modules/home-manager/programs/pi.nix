@@ -59,6 +59,8 @@
       "${piDir}/permission-gate.json" = link "${dotfiles}/common/permission-gate.json";
       "${piDir}/prompts/execute-beads.md" = link "${dotfiles}/common/prompts/execute-beads.md";
       "${piDir}/extensions/beads" = link "${dotfiles}/common/extensions/beads";
+      "${piDir}/extensions/subagent/config.json" =
+        link "${dotfiles}/common/extensions/subagent/config.json";
       "${piDir}/extensions/zellij" = link "${dotfiles}/common/extensions/zellij";
     };
 

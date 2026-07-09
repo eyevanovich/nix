@@ -16,23 +16,21 @@ After choosing: auto-claim with `bd update <id> --claim`, inspect `bd show <id>`
 
 ## Build context + approve plan
 
-Before any subagent run: `subagent({ action: "list" })`; use only available non-disabled agents.
+Before any subagent run: `subagent({ action: "list" })`; use only available non-disabled agents. Prefer `async: true`; use `wait()` / `wait({ all: true })` when no independent parent work remains. Do not abandon live subagents.
 
-Use read-only subagents for context before planning when useful: `context-builder`/`scout`; add `researcher` only if external/current docs matter. Tell children: terse/caveman; no source edits during context/planning; Context7 and pi-web-access exist if third-party docs/web research needed.
+Use read-only subagents for context before planning when useful: `context-builder`/`scout`; add `researcher` only if external/current docs matter. Use `context: "fresh"` for recon/review; use fork only when inherited conversation context matters. Tell children: terse/caveman; no source edits during context/planning/review; no nested subagents; Context7 and pi-web-access exist if third-party docs/web research needed. For large context/review outputs, set `outputMode: "file-only"` with distinct output paths.
 
-Wait for all children (`wait()` / `wait({ all: true })`). Do not abandon live subagents.
-
-Synthesize compact plan: scope, likely files, validation contract, risks/open decisions, execution shape. Skip formal planning only for trivial work and say why. Before asking for implementation approval, ask needed clarifying questions; if none, say so. Ask user: `Execute this plan? yes/no/changes`. No implementation before approval.
+Synthesize compact plan: scope, likely files, validation contract, risks/open decisions, execution shape, subagent roles/contexts. If decision/risk feels non-obvious, ask `oracle` for a second opinion before presenting plan. Skip formal planning only for trivial work and say why. Before asking for implementation approval, ask needed clarifying questions; if none, say so. Ask user: `Execute this plan? yes/no/changes`. No implementation before approval.
 
 ## Execute after approval
 
 Use default loop every time:
-1. One `worker` implements. Single writer in active worktree.
+1. One async `worker` implements. Single writer in active worktree. Use `acceptance: "checked"` or stronger for risky work.
 2. Wait.
-3. Parallel fresh-context `reviewer`s: correctness/regressions, tests/validation, simplicity/maintainability. Add security/perf/docs/domain/user-flow angle if warranted.
+3. Parallel fresh-context async `reviewer`s: correctness/regressions, tests/validation, simplicity/maintainability. Add security/perf/docs/domain/user-flow angle if warranted.
 4. Wait.
-5. Parent synthesizes blockers / fixes-now / optional-defer / ignore.
-6. If fixes-now exist, one `worker` fix pass.
+5. Parent synthesizes blockers / fixes-now / optional-defer / ignore. Do not blindly apply reviewer suggestions.
+6. If fixes-now exist, one async `worker` fix pass.
 7. Wait; re-review if fix pass non-trivial.
 8. Parent final diff + validation pass.
 

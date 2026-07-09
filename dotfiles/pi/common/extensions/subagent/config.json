@@ -1,0 +1,11 @@
+{
+  "toolDescriptionMode": "compact",
+  "parallel": {
+    "maxTasks": 8,
+    "concurrency": 4
+  },
+  "globalConcurrencyLimit": 12,
+  "completionBatch": {
+    "enabled": true
+  }
+}
