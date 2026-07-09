@@ -27,6 +27,17 @@ in {
     fi
   '';
 
+  system.activationScripts.postActivation.text = lib.mkAfter ''
+    if [ -x /opt/homebrew/bin/engram ]; then
+      sudo \
+        --user=${lib.escapeShellArg username} \
+        --set-home \
+        env PATH="${pkgs.git}/bin:${pkgs.nodejs}/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" \
+        /opt/homebrew/bin/engram setup pi || \
+        echo "warning: failed to run engram setup pi"
+    fi
+  '';
+
   ##########################################################################
   #
   #  Install all apps and packages here.

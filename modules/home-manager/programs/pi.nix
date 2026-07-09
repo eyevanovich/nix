@@ -6,16 +6,12 @@
 # caches, litellm-*, mcp.json, *.pem) is intentionally NOT managed here.
 #
 # Layout under dotfiles/pi/:
-#   common/   — shared on every machine (skills, theme, keybindings, configs,
-#               loose extensions beads + zellij)
-#   personal/ — personal machines only (uber-go-style + permission-gate
-#               extensions vendored out of the work gitlab repo)
-#   work/     — work machines only (mysql-connector, litellm-spend)
-#   hosts/<hostname>/ — single-machine overrides (APPEND_SYSTEM.md)
+#   common/   — shared on every machine
+#   personal/ — personal machines only
+#   work/     — work machines only
 {
   config,
   profile,
-  hostname,
   lib,
   pkgs,
   ...
@@ -24,44 +20,149 @@
   piDir = ".pi/agent";
   link = path: {source = config.lib.file.mkOutOfStoreSymlink path;};
 
+  commonSkills = [
+    "caveman"
+    "diagnose"
+    "grill-me"
+    "grill-with-docs"
+    "handoff"
+    "improve-codebase-architecture"
+    "prototype"
+    "review"
+    "setup-matt-pocock-skills"
+    "tdd"
+    "teach"
+    "to-issues"
+    "to-prd"
+    "triage"
+    "write-a-skill"
+    "zoom-out"
+  ];
+
+  commonSkillLinks = lib.listToAttrs (map (name: {
+      name = "${piDir}/skills/${name}";
+      value = link "${dotfiles}/common/skills/${name}";
+    })
+    commonSkills);
+
+  commonFiles =
+    commonSkillLinks
+    // {
+      "${piDir}/themes/catppuccin-mocha.json" =
+        link "${dotfiles}/common/themes/catppuccin-mocha.json";
+      "${piDir}/keybindings.json" = link "${dotfiles}/common/keybindings.json";
+      "${piDir}/uber-go-style.json" = link "${dotfiles}/common/uber-go-style.json";
+      "${piDir}/permission-gate.json" = link "${dotfiles}/common/permission-gate.json";
+      "${piDir}/prompts/execute-beads.md" = link "${dotfiles}/common/prompts/execute-beads.md";
+      "${piDir}/extensions/beads" = link "${dotfiles}/common/extensions/beads";
+      "${piDir}/extensions/zellij" = link "${dotfiles}/common/extensions/zellij";
+    };
+
+  personalFiles = lib.optionalAttrs (profile == "personal") {
+    "${piDir}/extensions/uber-go-style" =
+      link "${dotfiles}/personal/extensions/uber-go-style";
+    "${piDir}/extensions/permission-gate" =
+      link "${dotfiles}/personal/extensions/permission-gate";
+    "${piDir}/extensions/codex-status.ts" =
+      link "${dotfiles}/personal/extensions/codex-status.ts";
+  };
+
+  profileAppendSystem = lib.optionalAttrs (builtins.pathExists "${dotfiles}/${profile}/APPEND_SYSTEM.md") {
+    "${piDir}/APPEND_SYSTEM.md" = link "${dotfiles}/${profile}/APPEND_SYSTEM.md";
+  };
+
+  workFiles = lib.optionalAttrs (profile == "work") {
+    "${piDir}/extensions/mysql-connector" =
+      link "${dotfiles}/work/extensions/mysql-connector";
+    "${piDir}/extensions/litellm-spend.ts" =
+      link "${dotfiles}/work/extensions/litellm-spend.ts";
+  };
+
+  homeFiles = commonFiles // personalFiles // workFiles // profileAppendSystem;
+  managedPaths = builtins.attrNames homeFiles;
+
+  # Legacy loose extension files from pre-Nix machines. Back these up to avoid
+  # duplicate extension loading once the directory packages are managed.
+  legacyPaths = [
+    "${piDir}/extensions/zellij.ts"
+    "${piDir}/extensions/permission-gate.ts"
+  ];
+
+  piPackages = [
+    "npm:@dreki-gg/pi-context7"
+    "npm:@luxusai/pi-hindsight"
+    "npm:@ryan_nookpi/pi-extension-headroom"
+    "git:github.com/championswimmer/pi-context-usage"
+    "npm:pi-mcp-adapter"
+    "npm:pi-powerline-footer"
+    "npm:pi-subagents"
+    "npm:pi-web-access"
+    "git:gitlab.com/gitlab-org/ai/skills"
+  ];
+
+  removedPiPackages = [
+    "npm:pi-schedule-prompt"
+  ];
+
   # Extensions needing runtime npm deps: gitignored node_modules, reinstalled
   # on activation. path is relative to ~/.pi/agent.
   npmExtensions = lib.optionals (profile == "work") [
     "extensions/mysql-connector"
   ];
 in {
-  home.file =
-    # ── common (all machines) ──
-    {
-      "${piDir}/skills" = link "${dotfiles}/common/skills";
-      "${piDir}/themes/catppuccin-mocha.json" =
-        link "${dotfiles}/common/themes/catppuccin-mocha.json";
-      "${piDir}/keybindings.json" = link "${dotfiles}/common/keybindings.json";
-      "${piDir}/uber-go-style.json" = link "${dotfiles}/common/uber-go-style.json";
-      "${piDir}/permission-gate.json" = link "${dotfiles}/common/permission-gate.json";
-      "${piDir}/extensions/beads" = link "${dotfiles}/common/extensions/beads";
-      "${piDir}/extensions/zellij" = link "${dotfiles}/common/extensions/zellij";
+  home.file = homeFiles;
+
+  home.activation.piAdoptExistingFiles = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
+    backupDir="$HOME/.pi/agent/pre-nix-backup"
+    backup_managed_path() {
+      target="$1"
+      if [ ! -e "$target" ] && [ ! -L "$target" ]; then
+        return
+      fi
+
+      if [ -L "$target" ]; then
+        linkTarget="$(${pkgs.coreutils}/bin/readlink "$target")"
+        case "$linkTarget" in
+          /nix/store/*) return ;;
+        esac
+      fi
+
+      rel="''${target#$HOME/.pi/agent/}"
+      stamp="$(${pkgs.coreutils}/bin/date +%Y%m%d%H%M%S)"
+      mkdir -p "$backupDir/$(${pkgs.coreutils}/bin/dirname "$rel")"
+      mv "$target" "$backupDir/$rel.$stamp"
     }
-    # ── personal only: vendor uber-go-style + permission-gate extensions ──
-    # (work machines load these from the gitlab pi-extensions-and-skills repo)
-    // lib.optionalAttrs (profile == "personal") {
-      "${piDir}/extensions/uber-go-style" =
-        link "${dotfiles}/personal/extensions/uber-go-style";
-      "${piDir}/extensions/permission-gate" =
-        link "${dotfiles}/personal/extensions/permission-gate";
-    }
-    # ── work only ──
-    // lib.optionalAttrs (profile == "work") {
-      "${piDir}/extensions/mysql-connector" =
-        link "${dotfiles}/work/extensions/mysql-connector";
-      "${piDir}/extensions/litellm-spend.ts" =
-        link "${dotfiles}/work/extensions/litellm-spend.ts";
-    }
-    # ── per-host override ──
-    // lib.optionalAttrs (builtins.pathExists "${dotfiles}/hosts/${hostname}/APPEND_SYSTEM.md") {
-      "${piDir}/APPEND_SYSTEM.md" =
-        link "${dotfiles}/hosts/${hostname}/APPEND_SYSTEM.md";
-    };
+
+    ${lib.concatMapStringsSep "\n" (rel: ''
+      backup_managed_path "$HOME/${rel}"
+    '') (managedPaths ++ legacyPaths)}
+  '';
+
+  home.activation.piPackages = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    piBin="/opt/homebrew/bin/pi"
+    piPath="${pkgs.git}/bin:${pkgs.nodejs}/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+    if [ -x "$piBin" ]; then
+      piList="$(env PATH="$piPath" "$piBin" list 2>/dev/null || true)"
+
+      ${lib.concatMapStringsSep "\n" (source: ''
+        if printf '%s\n' "$piList" | ${pkgs.gnugrep}/bin/grep -Fq "${source}"; then
+          echo "Removing pi package ${source}"
+          env PATH="$piPath" "$piBin" remove "${source}" || echo "warning: failed to remove ${source}"
+          piList="$(env PATH="$piPath" "$piBin" list 2>/dev/null || true)"
+        fi
+      '')
+      removedPiPackages}
+
+      ${lib.concatMapStringsSep "\n" (source: ''
+        if ! printf '%s\n' "$piList" | ${pkgs.gnugrep}/bin/grep -Fq "${source}"; then
+          echo "Installing pi package ${source}"
+          env PATH="$piPath" "$piBin" install "${source}" || echo "warning: failed to install ${source}"
+          piList="$(env PATH="$piPath" "$piBin" list 2>/dev/null || true)"
+        fi
+      '')
+      piPackages}
+    fi
+  '';
 
   # Reinstall gitignored node_modules for symlinked extensions that need them.
   home.activation.piExtensionDeps = lib.hm.dag.entryAfter ["writeBoundary"] (
