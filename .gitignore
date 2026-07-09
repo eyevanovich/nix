@@ -5,6 +5,9 @@ secrets.nix
 .env
 .env.*
 
+# pi: vendored extension deps are reinstalled on rebuild, not committed
+dotfiles/pi/**/node_modules/
+
 # Beads / Dolt files (added by bd init)
 .dolt/
 *.db

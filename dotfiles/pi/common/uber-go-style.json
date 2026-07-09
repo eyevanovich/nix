@@ -1,0 +1,12 @@
+{
+  "enabled": true,
+  "injectStandards": true,
+  "injectMode": "hybrid",
+  "armOnGoProject": false,
+  "lint": {
+    "gofmt": true,
+    "goVet": false,
+    "golangciLint": false,
+    "timeoutMs": 15000
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "pi-mysql-connector",
+  "version": "1.0.0",
+  "description": "MySQL query tool for pi",
+  "main": "index.ts",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "mysql2": "^3.9.7",
+    "typebox": "^1.1.38"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

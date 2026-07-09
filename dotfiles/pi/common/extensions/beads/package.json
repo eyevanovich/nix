@@ -1,0 +1,17 @@
+{
+  "name": "pi-beads",
+  "version": "0.2.0",
+  "description": "pi extension for beads (bd) task management",
+  "type": "module",
+  "license": "MIT",
+  "pi": {
+    "extensions": ["./index.ts"]
+  },
+  "exports": {
+    ".": "./index.ts"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  }
+}

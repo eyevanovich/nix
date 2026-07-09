@@ -1,0 +1,64 @@
+# pi-beads
+
+pi extension for [beads (bd)](https://github.com/steveyegge/beads) task management.
+
+Ported from [edmundmiller/pi-beads](https://github.com/edmundmiller/dotfiles/tree/main/packages/pi-packages/pi-beads)
+(itself a fork of [@soleone/pi-tasks](https://github.com/Soleone/pi-tasks)) to the
+`@earendil-works/pi-coding-agent` API.
+
+## Requirements
+
+- `bd` CLI in PATH (tested with bd 1.0.5)
+- `.beads/` directory in the project (run `bd init` once)
+
+The extension only activates its backend when both are present.
+
+## Usage
+
+- `/beads-tasks` — open the task list
+- `ctrl+e` — also opens the task list
+
+> **Note:** pi has no conflict-free `ctrl+<letter>` left — every non-control-code
+> letter is bound by either the app or the emacs-style editor. `ctrl+e` overrides
+> the editor's *cursor-to-line-end*; the extension wins the binding, and the
+> **End** key still jumps to line-end, so the loss is negligible. To rebind, edit
+> the `pi.registerShortcut(...)` block in `extension.ts` — `/beads-tasks` works
+> regardless.
+
+## Keybindings
+
+**List view**
+
+| Key | Action |
+|-----|--------|
+| `w` / `s` | Navigate |
+| `space` | Cycle status (open → in-progress → blocked → deferred → closed) |
+| `0`–`4` | Set priority |
+| `t` | Cycle type |
+| `e` / `→` | Edit task |
+| `enter` | Send task to prompt |
+| `tab` | Insert task ref and close |
+| `c` | Create task |
+| `f` | Search/filter |
+| `j` / `k` | Scroll description |
+| `esc` | Back / clear filter |
+
+**Edit view**
+
+| Key | Action |
+|-----|--------|
+| `tab` | Switch focus (title ↔ description) |
+| `enter` | Save |
+| `esc` | Back to nav |
+
+## Security
+
+All shell-out goes through `bd` with arguments passed as an argv array (no shell
+interpolation, no command injection). No network access, no filesystem writes
+outside what `bd` itself does, no dynamic code evaluation. Audited on port.
+
+## Notes
+
+- `bd list` runs sequentially (open, then in_progress, then blocked). bd's dolt
+  backend panics on concurrent DB access, so do not parallelise these calls.
+- Typechecks clean against the installed pi types via `tsconfig.json`.

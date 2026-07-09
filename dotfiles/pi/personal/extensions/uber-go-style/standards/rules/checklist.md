@@ -1,0 +1,27 @@
+# Quick Checklist
+
+- [ ] Blank line after every `}` / `)` before next statement (with exceptions)
+- [ ] `errors.Is` / `errors.As` for sentinel errors
+- [ ] `errors.New` for static error messages (no format verbs)
+- [ ] Error wrapping with `%w` (not `%v`); never concat into the format string
+- [ ] All struct inits use field names
+- [ ] `defs.go` holds interfaces, public/DTO types (+ marshalers), constants, sentinel errors; opaque impl struct + alias live in the impl file next to the methods
+- [ ] CDI: consumer defines the interface (service→repo, controller→service); imports point up
+- [ ] Repo structs private, no `json` tags; controller owns public json-tagged API types; service converts (no pass-through)
+- [ ] Constructors return the concrete alias (`type X = *x`), never an interface; alias receivers `(s Service)`
+- [ ] Alias is already a pointer — no `*Alias` in fields/params/vars (double-pointer build break)
+- [ ] Custom JSON via `MarshalJSON` on a named type, not a `MarshalFoo` utility
+- [ ] Helper that works on one struct is a method (alias receiver); stateless helpers shared across types in `util.go`
+- [ ] No method/package-func name shadowing (put the impl on the method)
+- [ ] Sentinel errors exported only if a consumer does `errors.Is`; otherwise unexported
+- [ ] Controllers expose `Register(app fiber.Router)`; shared path prefixes grouped
+- [ ] Squirrel: dot-imported, db constants for all tables/columns, no raw SQL literals, chainable API
+- [ ] Single shared `*sql.DB` pool; cross-schema reads schema-qualified
+- [ ] Bare `defer tx.Rollback()` (don't "fix" the unchecked error)
+- [ ] `sql.NullInt32`/`NullInt16` — assert `v.(int64)`, not `v.(int32)`/`v.(int16)` (driver normalises to int64)
+- [ ] Lint findings checked against existing code before "fixing" (CI is `go test` only)
+- [ ] No useless private wrappers (forwarding-only methods)
+- [ ] No panics in library code
+- [ ] No `os.Exit` / `log.Fatal` outside `main()`
+- [ ] Goroutines have tracked lifecycles
+- [ ] Defer used for cleanup (`Close`, `Unlock`)

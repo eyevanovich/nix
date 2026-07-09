@@ -17,5 +17,6 @@
     ./carapace.nix
     ./opencode.nix
     ./claude-code.nix
+    ./pi.nix
   ];
 }

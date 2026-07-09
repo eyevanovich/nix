@@ -1,0 +1,60 @@
+{
+  "defaultGate": "allow",
+  "rules": [
+    {
+      "description": "rm -rf on absolute/home paths",
+      "gate": "ask",
+      "keywords": [
+        "rm -rf /",
+        "rm -rf ~",
+        "rm -fr /",
+        "rm -fr ~"
+      ]
+    },
+    {
+      "description": "Writing to block devices",
+      "gate": "always_block",
+      "keywords": [
+        "> /dev/sd"
+      ]
+    },
+    {
+      "description": "Formatting filesystems",
+      "gate": "always_block",
+      "keywords": [
+        "mkfs."
+      ]
+    },
+    {
+      "description": "Raw disk writes",
+      "gate": "always_block",
+      "keywords": [
+        "dd if="
+      ]
+    },
+    {
+      "description": "Overly permissive permissions",
+      "gate": "ask",
+      "keywords": [
+        "chmod 777",
+        "chown 777"
+      ]
+    },
+    {
+      "description": "Pipe output to shell",
+      "gate": "ask",
+      "keywords": [
+        "| sh",
+        "| bash"
+      ]
+    },
+    {
+      "description": "Git force push",
+      "gate": "ask",
+      "keywords": [
+        "git push -f",
+        "git push --force"
+      ]
+    }
+  ]
+}
