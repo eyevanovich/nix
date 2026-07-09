@@ -8,8 +8,13 @@ secrets.nix
 # pi: vendored extension deps are reinstalled on rebuild, not committed
 dotfiles/pi/**/node_modules/
 
+# pi: skills are installed/version-locked by pi's own skill manager under
+# ~/.agents/skills and symlinked in by pi.nix; not vendored here
+dotfiles/pi/common/skills/
+
 # Beads / Dolt files (added by bd init)
 .dolt/
 *.db
 .beads-credential-key
 /.pi/hindsight
+result

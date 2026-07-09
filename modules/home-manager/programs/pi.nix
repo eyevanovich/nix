@@ -39,9 +39,13 @@
     "zoom-out"
   ];
 
+  # Skills are installed and version-locked by pi's own skill manager under
+  # ~/.agents/skills (see ~/.agents/.skill-lock.json). We only symlink them into
+  # ~/.pi/agent/skills; we do NOT vendor them into this repo.
+  agentsSkills = "${config.home.homeDirectory}/.agents/skills";
   commonSkillLinks = lib.listToAttrs (map (name: {
       name = "${piDir}/skills/${name}";
-      value = link "${dotfiles}/common/skills/${name}";
+      value = link "${agentsSkills}/${name}";
     })
     commonSkills);
 
@@ -88,21 +92,29 @@
     "${piDir}/extensions/permission-gate.ts"
   ];
 
-  piPackages = [
-    "npm:@dreki-gg/pi-context7"
-    "npm:@luxusai/pi-hindsight"
-    "npm:@ryan_nookpi/pi-extension-headroom"
-    "git:github.com/championswimmer/pi-context-usage"
-    "npm:pi-mcp-adapter"
-    "npm:pi-powerline-footer"
-    "npm:pi-subagents"
-    "npm:pi-web-access"
-    "git:gitlab.com/gitlab-org/ai/skills"
-  ];
+  piPackages =
+    [
+      "npm:@dreki-gg/pi-context7"
+      "git:github.com/championswimmer/pi-context-usage"
+      "npm:pi-mcp-adapter"
+      "npm:pi-powerline-footer"
+      "npm:pi-subagents"
+      "npm:pi-web-access"
+      "git:gitlab.com/gitlab-org/ai/skills"
+    ]
+    ++ lib.optionals (profile == "personal") [
+      "npm:@luxusai/pi-hindsight"
+      "npm:@ryan_nookpi/pi-extension-headroom"
+    ];
 
-  removedPiPackages = [
-    "npm:pi-schedule-prompt"
-  ];
+  removedPiPackages =
+    [
+      "npm:pi-schedule-prompt"
+    ]
+    ++ lib.optionals (profile == "work") [
+      "npm:@luxusai/pi-hindsight"
+      "npm:@ryan_nookpi/pi-extension-headroom"
+    ];
 
   # Extensions needing runtime npm deps: gitignored node_modules, reinstalled
   # on activation. path is relative to ~/.pi/agent.

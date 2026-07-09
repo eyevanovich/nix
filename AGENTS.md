@@ -110,7 +110,25 @@ Two approaches exist in this repo:
 ### Adding a New Host
 
 1. Add entry to `hosts.nix` with `system`, `profile`, and `uid`
-2. Run `task rebuild <hostname>` or `task build` on the new machine
+2. Install the pi agent skills (see below), then run `task rebuild <hostname>` or `task build` on the new machine
+
+### Pi Agent Skills (`~/.agents/skills`)
+
+`modules/home-manager/programs/pi.nix` symlinks each skill in `commonSkills` from
+`~/.agents/skills/<name>` into `~/.pi/agent/skills/<name>`. It does **not** install
+the skills themselves — those are the canonical copies managed by the `skills` CLI
+(`~/.agents/.skill-lock.json`), not vendored into this repo.
+
+On a fresh machine `~/.agents/skills` won't exist, so the symlinks dangle. Bootstrap
+once (before the first `task rebuild`):
+
+```bash
+npx skills@latest add mattpocock/skills --skill '*' -g -y
+```
+
+This is deliberately a manual step, not wired into activation: `npx skills add` hits
+the network, isn't pinned to `.skill-lock.json` (tracks upstream HEAD), and the `-y`
+non-interactive path is young — not worth running unattended on every rebuild.
 
 ### Homebrew Cleanup Warning
 
