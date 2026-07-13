@@ -12,7 +12,7 @@ If a target is given, resolve each exact Bead ID first; otherwise fuzzy-search t
 
 If no target is given, use triage workflow: run `bd ready --label triage:ready-for-agent`; if empty, run `bd ready`. Show compact numbered options and ask the user to choose.
 
-Build an ordered target set. Run `bd show <id>` before claiming; inspect status, dependencies, and acceptance criteria. Atomically claim only executable targets with `bd update <id> --claim`. Stop if another actor owns the claim. Report blocked, closed, or dependency-conflicted targets; ask before overriding readiness. For multiple targets, group only one coherent outcome per execution batch and otherwise follow dependency order. Use `CONTEXT-MAP.md` when present and relevant.
+Build an ordered target set. Run `bd show <id>` before claiming; inspect status, dependencies, and acceptance criteria. If the selected target is a parent epic, resolve its child beads and select only the next executable child in dependency order. Do not claim, plan, or execute the remaining children in that epic during this invocation. Atomically claim only executable targets with `bd update <id> --claim`. Stop if another actor owns the claim. Report blocked, closed, or dependency-conflicted targets; ask before overriding readiness. For multiple targets, group only one coherent outcome per execution batch and otherwise follow dependency order. Use `CONTEXT-MAP.md` when present and relevant.
 
 ## Build context + approve plan
 
@@ -49,4 +49,6 @@ Keep the active worktree single-writer. Parallelize writers only in isolated wor
 
 Close each target individually only when its approved outcome, acceptance criteria, integrated diff, focused validation, and required review pass: `bd close <id> --reason="Completed"`. Otherwise leave a concise per-bead note with blocker/failure evidence and remaining work.
 
-Final answer: bead(s), outcome, changed artifacts, validation/check results, review outcome, deferred items, and remaining risks.
+After closing a bead selected from a parent epic, report its outcome and ask whether the user wants to continue with the next open executable bead in that epic or start a new session. Do not automatically claim or begin another bead.
+
+Final answer: bead(s), outcome, changed artifacts, validation/check results, review outcome, deferred items, remaining risks, and—when applicable—the explicit continue-or-new-session question.

@@ -130,6 +130,7 @@ in {
         "1password-cli"
         "easyfind"
         "orbstack"
+        "codexbar"
         "raycast"
         "obsidian"
         "tidal"

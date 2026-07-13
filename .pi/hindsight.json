@@ -1,0 +1,26 @@
+{
+  "setupComplete": true,
+  "scope": {
+    "mode": "domain-tagged"
+  },
+  "agentUse": "coding",
+  "banks": {
+    "project": {
+      "enabled": true,
+      "derive": "manual",
+      "bankId": "nix"
+    },
+    "user": {
+      "enabled": false
+    }
+  },
+  "userRetain": {
+    "mode": "explicit-only"
+  },
+  "recall": {
+    "enabled": true
+  },
+  "retain": {
+    "enabled": true
+  }
+}
