@@ -121,6 +121,7 @@ in {
         "messense/macos-cross-toolchains/aarch64-unknown-linux-gnu"
         "xmlstarlet"
         "awscli-local"
+        "azure-cli"
       ];
 
     # `brew install --cask`
