@@ -21,22 +21,29 @@
   link = path: {source = config.lib.file.mkOutOfStoreSymlink path;};
 
   commonSkills = [
-    "caveman"
-    "diagnose"
+    "ask-matt"
+    "code-review"
+    "codebase-design"
+    "diagnosing-bugs"
+    "domain-modeling"
     "grill-me"
     "grill-with-docs"
+    "grilling"
     "handoff"
+    "implement"
     "improve-codebase-architecture"
     "prototype"
-    "review"
+    "qa"
+    "research"
+    "resolving-merge-conflicts"
     "setup-matt-pocock-skills"
     "tdd"
     "teach"
-    "to-issues"
-    "to-prd"
+    "to-spec"
+    "to-tickets"
     "triage"
-    "write-a-skill"
-    "zoom-out"
+    "wayfinder"
+    "writing-great-skills"
   ];
 
   # Skills are installed and version-locked by pi's own skill manager under
