@@ -8,13 +8,7 @@
     "noEmit": true,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
-    "types": [],
-    "baseUrl": ".",
-    "paths": {
-      "@earendil-works/pi-coding-agent": ["/opt/homebrew/Cellar/pi-coding-agent/0.79.4/libexec/lib/node_modules/@earendil-works/pi-coding-agent/dist/index.d.ts"],
-      "@earendil-works/pi-tui": ["/opt/homebrew/Cellar/pi-coding-agent/0.79.4/libexec/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-tui/dist/index.d.ts"],
-      "@earendil-works/pi-ai": ["/opt/homebrew/Cellar/pi-coding-agent/0.79.4/libexec/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-ai/dist/index.d.ts"]
-    }
+    "types": ["node"]
   },
   "include": ["**/*.ts"]
 }

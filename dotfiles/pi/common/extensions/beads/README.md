@@ -51,6 +51,25 @@ The extension only activates its backend when both are present.
 | `enter` | Save |
 | `esc` | Back to nav |
 
+## Development
+
+Install the locked development dependencies, then run the combined validation:
+
+```sh
+npm ci
+npm run check
+```
+
+The individual checks are also available:
+
+```sh
+npm run typecheck
+npm test
+```
+
+The adapter tests use a fake Pi command executor, so validation does not require
+`bd`, a `.beads/` directory, or a project database.
+
 ## Security
 
 All shell-out goes through `bd` with arguments passed as an argv array (no shell
@@ -61,4 +80,4 @@ outside what `bd` itself does, no dynamic code evaluation. Audited on port.
 
 - `bd list` runs sequentially (open, then in_progress, then blocked). bd's dolt
   backend panics on concurrent DB access, so do not parallelise these calls.
-- Typechecks clean against the installed pi types via `tsconfig.json`.
+- Typechecks against the Pi API version locked in the development dependencies.

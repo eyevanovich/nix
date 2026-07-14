@@ -4,8 +4,18 @@
   "description": "pi extension for beads (bd) task management",
   "type": "module",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test test/beads-adapter.test.ts test/pure-behavior.test.ts",
+    "check": "npm run typecheck && npm test"
+  },
   "pi": {
-    "extensions": ["./index.ts"]
+    "extensions": [
+      "./index.ts"
+    ]
   },
   "exports": {
     ".": "./index.ts"
@@ -13,5 +23,11 @@
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
     "@earendil-works/pi-tui": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "0.80.6",
+    "@earendil-works/pi-tui": "0.80.6",
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3"
   }
 }
