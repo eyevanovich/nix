@@ -12,10 +12,8 @@ dotfiles/pi/**/node_modules/
 # ~/.agents/skills and symlinked in by pi.nix; not vendored here
 dotfiles/pi/common/skills/
 
-# Beads / Dolt files (added by bd init)
-.dolt/
-*.db
-.beads-credential-key
+# Beads issue data is local-only
+/.beads/
+
 /.pi/hindsight
 result
-/.beads/embeddeddolt/beads/.dolt/noms
