@@ -33,8 +33,14 @@ export interface TaskAdapter {
   create(input: CreateTaskInput): Promise<Task>;
 }
 
+export type TaskAdapterCapability =
+  | { kind: "ready" }
+  | { kind: "missing-workspace"; message: string }
+  | { kind: "unavailable-cli"; message: string };
+
 export interface TaskAdapterInitializer {
   readonly id: string;
-  isApplicable(): boolean;
+  checkCapability(cwd: string): TaskAdapterCapability;
+  isApplicable(cwd?: string): boolean;
   initialize(pi: ExtensionAPI): TaskAdapter;
 }

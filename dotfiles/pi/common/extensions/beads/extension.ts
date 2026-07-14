@@ -1,10 +1,13 @@
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
-import initializeAdapter from "./backend/resolver.ts";
+import initializeAdapter, {
+  checkAdapterCapability,
+  openTaskBrowserWhenAvailable,
+} from "./backend/resolver.ts";
 import type { Task, TaskStatus } from "./models/task.ts";
 import { buildTaskWorkPrompt, serializeTask } from "./lib/task-serialization.ts";
 import { showTaskList } from "./ui/pages/list.ts";
 import { showTaskForm } from "./ui/pages/show.ts";
-import type { TaskUpdate } from "./backend/api.ts";
+import type { TaskAdapterCapability, TaskUpdate } from "./backend/api.ts";
 
 const CTRL_X = "\x18";
 
@@ -182,8 +185,16 @@ function applyDraftToTask(
   return nextTask;
 }
 
-export default function registerExtension(pi: ExtensionAPI) {
+export interface TaskBrowserDependencies {
+  checkCapability?: (cwd: string) => TaskAdapterCapability;
+}
+
+export default function registerExtension(
+  pi: ExtensionAPI,
+  dependencies: TaskBrowserDependencies = {}
+) {
   const backend = initializeAdapter(pi);
+  const checkCapability = dependencies.checkCapability ?? checkAdapterCapability;
   validateBackendConfiguration(backend);
 
   const nextStatus = (status: TaskStatus): TaskStatus => cycleStatus(status, backend.statusMap);
@@ -353,19 +364,21 @@ export default function registerExtension(pi: ExtensionAPI) {
     }
   }
 
+  async function openTaskBrowser(ctx: ExtensionCommandContext): Promise<void> {
+    await openTaskBrowserWhenAvailable(ctx, () => browseTasks(ctx), checkCapability);
+  }
+
   pi.registerCommand("beads-tasks", {
     description: "Open beads task list",
     handler: async (_rawArgs, ctx) => {
-      if (!ctx.hasUI) return;
-      await browseTasks(ctx);
+      await openTaskBrowser(ctx);
     },
   });
 
   pi.registerShortcut("ctrl+e", {
     description: "Open beads task list",
     handler: async (ctx) => {
-      if (!ctx.hasUI) return;
-      await browseTasks(ctx as ExtensionCommandContext);
+      await openTaskBrowser(ctx as ExtensionCommandContext);
     },
   });
 }

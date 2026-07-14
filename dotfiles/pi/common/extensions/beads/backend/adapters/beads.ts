@@ -6,6 +6,7 @@ import type { Task, TaskStatus } from "../../models/task.ts";
 import type {
   CreateTaskInput,
   TaskAdapter,
+  TaskAdapterCapability,
   TaskAdapterInitializer,
   TaskStatusMap,
   TaskUpdate,
@@ -187,14 +188,55 @@ function parseJsonObject<T>(stdout: string, context: string): T {
   }
 }
 
-function isApplicable(): boolean {
-  if (!existsSync(resolve(process.cwd(), ".beads"))) return false;
+interface BeadsCapabilityDependencies {
+  workspaceExists(path: string): boolean;
+  checkCli(): {
+    error?: Error;
+    status: number | null;
+    stdout?: string;
+    stderr?: string;
+  };
+}
 
-  const result = spawnSync("bd", ["--version"], {
-    stdio: "ignore",
-  });
+const DEFAULT_CAPABILITY_DEPENDENCIES: BeadsCapabilityDependencies = {
+  workspaceExists: existsSync,
+  checkCli: () => {
+    const result = spawnSync("bd", ["--version"], { encoding: "utf8" });
+    return {
+      error: result.error,
+      status: result.status,
+      stdout: result.stdout,
+      stderr: result.stderr,
+    };
+  },
+};
 
-  return !result.error;
+export function checkBeadsCapability(
+  cwd: string,
+  dependencies: BeadsCapabilityDependencies = DEFAULT_CAPABILITY_DEPENDENCIES
+): TaskAdapterCapability {
+  if (!dependencies.workspaceExists(resolve(cwd, ".beads"))) {
+    return {
+      kind: "missing-workspace",
+      message: `No Beads workspace found in ${cwd}. Run bd init there first.`,
+    };
+  }
+
+  const result = dependencies.checkCli();
+  if (result.error || result.status !== 0) {
+    const details = (result.stderr || result.stdout || result.error?.message || "").trim();
+    const suffix = details ? ` (${details})` : "";
+    return {
+      kind: "unavailable-cli",
+      message: `The bd CLI is unavailable. Install bd or add it to PATH.${suffix}`,
+    };
+  }
+
+  return { kind: "ready" };
+}
+
+function isApplicable(cwd = process.cwd()): boolean {
+  return checkBeadsCapability(cwd).kind === "ready";
 }
 
 function initialize(pi: ExtensionAPI): TaskAdapter {
@@ -304,6 +346,7 @@ function initialize(pi: ExtensionAPI): TaskAdapter {
 
 export default {
   id: "beads",
+  checkCapability: checkBeadsCapability,
   isApplicable,
   initialize,
 } satisfies TaskAdapterInitializer;

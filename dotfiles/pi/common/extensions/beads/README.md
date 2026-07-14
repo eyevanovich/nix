@@ -11,7 +11,9 @@ Ported from [edmundmiller/pi-beads](https://github.com/edmundmiller/dotfiles/tre
 - `bd` CLI in PATH (tested with bd 1.0.5)
 - `.beads/` directory in the project (run `bd init` once)
 
-The extension only activates its backend when both are present.
+The interactive browser opens only in Pi TUI mode. Each invocation checks the
+active session directory for `.beads/` and verifies that `bd` is available before
+loading tasks. Missing prerequisites are reported without entering the browser.
 
 ## Usage
 

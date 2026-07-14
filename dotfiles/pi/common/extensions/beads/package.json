@@ -9,13 +9,11 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "node --test test/beads-adapter.test.ts test/pure-behavior.test.ts",
+    "test": "node --test test/beads-adapter.test.ts test/pure-behavior.test.ts test/runtime-capability.test.ts",
     "check": "npm run typecheck && npm test"
   },
   "pi": {
-    "extensions": [
-      "./index.ts"
-    ]
+    "extensions": ["./index.ts"]
   },
   "exports": {
     ".": "./index.ts"
