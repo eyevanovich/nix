@@ -137,12 +137,13 @@ export async function hydrateTaskForEdit(
 }
 
 export function createTaskWorkHandler(
-  backend: Pick<TaskAdapter, "show">,
+  backend: Pick<TaskAdapter, "claim" | "show">,
   send: (prompt: string) => void,
   notify: (message: string) => void
 ): (task: Task) => Promise<void> {
   return async (task) => {
     try {
+      await backend.claim(task.ref);
       const shown = await backend.show(task.ref);
       send(buildTaskWorkPrompt(mergeHydratedTask(task, shown)));
     } catch (error) {

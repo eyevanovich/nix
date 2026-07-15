@@ -38,7 +38,7 @@ loading tasks. Missing prerequisites are reported without entering the browser.
 | `0`–`4` | Set priority |
 | `t` | Cycle type |
 | `e` / `→` | Edit task |
-| `enter` | Send task to prompt |
+| `enter` | Claim task and send it to the work prompt |
 | `tab` | Insert task ref and close |
 | `c` | Create task |
 | `f` | Search/filter |
@@ -84,8 +84,14 @@ outside what `bd` itself does, no dynamic code evaluation. Audited on port.
   `in_progress`, and `blocked`, then one `bd blocked --json` query to attach exact
   active blocker refs. Deferred and closed tasks are intentionally absent.
 - Dependency-blocked rows keep their stored status symbol and add `blocked:N`.
-  Opening a task or starting work hydrates it with `bd show`; work prompts include
-  rich execution context and an explicit warning with actionable blocker IDs.
+  Starting work closes the list immediately, then atomically claims the selected
+  issue before hydrating it with `bd show`. Re-entering an issue already owned by
+  the same actor is idempotent; a competing owner or any other claim failure is
+  reported as an error and prevents hydration and prompt submission. Successful
+  work prompts retain rich task context and actionable blocker IDs.
+- Beads context setup remains explicit and session-level: run `bd prime` yourself
+  when needed. The browser neither runs nor injects it, and task-specific work
+  prompts remain separate from `/execute-beads`.
 - Editable task types include the bd 1.1 built-ins (`task`, `feature`, `bug`,
   `chore`, `epic`, and `decision`) plus unique values from `types.custom`.
 - `bd` commands are serialized because its dolt backend cannot safely handle

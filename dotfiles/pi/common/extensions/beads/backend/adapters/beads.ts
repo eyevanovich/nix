@@ -326,6 +326,11 @@ function initialize(pi: ExtensionAPI): TaskAdapter {
     return command;
   }
 
+  async function claim(ref: string): Promise<void> {
+    const out = await execBd(["update", ref, "--claim", "--json"]);
+    parseJsonArray<BeadsIssue>(out, `claim ${ref}`);
+  }
+
   async function update(ref: string, update: TaskUpdate): Promise<void> {
     const args = fromTaskUpdateToBeadsArgs(update);
     if (args.length === 0) return;
@@ -379,6 +384,8 @@ function initialize(pi: ExtensionAPI): TaskAdapter {
       }
       return sortActiveTasks(activeTasks).slice(0, MAX_LIST_RESULTS);
     },
+
+    claim,
 
     show,
 

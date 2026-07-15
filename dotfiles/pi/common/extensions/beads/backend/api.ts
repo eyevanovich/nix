@@ -44,6 +44,7 @@ export interface TaskAdapter {
   readonly priorityHotkeys?: Record<string, string>;
   invalidateCache?(): void;
   list(): Promise<Task[]>;
+  claim(ref: string): Promise<void>;
   show(ref: string): Promise<Task>;
   update(ref: string, update: TaskUpdate): Promise<void>;
   create(input: CreateTaskInput): Promise<Task>;

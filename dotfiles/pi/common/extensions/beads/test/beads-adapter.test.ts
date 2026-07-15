@@ -240,6 +240,36 @@ test("unknown backend statuses fail with the unsupported value", async () => {
   );
 });
 
+test("claim uses exact argv for idle and already-owned tasks", async () => {
+  const idle = makeHarness([
+    json([{ id: "demo-idle", title: "Idle", status: "in_progress", assignee: "ivan" }]),
+  ]);
+  await idle.adapter.claim("demo-idle");
+  assert.deepEqual(idle.calls.map(({ args }) => args), [
+    ["update", "demo-idle", "--claim", "--json"],
+  ]);
+
+  const alreadyOwned = makeHarness([
+    json([{ id: "demo-owned", title: "Owned", status: "in_progress", assignee: "ivan" }]),
+  ]);
+  await alreadyOwned.adapter.claim("demo-owned");
+  assert.deepEqual(alreadyOwned.calls.map(({ args }) => args), [
+    ["update", "demo-owned", "--claim", "--json"],
+  ]);
+});
+
+test("claim failures surface bd errors", async () => {
+  const harness = makeHarness([{ code: 2, stderr: "issue already claimed by another actor" }]);
+
+  await assert.rejects(
+    harness.adapter.claim("demo-contested"),
+    /issue already claimed by another actor/
+  );
+  assert.deepEqual(harness.calls.map(({ args }) => args), [
+    ["update", "demo-contested", "--claim", "--json"],
+  ]);
+});
+
 test("show consumes the captured bd 1.1 array shape", async () => {
   const harness = makeHarness([fixture("show")]);
 
@@ -511,6 +541,12 @@ test("malformed JSON and unexpected bd 1.1 JSON shapes include command context",
   await assert.rejects(
     malformedBlocked.adapter.list(),
     /Failed to parse bd output \(blocked active\): expected JSON array/
+  );
+
+  const malformedClaim = makeHarness([json({ id: "demo-1" })]);
+  await assert.rejects(
+    malformedClaim.adapter.claim("demo-1"),
+    /Failed to parse bd output \(claim demo-1\): expected JSON array/
   );
 
   const malformedShow = makeHarness([json({ id: "demo-1" })]);

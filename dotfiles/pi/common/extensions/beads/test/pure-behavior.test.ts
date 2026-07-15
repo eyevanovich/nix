@@ -627,7 +627,7 @@ test("rich edit form render includes every read-only context field and exact ID"
   assert.match(rendered, /ID: demo-rich-exact-id/);
 });
 
-test("work hydration preserves active blockers, enriches them, and handles show failure", async () => {
+test("work claims first, preserves hydrated blockers, and stops on claim or show failure", async () => {
   const listed: Task = {
     ref: "demo-open",
     id: "demo-open",
@@ -650,25 +650,71 @@ test("work hydration preserves active blockers, enriches them, and handles show 
 
   const prompts: string[] = [];
   const notifications: string[] = [];
+  const calls: string[] = [];
   const successful = createTaskWorkHandler(
-    { show: async () => shown },
+    {
+      claim: async (ref) => { calls.push(`claim:${ref}`); },
+      show: async (ref) => { calls.push(`show:${ref}`); return shown; },
+    },
     (prompt) => prompts.push(prompt),
     (message) => notifications.push(message)
   );
   await successful(listed);
+  assert.deepEqual(calls, ["claim:demo-open", "show:demo-open"]);
   assert.equal(prompts.length, 1);
   assert.match(prompts[0] ?? "", /^Work on task demo-open: Hydrated title/);
   assert.match(prompts[0] ?? "", /WARNING:.*demo-prereq/);
   assert.match(prompts[0] ?? "", /Active blockers: demo-prereq \(Foundation; open\)/);
+  assert.doesNotMatch(prompts[0] ?? "", /bd prime|execute-beads/i);
 
+  await successful({ ...listed, assignee: "ivan" });
+  assert.deepEqual(calls, [
+    "claim:demo-open",
+    "show:demo-open",
+    "claim:demo-open",
+    "show:demo-open",
+  ]);
+  assert.equal(prompts.length, 2);
+
+  const failedCalls: string[] = [];
   const failed = createTaskWorkHandler(
-    { show: async () => { throw new Error("show failed"); } },
+    {
+      claim: async (ref) => {
+        failedCalls.push(`claim:${ref}`);
+        throw new Error("issue already claimed by another actor");
+      },
+      show: async (ref) => {
+        failedCalls.push(`show:${ref}`);
+        return shown;
+      },
+    },
     (prompt) => prompts.push(prompt),
     (message) => notifications.push(message)
   );
   await failed(listed);
-  assert.equal(prompts.length, 1);
-  assert.deepEqual(notifications, ["show failed"]);
+  assert.deepEqual(failedCalls, ["claim:demo-open"]);
+  assert.equal(prompts.length, 2);
+  assert.deepEqual(notifications, ["issue already claimed by another actor"]);
+
+  const showFailedCalls: string[] = [];
+  const showFailedNotifications: string[] = [];
+  const showFailed = createTaskWorkHandler(
+    {
+      claim: async (ref) => {
+        showFailedCalls.push(`claim:${ref}`);
+      },
+      show: async (ref) => {
+        showFailedCalls.push(`show:${ref}`);
+        throw new Error("failed to load claimed issue");
+      },
+    },
+    (prompt) => prompts.push(prompt),
+    (message) => showFailedNotifications.push(message)
+  );
+  await showFailed(listed);
+  assert.deepEqual(showFailedCalls, ["claim:demo-open", "show:demo-open"]);
+  assert.equal(prompts.length, 2);
+  assert.deepEqual(showFailedNotifications, ["failed to load claimed issue"]);
 });
 
 test("task serialization and rich work prompts preserve exact execution context", () => {
