@@ -21,7 +21,9 @@ const STATUS_MAP = {
   deferred: "deferred",
   closed: "closed",
 } satisfies TaskStatusMap;
-const TASK_TYPES = ["task", "feature", "bug", "chore", "epic"];
+const BUILT_IN_TASK_TYPES = ["task", "feature", "bug", "chore", "epic", "decision"];
+const ACTIVE_BACKEND_STATUSES = ["open", "in_progress", "blocked"];
+const ACTIVE_TASK_STATUSES: TaskStatus[] = ["open", "inProgress", "blocked"];
 const PRIORITIES = ["p0", "p1", "p2", "p3", "p4"];
 const PRIORITY_HOTKEYS: Record<string, string> = {
   "0": "p0",
@@ -31,8 +33,21 @@ const PRIORITY_HOTKEYS: Record<string, string> = {
   "4": "p4",
 };
 
-function makeListArgs(status: string): string[] {
-  return ["list", "--status", status, "--limit", String(MAX_LIST_RESULTS), "--json"];
+function makeListArgs(): string[] {
+  return [
+    "list",
+    "--status",
+    ACTIVE_BACKEND_STATUSES.join(","),
+    "--limit",
+    String(MAX_LIST_RESULTS),
+    "--json",
+  ];
+}
+
+interface BeadsConfigValue {
+  key: string;
+  schema_version: number;
+  value: string;
 }
 
 interface BeadsIssue {
@@ -77,7 +92,7 @@ function fromBackendStatus(status: string): TaskStatus {
   for (const [internalStatus, backendStatus] of Object.entries(STATUS_MAP)) {
     if (backendStatus === status) return internalStatus as TaskStatus;
   }
-  return "open";
+  throw new Error(`Unsupported status from beads backend: ${status}`);
 }
 
 function toBackendStatus(status: TaskStatus): string {
@@ -155,7 +170,7 @@ function fromTaskUpdateToBeadsArgs(update: TaskUpdate): string[] {
   }
 
   if (update.taskType !== undefined) {
-    args.push("--type", update.taskType || TASK_TYPES[0]);
+    args.push("--type", update.taskType || BUILT_IN_TASK_TYPES[0]);
   }
 
   if (update.dueAt !== undefined) {
@@ -242,6 +257,7 @@ function isApplicable(cwd = process.cwd()): boolean {
 
 function initialize(pi: ExtensionAPI): TaskAdapter {
   let commandQueue: Promise<void> = Promise.resolve();
+  const taskTypes = [...BUILT_IN_TASK_TYPES];
 
   function execBd(args: string[], timeout = 30_000): Promise<string> {
     const command = commandQueue.then(async () => {
@@ -266,7 +282,19 @@ function initialize(pi: ExtensionAPI): TaskAdapter {
     const args = fromTaskUpdateToBeadsArgs(update);
     if (args.length === 0) return;
 
-    await execBd(["update", ref, ...args]);
+    const out = await execBd(["update", ref, ...args, "--json"]);
+    parseJsonArray<BeadsIssue>(out, `update ${ref}`);
+  }
+
+  async function hydrateTaskTypes(): Promise<void> {
+    const out = await execBd(["config", "get", "types.custom", "--json"]);
+    const config = parseJsonObject<BeadsConfigValue>(out, "config types.custom");
+    const customTypes = config.value
+      .split(",")
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+
+    taskTypes.splice(0, taskTypes.length, ...new Set([...BUILT_IN_TASK_TYPES, ...customTypes]));
   }
 
   async function show(ref: string): Promise<Task> {
@@ -280,26 +308,19 @@ function initialize(pi: ExtensionAPI): TaskAdapter {
   return {
     id: "beads",
     statusMap: STATUS_MAP,
-    taskTypes: TASK_TYPES,
+    taskTypes,
     priorities: PRIORITIES,
     priorityHotkeys: PRIORITY_HOTKEYS,
 
     async list(): Promise<Task[]> {
-      // Sequential — bd uses dolt, which panics on concurrent DB access
-      const openOut = await execBd(makeListArgs(STATUS_MAP.open));
-      const inProgressOut = await execBd(makeListArgs(STATUS_MAP.inProgress!));
-      const blockedOut = await execBd(makeListArgs(STATUS_MAP.blocked!));
+      await hydrateTaskTypes();
+      const out = await execBd(makeListArgs());
+      const issues = parseJsonArray<BeadsIssue>(out, "list active");
 
-      const openIssues = parseJsonArray<BeadsIssue>(openOut, "list open");
-      const inProgressIssues = parseJsonArray<BeadsIssue>(inProgressOut, "list in_progress");
-      const blockedIssues = parseJsonArray<BeadsIssue>(blockedOut, "list blocked");
-
-      const dedupedById = new Map<string, Task>();
-      for (const issue of [...inProgressIssues, ...openIssues, ...blockedIssues]) {
-        dedupedById.set(issue.id, toTask(issue));
-      }
-
-      return sortActiveTasks([...dedupedById.values()]).slice(0, MAX_LIST_RESULTS);
+      const activeTasks = issues.map(toTask).filter((task) =>
+        ACTIVE_TASK_STATUSES.includes(task.status)
+      );
+      return sortActiveTasks(activeTasks).slice(0, MAX_LIST_RESULTS);
     },
 
     show,
@@ -317,7 +338,7 @@ function initialize(pi: ExtensionAPI): TaskAdapter {
         "--priority",
         String(toRequiredPriorityValue(selectedPriority)),
         "--type",
-        input.taskType || TASK_TYPES[0],
+        input.taskType || taskTypes[0],
         "--json",
       ];
 

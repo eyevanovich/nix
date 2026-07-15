@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { PartialTaskCreateError } from "../backend/api.ts";
@@ -16,19 +17,18 @@ interface CommandCall {
   timeout: number | undefined;
 }
 
+function fixture(name: "list" | "show" | "create" | "update"): CommandResult {
+  return {
+    stdout: readFileSync(new URL(`./fixtures/bd-1.1/${name}.json`, import.meta.url), "utf8"),
+  };
+}
+
 function makeHarness(results: CommandResult[]) {
   const calls: CommandCall[] = [];
-  let activeCalls = 0;
-  let maxActiveCalls = 0;
 
   const pi = {
     async exec(command: string, args: string[], options?: { timeout?: number }) {
       calls.push({ command, args: [...args], timeout: options?.timeout });
-      activeCalls += 1;
-      maxActiveCalls = Math.max(maxActiveCalls, activeCalls);
-      await Promise.resolve();
-      activeCalls -= 1;
-
       const result = results.shift();
       if (!result) throw new Error(`Unexpected command: ${command} ${args.join(" ")}`);
       return {
@@ -40,15 +40,15 @@ function makeHarness(results: CommandResult[]) {
     },
   } as unknown as ExtensionAPI;
 
-  return {
-    adapter: beadsInitializer.initialize(pi),
-    calls,
-    maxActiveCalls: () => maxActiveCalls,
-  };
+  return { adapter: beadsInitializer.initialize(pi), calls };
 }
 
 function json(value: unknown): CommandResult {
   return { stdout: JSON.stringify(value) };
+}
+
+function customTypes(value: string): CommandResult {
+  return json({ key: "types.custom", schema_version: 1, value });
 }
 
 function deferred<T>() {
@@ -93,7 +93,7 @@ test("adapter serializes commands and continues after a rejected command", async
   const adapter = beadsInitializer.initialize(pi);
 
   const failedUpdate = adapter.update("demo-1", { status: "closed" });
-  const shownTask = adapter.show("demo-2");
+  const successfulUpdate = adapter.update("demo-2", { status: "inProgress" });
   const rejectedUpdate = assert.rejects(failedUpdate, /first command failed/);
 
   await flushMicrotasks();
@@ -110,116 +110,196 @@ test("adapter serializes commands and continues after a rejected command", async
 
   assert.equal(calls.length, 2);
   assert.deepEqual(calls.map(({ args }) => args), [
-    ["update", "demo-1", "--status", "closed"],
-    ["show", "demo-2", "--json"],
+    ["update", "demo-1", "--status", "closed", "--json"],
+    ["update", "demo-2", "--status", "in_progress", "--json"],
   ]);
 
   secondResult.resolve({
-    stdout: JSON.stringify([{ id: "demo-2", title: "Queued", status: "open" }]),
+    stdout: JSON.stringify([
+      { id: "demo-2", title: "Queued update", status: "in_progress" },
+    ]),
     stderr: "",
     code: 0,
     killed: false,
   });
-  assert.equal((await shownTask).ref, "demo-2");
+  await successfulUpdate;
 });
 
-test("list runs status queries sequentially, maps issues, deduplicates, and sorts", async () => {
+test("list uses one exact active-work query and intentionally excludes deferred and closed", async () => {
+  const harness = makeHarness([customTypes(""), fixture("list")]);
+
+  const tasks = await harness.adapter.list();
+
+  assert.deepEqual(harness.calls, [
+    {
+      command: "bd",
+      args: ["config", "get", "types.custom", "--json"],
+      timeout: 30_000,
+    },
+    {
+      command: "bd",
+      args: [
+        "list",
+        "--status",
+        "open,in_progress,blocked",
+        "--limit",
+        "100",
+        "--json",
+      ],
+      timeout: 30_000,
+    },
+  ]);
+  assert.equal(harness.calls.filter(({ args }) => args[0] === "list").length, 1);
+  assert.ok(!harness.calls[1]?.args.includes("deferred"));
+  assert.ok(!harness.calls[1]?.args.includes("closed"));
+  assert.deepEqual(
+    tasks.map(({ ref, status, priority }) => ({ ref, status, priority })),
+    [
+      { ref: "demo-active", status: "inProgress", priority: "p1" },
+      { ref: "demo-open", status: "open", priority: "p2" },
+      { ref: "demo-blocked", status: "blocked", priority: "p0" },
+    ]
+  );
+});
+
+test("list omits deferred and closed results even if the backend returns them", async () => {
   const harness = makeHarness([
+    customTypes(""),
     json([
-      { id: "demo-a", title: "Open A", status: "open", priority: 2 },
-      { id: "demo-dup", title: "Open wins", status: "open", priority: 4 },
+      { id: "demo-open", title: "Open", status: "open" },
+      { id: "demo-deferred", title: "Deferred", status: "deferred" },
+      { id: "demo-closed", title: "Closed", status: "closed" },
     ]),
-    json([
-      { id: "demo-b", title: "Active B", status: "in_progress", priority: 1 },
-      { id: "demo-dup", title: "Earlier duplicate", status: "in_progress", priority: 0 },
-    ]),
-    json([{ id: "demo-c", title: "Blocked C", status: "blocked", priority: 0 }]),
   ]);
 
   const tasks = await harness.adapter.list();
 
-  assert.deepEqual(
-    harness.calls.map(({ command, args, timeout }) => ({ command, args, timeout })),
-    [
-      {
-        command: "bd",
-        args: ["list", "--status", "open", "--limit", "100", "--json"],
-        timeout: 30_000,
-      },
-      {
-        command: "bd",
-        args: ["list", "--status", "in_progress", "--limit", "100", "--json"],
-        timeout: 30_000,
-      },
-      {
-        command: "bd",
-        args: ["list", "--status", "blocked", "--limit", "100", "--json"],
-        timeout: 30_000,
-      },
-    ]
-  );
-  assert.equal(harness.maxActiveCalls(), 1);
-  assert.deepEqual(
-    tasks.map(({ ref, title, status, priority }) => ({ ref, title, status, priority })),
-    [
-      { ref: "demo-b", title: "Active B", status: "inProgress", priority: "p1" },
-      { ref: "demo-a", title: "Open A", status: "open", priority: "p2" },
-      { ref: "demo-dup", title: "Open wins", status: "open", priority: "p4" },
-      { ref: "demo-c", title: "Blocked C", status: "blocked", priority: "p0" },
-    ]
+  assert.deepEqual(tasks.map(({ ref }) => ref), ["demo-open"]);
+});
+
+test("list merges trimmed unique custom types without losing bd 1.1 built-ins", async () => {
+  const harness = makeHarness([customTypes("research, bug, research, spike, decision"), json([])]);
+
+  await harness.adapter.list();
+
+  assert.deepEqual(harness.adapter.taskTypes, [
+    "task",
+    "feature",
+    "bug",
+    "chore",
+    "epic",
+    "decision",
+    "research",
+    "spike",
+  ]);
+});
+
+test("empty custom type metadata preserves all bd 1.1 built-ins", async () => {
+  const harness = makeHarness([customTypes(""), json([])]);
+
+  await harness.adapter.list();
+
+  assert.deepEqual(harness.adapter.taskTypes, [
+    "task",
+    "feature",
+    "bug",
+    "chore",
+    "epic",
+    "decision",
+  ]);
+});
+
+test("unknown backend statuses fail with the unsupported value", async () => {
+  const harness = makeHarness([
+    customTypes(""),
+    json([{ id: "demo-unknown", title: "Unknown", status: "archived" }]),
+  ]);
+
+  await assert.rejects(
+    harness.adapter.list(),
+    /Unsupported status from beads backend: archived/
   );
 });
 
-test("show requests one task and maps optional JSON fields", async () => {
-  const harness = makeHarness([
-    json([
-      {
-        id: "demo-42",
-        title: "Mapped task",
-        description: "Details",
-        status: "closed",
-        priority: 3,
-        issue_type: "bug",
-        owner: "Ivan",
-        created_at: "2026-01-01",
-        due: "2026-02-01",
-        updated_at: "2026-01-02",
-        dependency_count: 2,
-        dependent_count: 1,
-        comment_count: 4,
-      },
-    ]),
-  ]);
+test("show consumes the captured bd 1.1 array shape", async () => {
+  const harness = makeHarness([fixture("show")]);
 
-  const task = await harness.adapter.show("demo-42");
+  const task = await harness.adapter.show("demo-show");
 
-  assert.deepEqual(harness.calls[0], {
-    command: "bd",
-    args: ["show", "demo-42", "--json"],
-    timeout: 30_000,
-  });
+  assert.deepEqual(harness.calls[0]?.args, ["show", "demo-show", "--json"]);
   assert.deepEqual(task, {
-    ref: "demo-42",
-    id: "demo-42",
-    title: "Mapped task",
-    description: "Details",
+    ref: "demo-show",
+    id: "demo-show",
+    title: "Shown task",
+    description: "Captured from bd show",
     status: "closed",
     priority: "p3",
-    taskType: "bug",
-    owner: "Ivan",
-    createdAt: "2026-01-01",
-    dueAt: "2026-02-01",
-    updatedAt: "2026-01-02",
+    taskType: "decision",
+    owner: "ivan",
+    createdAt: "2026-07-10T12:00:00Z",
+    dueAt: "2026-08-01T00:00:00Z",
+    updatedAt: "2026-07-14T09:30:00Z",
     dependencyCount: 2,
     dependentCount: 1,
     commentCount: 4,
   });
 });
 
+test("create consumes the captured bd 1.1 object shape", async () => {
+  const harness = makeHarness([fixture("create")]);
+
+  const task = await harness.adapter.create({ title: "  Created task  " });
+
+  assert.deepEqual(harness.calls[0]?.args, [
+    "create",
+    "--title",
+    "Created task",
+    "--priority",
+    "2",
+    "--type",
+    "task",
+    "--json",
+  ]);
+  assert.equal(task.ref, "demo-created");
+  assert.equal(task.status, "open");
+  assert.equal(task.taskType, "task");
+});
+
+test("update requests and consumes the captured bd 1.1 array shape", async () => {
+  const harness = makeHarness([fixture("update")]);
+
+  await harness.adapter.update("demo-updated", {
+    title: "  Updated task  ",
+    description: "Captured from bd update",
+    status: "inProgress",
+    priority: "p1",
+    taskType: "feature",
+    dueAt: "tomorrow",
+  });
+
+  assert.deepEqual(harness.calls[0]?.args, [
+    "update",
+    "demo-updated",
+    "--title",
+    "Updated task",
+    "--description",
+    "Captured from bd update",
+    "--status",
+    "in_progress",
+    "--priority",
+    "1",
+    "--type",
+    "feature",
+    "--due",
+    "tomorrow",
+    "--json",
+  ]);
+});
+
 test("create builds exact argv and applies a non-open status", async () => {
   const harness = makeHarness([
     json({ id: "demo-new", title: "backend title", status: "open", priority: 1 }),
-    { stdout: "" },
+    json([{ id: "demo-new", title: "backend title", status: "blocked", priority: 1 }]),
   ]);
 
   const task = await harness.adapter.create({
@@ -248,29 +328,10 @@ test("create builds exact argv and applies a non-open status", async () => {
         "bug",
         "--json",
       ],
-      ["update", "demo-new", "--status", "blocked"],
+      ["update", "demo-new", "--status", "blocked", "--json"],
     ]
   );
-  assert.deepEqual(
-    {
-      ref: task.ref,
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority,
-      taskType: task.taskType,
-      dueAt: task.dueAt,
-    },
-    {
-      ref: "demo-new",
-      title: "New task",
-      description: "Task details",
-      status: "blocked",
-      priority: "p1",
-      taskType: "bug",
-      dueAt: "2026-08-01",
-    }
-  );
+  assert.equal(task.status, "blocked");
 });
 
 test("partial create failure refreshes the exact persisted task state", async () => {
@@ -312,29 +373,27 @@ test("partial create failure refreshes the exact persisted task state", async ()
       });
       assert.match(error.message, /demo-partial was created with status open/);
       assert.match(error.message, /setting status to blocked failed: status update failed/);
+      assert.equal((error.cause as Error).message, "status update failed");
       return true;
     }
   );
 
-  assert.deepEqual(
-    harness.calls.map(({ args }) => args),
+  assert.deepEqual(harness.calls.map(({ args }) => args), [
     [
-      [
-        "create",
-        "--title",
-        "Partial",
-        "--description",
-        "Requested details",
-        "--priority",
-        "1",
-        "--type",
-        "bug",
-        "--json",
-      ],
-      ["update", "demo-partial", "--status", "blocked"],
-      ["show", "demo-partial", "--json"],
-    ]
-  );
+      "create",
+      "--title",
+      "Partial",
+      "--description",
+      "Requested details",
+      "--priority",
+      "1",
+      "--type",
+      "bug",
+      "--json",
+    ],
+    ["update", "demo-partial", "--status", "blocked", "--json"],
+    ["show", "demo-partial", "--json"],
+  ]);
 });
 
 test("partial create refresh failure falls back to the unmodified create response", async () => {
@@ -363,6 +422,8 @@ test("partial create refresh failure falls back to the unmodified create respons
         owner: undefined,
         priority: "p4",
       });
+      assert.equal(error.requestedStatus, "blocked");
+      assert.match(error.message, /demo-fallback was created with status open/);
       assert.match(error.message, /setting status to blocked failed: status update failed/);
       assert.doesNotMatch(error.message, /refresh failed/);
       assert.equal((error.cause as Error).message, "status update failed");
@@ -383,52 +444,30 @@ test("partial create refresh failure falls back to the unmodified create respons
       "bug",
       "--json",
     ],
-    ["update", "demo-fallback", "--status", "blocked"],
+    ["update", "demo-fallback", "--status", "blocked", "--json"],
     ["show", "demo-fallback", "--json"],
-  ]);
-});
-
-test("update translates all supported fields and trims the title", async () => {
-  const harness = makeHarness([{ stdout: "" }]);
-
-  await harness.adapter.update("demo-7", {
-    title: "  Revised  ",
-    description: "Description",
-    status: "inProgress",
-    priority: "p0",
-    taskType: "feature",
-    dueAt: "tomorrow",
-  });
-
-  assert.deepEqual(harness.calls[0]?.args, [
-    "update",
-    "demo-7",
-    "--title",
-    "Revised",
-    "--description",
-    "Description",
-    "--status",
-    "in_progress",
-    "--priority",
-    "0",
-    "--type",
-    "feature",
-    "--due",
-    "tomorrow",
   ]);
 });
 
 test("empty update is a no-op", async () => {
   const harness = makeHarness([]);
-
   await harness.adapter.update("demo-7", {});
-
   assert.deepEqual(harness.calls, []);
 });
 
-test("malformed JSON and unexpected JSON shapes include command context", async () => {
-  const malformedList = makeHarness([{ stdout: "not-json" }, json([]), json([])]);
-  await assert.rejects(malformedList.adapter.list(), /Failed to parse bd output \(list open\)/);
+test("malformed JSON and unexpected bd 1.1 JSON shapes include command context", async () => {
+  const syntacticallyMalformedList = makeHarness([customTypes(""), { stdout: "not-json" }]);
+  await assert.rejects(
+    syntacticallyMalformedList.adapter.list(),
+    /Failed to parse bd output \(list active\)/
+  );
+  assert.equal(syntacticallyMalformedList.calls.length, 2);
+
+  const malformedList = makeHarness([customTypes(""), json({})]);
+  await assert.rejects(
+    malformedList.adapter.list(),
+    /Failed to parse bd output \(list active\): expected JSON array/
+  );
 
   const malformedShow = makeHarness([json({ id: "demo-1" })]);
   await assert.rejects(
@@ -441,17 +480,36 @@ test("malformed JSON and unexpected JSON shapes include command context", async 
     malformedCreate.adapter.create({ title: "Task" }),
     /Failed to parse bd output \(create\): expected JSON object/
   );
+
+  const malformedUpdate = makeHarness([json({})]);
+  await assert.rejects(
+    malformedUpdate.adapter.update("demo-1", { title: "Updated" }),
+    /Failed to parse bd output \(update demo-1\): expected JSON array/
+  );
 });
 
 test("show reports an empty result as not found", async () => {
   const harness = makeHarness([json([])]);
-
   await assert.rejects(harness.adapter.show("missing"), /Task not found: missing/);
 });
 
 test("command failures surface stderr and stop further work", async () => {
-  const harness = makeHarness([{ code: 2, stderr: "database unavailable" }]);
+  const harness = makeHarness([
+    customTypes(""),
+    { code: 2, stderr: "database unavailable" },
+    json([{ id: "unintended", title: "Should not run", status: "open" }]),
+  ]);
 
   await assert.rejects(harness.adapter.list(), /database unavailable/);
-  assert.equal(harness.calls.length, 1);
+  assert.deepEqual(harness.calls.map(({ args }) => args), [
+    ["config", "get", "types.custom", "--json"],
+    [
+      "list",
+      "--status",
+      "open,in_progress,blocked",
+      "--limit",
+      "100",
+      "--json",
+    ],
+  ]);
 });

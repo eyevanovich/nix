@@ -8,7 +8,7 @@ Ported from [edmundmiller/pi-beads](https://github.com/edmundmiller/dotfiles/tre
 
 ## Requirements
 
-- `bd` CLI in PATH (tested with bd 1.0.5)
+- `bd` CLI in PATH (requires bd 1.1)
 - `.beads/` directory in the project (run `bd init` once)
 
 The interactive browser opens only in Pi TUI mode. Each invocation checks the
@@ -80,6 +80,10 @@ outside what `bd` itself does, no dynamic code evaluation. Audited on port.
 
 ## Notes
 
-- `bd list` runs sequentially (open, then in_progress, then blocked). bd's dolt
-  backend panics on concurrent DB access, so do not parallelise these calls.
+- The browser loads active work with one `bd list` query for exactly `open`,
+  `in_progress`, and `blocked`. Deferred and closed tasks are intentionally absent.
+- Editable task types include the bd 1.1 built-ins (`task`, `feature`, `bug`,
+  `chore`, `epic`, and `decision`) plus unique values from `types.custom`.
+- `bd` commands are serialized because its dolt backend cannot safely handle
+  concurrent database access.
 - Typechecks against the Pi API version locked in the development dependencies.
