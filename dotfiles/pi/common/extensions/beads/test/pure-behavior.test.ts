@@ -102,6 +102,9 @@ function makeCustomUiHarness(userBindings: KeybindingsConfig = {}) {
     },
     doneValues,
     notifications,
+    setTerminalRows(rows: number) {
+      tui.terminal.rows = rows;
+    },
   };
 }
 
@@ -712,6 +715,115 @@ test("task list page wraps ANSI and CJK content within every terminal width", as
     }
   }
   harness.component().handleInput("\x18");
+  await page;
+});
+
+test("task list page budgets terminal height and gives tall surplus to description", async () => {
+  const harness = makeCustomUiHarness();
+  const description = Array.from(
+    { length: 40 },
+    (_, index) => `DESC-01-LINE-${String(index + 1).padStart(2, "0")}`
+  ).join("\n");
+  const tasks: Task[] = Array.from({ length: 30 }, (_, index) => ({
+    ref: `bead-${String(index + 1).padStart(2, "0")}`,
+    id: `bead-${String(index + 1).padStart(2, "0")}`,
+    title: `List item ${String(index + 1).padStart(2, "0")}`,
+    description: index === 0 ? description : `Description for item ${index + 1}`,
+    status: "open",
+  }));
+  const page = showTaskList(harness.ctx, {
+    title: "Tasks",
+    subtitle: "height regression",
+    tasks,
+    priorities: ["p0", "p1", "p2"],
+    closeKey: "x",
+    cycleStatus: (status) => status,
+    cycleTaskType: () => "task",
+    onUpdateTask: async () => {},
+    onWork: async () => {},
+    onInsert: () => {},
+    onEdit: async () => ({ updatedTask: null, closeList: false }),
+    onCreate: async () => null,
+  });
+  const component = harness.component();
+  const width = 120;
+  const previewLines = (lines: string[]) =>
+    lines.map((line) => line.trim()).filter((line) => /^DESC-01-LINE-\d{2}$/.test(line));
+  const visibleTaskLines = (lines: string[]) =>
+    lines.filter((line) => /^(?:→ |  ).*List item \d{2}/.test(line));
+
+  harness.setTerminalRows(60);
+  const tall = component.render(width);
+  assert.ok(tall.length >= Math.ceil((60 * 2) / 3));
+  assert.ok(tall.length <= 60);
+  assert.ok(tall.every((line) => visibleWidth(line) <= width));
+  assert.equal(visibleTaskLines(tall).length, 10);
+  const tallPreview = previewLines(tall);
+  assert.ok(tallPreview.length > 7);
+  assert.equal(tallPreview[0], "DESC-01-LINE-01");
+
+  component.handleInput("j");
+  const scrolledPreview = previewLines(component.render(width));
+  assert.equal(scrolledPreview.length, tallPreview.length);
+  assert.equal(scrolledPreview[0], "DESC-01-LINE-02");
+  assert.notEqual(scrolledPreview.at(-1), tallPreview.at(-1));
+
+  harness.setTerminalRows(24);
+  const small = component.render(width);
+  assert.ok(small.length >= Math.ceil((24 * 2) / 3));
+  assert.ok(small.length <= 24);
+  assert.ok(small.every((line) => visibleWidth(line) <= width));
+  assert.ok(visibleTaskLines(small).length < 10);
+  assert.equal(previewLines(small)[0], "DESC-01-LINE-02");
+
+  const assertFullFooter = (lines: string[]) => {
+    const rendered = lines.join(" ");
+    assert.match(rendered, /enter work/);
+    assert.match(rendered, /escape[^ ]* cancel/);
+    assert.match(rendered, /x close/);
+    assert.match(rendered, /space status/);
+    assert.match(rendered, /j\/k scroll/);
+    assert.match(lines.at(-1) ?? "", /^─/);
+  };
+
+  for (const rows of [9, 10, 11, 12]) {
+    harness.setTerminalRows(rows);
+    const short = component.render(width);
+    assert.ok(short.length <= rows);
+    assert.ok(short.every((line) => visibleWidth(line) <= width));
+    assertFullFooter(short);
+  }
+
+  harness.setTerminalRows(11);
+  const narrow = component.render(60);
+  assert.ok(narrow.length <= 11);
+  assertFullFooter(narrow);
+
+  harness.setTerminalRows(7);
+  assert.equal(visibleTaskLines(component.render(width)).length, 0);
+  component.handleInput("s");
+  harness.setTerminalRows(12);
+  assert.match(
+    visibleTaskLines(component.render(width)).find((line) => line.startsWith("→ ")) ?? "",
+    /List item 02/
+  );
+
+  harness.setTerminalRows(Number.NaN);
+  const fallback = component.render(width);
+  assert.ok(fallback.length >= Math.ceil((24 * 2) / 3));
+  assert.ok(fallback.length <= 24);
+
+  for (const invalidRows of [0, -10, Number.POSITIVE_INFINITY]) {
+    harness.setTerminalRows(invalidRows);
+    assert.equal(component.render(width).length, fallback.length);
+  }
+
+  harness.setTerminalRows(1_000_000_000);
+  const capped = component.render(width);
+  assert.ok(capped.length >= Math.ceil((500 * 2) / 3));
+  assert.ok(capped.length <= 500);
+
+  component.handleInput("x");
   await page;
 });
 

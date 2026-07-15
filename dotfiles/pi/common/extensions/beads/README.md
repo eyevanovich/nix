@@ -90,6 +90,9 @@ outside what `bd` itself does, no dynamic code evaluation. Audited on port.
 - The browser loads active work with one `bd list` query for exactly `open`,
   `in_progress`, and `blocked`, then one `bd blocked --json` query to attach exact
   active blocker refs. Deferred and closed tasks are intentionally absent.
+- The list view shows at most 10 tasks and remains scrollable. On shorter terminals
+  it reduces the visible task rows to fit; on taller terminals it expands the
+  selected task's description preview instead.
 - Dependency-blocked rows keep their stored status symbol and add `blocked:N`.
   Starting work closes the list immediately, then atomically claims the selected
   issue before hydrating it with `bd show`. Re-entering an issue already owned by

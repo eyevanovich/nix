@@ -67,12 +67,18 @@ export class SelectListWithColumns implements Component {
     this.selectedIndex = Math.max(0, Math.min(index, this.filteredItems.length - 1));
   }
 
+  setMaxVisible(maxVisible: number): void {
+    this.maxVisible = Math.max(0, Math.floor(maxVisible));
+  }
+
   invalidate(): void {
     // No cached state.
   }
 
   render(width: number): string[] {
     const lines: string[] = [];
+
+    if (this.maxVisible === 0) return lines;
 
     if (this.filteredItems.length === 0) {
       lines.push(truncateToWidth(this.theme.noMatch("  No matching commands"), width, ""));

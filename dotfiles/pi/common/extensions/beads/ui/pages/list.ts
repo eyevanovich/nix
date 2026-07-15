@@ -21,10 +21,12 @@ import {
   TaskMutationCoordinator,
 } from "../../controllers/list.ts";
 import { KEYBOARD_HELP_PADDING_X, formatKeyboardHelp } from "../components/keyboard-help.ts";
-import { MinHeightContainer } from "../components/min-height.ts";
 import { SelectListWithColumns } from "../components/select-list-with-columns.ts";
 
-const LIST_PAGE_CONTENT_MIN_HEIGHT = 20;
+const DEFAULT_TERMINAL_ROWS = 24;
+const MAX_TERMINAL_ROWS = 500;
+const MAX_VISIBLE_TASKS = 10;
+const DEFAULT_DESCRIPTION_ROWS = 7;
 const TASK_LIST_ROW_LAYOUT = {
   valueMaxWidth: 60,
   valueColumnWidth: 62,
@@ -122,13 +124,8 @@ export async function showTaskList(
         const headerContainer = new Container();
         const listAreaContainer = new Container();
         const footerContainer = new Container();
-        const paddedListAreaContainer = new MinHeightContainer(
-          listAreaContainer,
-          LIST_PAGE_CONTENT_MIN_HEIGHT
-        );
-
         container.addChild(headerContainer);
-        container.addChild(paddedListAreaContainer);
+        container.addChild(listAreaContainer);
         container.addChild(footerContainer);
 
         const titleText = new Text("", 1, 0);
@@ -178,7 +175,7 @@ export async function showTaskList(
         let items = getItems();
         let selectList = new SelectListWithColumns(
           items,
-          Math.min(items.length, 10),
+          Math.min(items.length, MAX_VISIBLE_TASKS),
           selectListTheme,
           keybindings,
           TASK_LIST_ROW_LAYOUT
@@ -212,58 +209,56 @@ export async function showTaskList(
           }
         };
 
-        const renderListArea = () => {
+        const renderListArea = (showPreview = true) => {
           while (listAreaContainer.children.length > 0) {
             listAreaContainer.removeChild(listAreaContainer.children[0]);
           }
           listAreaContainer.addChild(selectList);
-          listAreaContainer.addChild(new Spacer(1));
-          listAreaContainer.addChild(itemPreviewContainer);
-        };
-
-        const wrapText = (text: string, width: number, maxLines: number): string[] => {
-          if (text.length === 0) return [""];
-          return wrapTextWithAnsi(text, Math.max(1, width)).slice(0, maxLines);
-        };
-
-        const buildDescText = (descLines: string[], width: number): string => {
-          const wrappedLines: string[] = [];
-          for (const line of descLines) {
-            const wrapped = wrapText(line, width, 7 - wrappedLines.length);
-            wrappedLines.push(...wrapped);
-            if (wrappedLines.length >= 7) break;
+          if (showPreview) {
+            listAreaContainer.addChild(new Spacer(1));
+            listAreaContainer.addChild(itemPreviewContainer);
           }
-          while (wrappedLines.length < 7) wrappedLines.push("");
-          return wrappedLines.join("\n");
+        };
+
+        const wrapText = (text: string, width: number): string[] => {
+          if (text.length === 0) return [""];
+          return wrapTextWithAnsi(text, Math.max(1, width));
         };
 
         const previewTitleText = new Text("", 0, 0);
-        const descTextComponent = new Text(buildDescText([], 80), 0, 0);
+        const descTextComponent = new Text("", 0, 0);
         const itemPreviewContainer = new Container();
         itemPreviewContainer.addChild(previewTitleText);
         itemPreviewContainer.addChild(descTextComponent);
 
         let lastWidth = 80;
+        let descriptionRows = DEFAULT_DESCRIPTION_ROWS;
 
-        const updateDescPreview = () => {
+        const getWrappedDescription = (): string[] => {
           const selected = selectList.getSelectedItem();
-          if (!selected) {
-            previewTitleText.setText("");
-            descTextComponent.setText(buildDescText([], lastWidth));
-            return;
-          }
+          const task = selected ? displayTasks.find((i) => i.ref === selected.value) : undefined;
+          if (!task) return [""];
 
-          descScroll = 0;
-          const task = displayTasks.find((i) => i.ref === selected.value);
-          if (!task) {
-            previewTitleText.setText("");
-            descTextComponent.setText(buildDescText([], lastWidth));
-            return;
-          }
+          return truncateDescription(task.description, 100).flatMap((line) =>
+            wrapText(line, lastWidth)
+          );
+        };
 
-          previewTitleText.setText(theme.fg("accent", theme.bold(task.title)));
-          const descLines = truncateDescription(task.description, 100);
-          descTextComponent.setText(buildDescText(descLines, lastWidth));
+        const renderDescription = () => {
+          const wrapped = getWrappedDescription();
+          const maxScroll = Math.max(0, wrapped.length - descriptionRows);
+          descScroll = Math.max(0, Math.min(descScroll, maxScroll));
+          const visibleLines = wrapped.slice(descScroll, descScroll + descriptionRows);
+          while (visibleLines.length < descriptionRows) visibleLines.push("");
+          descTextComponent.setText(visibleLines.join("\n"));
+        };
+
+        const updateDescPreview = (resetScroll = true) => {
+          const selected = selectList.getSelectedItem();
+          const task = selected ? displayTasks.find((i) => i.ref === selected.value) : undefined;
+          if (resetScroll) descScroll = 0;
+          previewTitleText.setText(task ? theme.fg("accent", theme.bold(task.title)) : "");
+          renderDescription();
         };
         if (items[0]) updateDescPreview();
 
@@ -364,7 +359,7 @@ export async function showTaskList(
 
           selectList = new SelectListWithColumns(
             items,
-            Math.min(items.length, 10),
+            Math.min(items.length, MAX_VISIBLE_TASKS),
             selectListTheme,
             keybindings,
             TASK_LIST_ROW_LAYOUT
@@ -409,7 +404,71 @@ export async function showTaskList(
         return {
           render: (w: number) => {
             lastWidth = w;
-            return container.render(w).map((l: string) => truncateToWidth(l, w));
+            const terminalRowsValue = tui.terminal?.rows;
+            const terminalRows =
+              typeof terminalRowsValue === "number" &&
+              Number.isFinite(terminalRowsValue) &&
+              terminalRowsValue > 0
+                ? Math.min(Math.floor(terminalRowsValue), MAX_TERMINAL_ROWS)
+                : DEFAULT_TERMINAL_ROWS;
+
+            const headerLines = headerContainer.render(w);
+            const footerLines = footerContainer.render(w);
+            const chromeRows = headerLines.length + footerLines.length;
+            if (terminalRows < chromeRows) {
+              const footerBudget = Math.min(terminalRows, footerLines.length);
+              const headerBudget = terminalRows - footerBudget;
+              return [
+                ...headerLines.slice(0, headerBudget),
+                ...footerLines.slice(footerLines.length - footerBudget),
+              ].map((line: string) => truncateToWidth(line, w));
+            }
+
+            const contentBudget = terminalRows - chromeRows;
+            const targetContentRows = Math.max(
+              0,
+              Math.ceil((terminalRows * 2) / 3) - chromeRows
+            );
+            const previewChromeRows = 1 + previewTitleText.render(w).length;
+
+            let visibleTaskRows = Math.max(
+              1,
+              Math.min(items.length || 1, MAX_VISIBLE_TASKS)
+            );
+            selectList.setMaxVisible(visibleTaskRows);
+            let listRows = selectList.render(w).length;
+            while (
+              visibleTaskRows > 1 &&
+              listRows + previewChromeRows + DEFAULT_DESCRIPTION_ROWS > contentBudget
+            ) {
+              visibleTaskRows -= 1;
+              selectList.setMaxVisible(visibleTaskRows);
+              listRows = selectList.render(w).length;
+            }
+            if (listRows > contentBudget) {
+              visibleTaskRows = 0;
+              selectList.setMaxVisible(0);
+              listRows = 0;
+            }
+
+            const showPreview = contentBudget - listRows >= previewChromeRows;
+            const renderedPreviewChromeRows = showPreview ? previewChromeRows : 0;
+            const maxDescriptionRows = Math.max(
+              0,
+              contentBudget - listRows - renderedPreviewChromeRows
+            );
+            const rowsNeededForTarget = Math.max(
+              DEFAULT_DESCRIPTION_ROWS,
+              targetContentRows - listRows - renderedPreviewChromeRows
+            );
+            descriptionRows = showPreview
+              ? Math.min(maxDescriptionRows, rowsNeededForTarget)
+              : 0;
+            updateDescPreview(false);
+            renderListArea(showPreview);
+
+            const lines = container.render(w);
+            return lines.map((line: string) => truncateToWidth(line, w));
           },
           invalidate: () => container.invalidate(),
           dispose: () => {
@@ -511,21 +570,16 @@ export async function showTaskList(
 
               case "scrollDescription":
                 withSelectedTask((task) => {
-                  const descLines = truncateDescription(task.description, 100);
-                  const allWrapped: string[] = [];
-                  for (const line of descLines) {
-                    const wrapped = wrapText(line, lastWidth, 100);
-                    allWrapped.push(...wrapped);
-                  }
-                  const maxScroll = Math.max(0, allWrapped.length - 7);
+                  const maxScroll = Math.max(
+                    0,
+                    getWrappedDescription().length - descriptionRows
+                  );
                   if (intent.delta > 0 && descScroll < maxScroll) {
                     descScroll++;
                   } else if (intent.delta < 0 && descScroll > 0) {
                     descScroll--;
                   }
-                  const visible = allWrapped.slice(descScroll, descScroll + 7);
-                  while (visible.length < 7) visible.push("");
-                  descTextComponent.setText(visible.join("\n"));
+                  renderDescription();
                   container.invalidate();
                   tui.requestRender();
                 });
