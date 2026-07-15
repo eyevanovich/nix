@@ -92,7 +92,11 @@ outside what `bd` itself does, no dynamic code evaluation. Audited on port.
   active blocker refs. Deferred and closed tasks are intentionally absent.
 - The list view shows at most 10 tasks and remains scrollable. On shorter terminals
   it reduces the visible task rows to fit; on taller terminals it expands the
-  selected task's description preview instead.
+  selected task's description preview instead. Create and edit forms follow the
+  same responsive-height policy: their description editor grows on tall terminals,
+  while optional read-only edit context yields before controls on short terminals.
+  When a focused form becomes compact, its active editor and footer help take
+  priority over inactive fields and header chrome.
 - Dependency-blocked rows keep their stored status symbol and add `blocked:N`.
   Starting work closes the list immediately, then atomically claims the selected
   issue before hydrating it with `bd show`. Re-entering an issue already owned by

@@ -474,6 +474,170 @@ test("task form propagates Focusable state to the active editor cursor", async (
   assert.deepEqual(await form, { action: "close_list" });
 });
 
+test("task form responsively budgets edit and create layouts", () => {
+  const description = Array.from(
+    { length: 40 },
+    (_, index) => `FORM-DESC-LINE-${String(index + 1).padStart(2, "0")}`
+  ).join("\n");
+  const richTask: Task = {
+    ref: "responsive-edit",
+    id: "responsive-edit",
+    title: "Responsive edit",
+    description,
+    status: "open",
+    priority: "p2",
+    taskType: "task",
+    assignee: "agent@example.test",
+    owner: "ivan",
+    labels: ["responsive", "form"],
+    dueAt: "2026-08-01",
+    acceptanceCriteria: "Keep all controls visible.",
+    design: "Grow the editor first.",
+    notes: "OPTIONAL-CONTEXT-TAIL",
+  };
+
+  const open = (mode: "edit" | "create", task: Task) => {
+    const harness = makeCustomUiHarness();
+    void showTaskForm(harness.ctx, {
+      mode,
+      subtitle: mode === "edit" ? "Edit" : "Create",
+      task,
+      closeKey: "x",
+      cycleStatus: (status) => status,
+      cycleTaskType: () => "task",
+      parsePriorityKey: () => null,
+      priorities: ["p0", "p1", "p2", "p3", "p4"],
+      onSave: async () => true,
+    });
+    return { harness, component: harness.component() };
+  };
+
+  for (const [mode, task] of [
+    ["edit", richTask],
+    ["create", { ...richTask, ref: "new", id: undefined }],
+  ] as const) {
+    const { harness, component } = open(mode, task);
+    for (const rows of [60, 24, 9]) {
+      harness.setTerminalRows(rows);
+      const lines = component.render(120);
+      assert.ok(lines.length <= rows, `${mode} rendered ${lines.length} rows for ${rows}`);
+      if (rows >= 24) {
+        assert.ok(lines.length >= Math.ceil((rows * 2) / 3));
+        const output = lines.join("\n");
+        assert.match(output, /Title/);
+        assert.match(output, /Description/);
+        assert.match(output, /save/);
+      }
+    }
+  }
+
+  const edit = open("edit", richTask);
+  edit.harness.setTerminalRows(60);
+  const tallOutput = edit.component.render(120).join("\n");
+  assert.ok((tallOutput.match(/FORM-DESC-LINE/g) ?? []).length > 8);
+  for (const { label, value } of buildReadOnlyTaskContext(richTask, "edit")) {
+    assert.ok(tallOutput.includes(`${label}:`), `missing tall label ${label}`);
+    assert.ok(tallOutput.includes(value), `missing tall value for ${label}`);
+  }
+
+  edit.harness.setTerminalRows(24);
+  const shortOutput = edit.component.render(120).join("\n");
+  assert.doesNotMatch(shortOutput, /OPTIONAL-CONTEXT-TAIL/);
+  assert.match(shortOutput, /Title/);
+  assert.match(shortOutput, /Description/);
+
+  for (const rows of [Number.NaN, 0, -1, Number.POSITIVE_INFINITY]) {
+    edit.harness.setTerminalRows(rows);
+    const lines = edit.component.render(120);
+    assert.ok(lines.length >= 16);
+    assert.ok(lines.length <= 24);
+  }
+  edit.harness.setTerminalRows(1_000_000);
+  const cappedLines = edit.component.render(120);
+  assert.ok(cappedLines.length >= Math.ceil((500 * 2) / 3));
+  assert.ok(cappedLines.length <= 500);
+
+  edit.harness.setTerminalRows(60);
+  const narrowOutput = edit.component.render(28).join("\n");
+  assert.match(narrowOutput, /save/);
+  assert.match(narrowOutput, /back/);
+  assert.ok(edit.component.render(28).every((line) => visibleWidth(line) <= 28));
+});
+
+test("task form prioritizes focused editors and complete footer help in compact layouts", () => {
+  const open = (mode: "edit" | "create", active: "title" | "desc") => {
+    const harness = makeCustomUiHarness();
+    void showTaskForm(harness.ctx, {
+      mode,
+      subtitle: mode === "edit" ? "Edit" : "Create",
+      task: {
+        ref: mode === "edit" ? "cursor-edit" : "new",
+        id: mode === "edit" ? "cursor-edit" : undefined,
+        title: "Cursor title",
+        description: Array.from({ length: 30 }, (_, index) => `Cursor line ${index}`).join("\n"),
+        status: "open",
+      },
+      closeKey: "x",
+      cycleStatus: (status) => status,
+      cycleTaskType: () => "task",
+      parsePriorityKey: () => null,
+      priorities: ["p0", "p1", "p2"],
+      onSave: async () => true,
+    });
+    const component = harness.component();
+    component.focused = true;
+    if (mode === "edit") component.handleInput("\t");
+    if (active === "desc") component.handleInput("\t");
+    return { harness, component };
+  };
+
+  const assertFocusedLayout = (
+    mode: "edit" | "create",
+    active: "title" | "desc",
+    rows: number,
+    width: number
+  ) => {
+    const { harness, component } = open(mode, active);
+    harness.setTerminalRows(rows);
+    const lines = component.render(width);
+    const output = lines.join("\n");
+    assert.ok(lines.length <= rows, `${mode}/${active} exceeded ${rows} rows`);
+    assert.ok(lines.every((line) => visibleWidth(line) <= width));
+    assert.equal(output.split(CURSOR_MARKER).length - 1, 1, `${mode}/${active} lost cursor`);
+    assert.match(output, active === "title" ? /Title/ : /Description/);
+    assert.match(output, /save/);
+    assert.match(output, /back/);
+    assert.match(output, active === "title" ? /description/ : /newline/);
+  };
+
+  for (const mode of ["create", "edit"] as const) {
+    for (const active of ["title", "desc"] as const) {
+      for (const width of [120, 28]) {
+        for (const rows of [9, 10, 11, 12, 13]) {
+          assertFocusedLayout(mode, active, rows, width);
+        }
+      }
+    }
+  }
+
+  for (const [mode, active] of [
+    ["create", "desc"],
+    ["edit", "title"],
+  ] as const) {
+    const { harness, component } = open(mode, active);
+    harness.setTerminalRows(60);
+    const tallBefore = component.render(80).join("\n");
+    harness.setTerminalRows(2);
+    const tinyLines = component.render(28);
+    assert.ok(tinyLines.length <= 2);
+    assert.ok(tinyLines.every((line) => visibleWidth(line) <= 28));
+    assert.equal(tinyLines.join("\n").split(CURSOR_MARKER).length - 1, 1);
+    assert.deepEqual(component.render(28), tinyLines);
+    harness.setTerminalRows(60);
+    assert.equal(component.render(80).join("\n"), tallBefore);
+  }
+});
+
 test("task form applies default description newline and submit semantics", async () => {
   const harness = makeCustomUiHarness();
   const drafts: FormDraft[] = [];
@@ -936,6 +1100,7 @@ test("edit hydration always calls show and exposes rich fields read-only only in
 
 test("rich edit form render includes every read-only context field and exact ID", () => {
   const harness = makeCustomUiHarness();
+  harness.setTerminalRows(60);
   const task: Task = {
     ref: "fallback-ref",
     id: "demo-rich-exact-id",

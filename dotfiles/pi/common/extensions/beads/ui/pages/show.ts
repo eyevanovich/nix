@@ -5,6 +5,7 @@ import {
   Text,
   truncateToWidth,
   visibleWidth,
+  wrapTextWithAnsi,
   type Component,
   type Focusable,
   type KeybindingsManager,
@@ -34,7 +35,6 @@ import {
 } from "../../lib/task-context.ts";
 import { BlurEditorField } from "../components/blur-editor.ts";
 import { KEYBOARD_HELP_PADDING_X, formatKeyboardHelp } from "../components/keyboard-help.ts";
-import { MinHeightContainer } from "../components/min-height.ts";
 
 export type TaskFormAction = "back" | "close_list";
 
@@ -85,8 +85,9 @@ function fieldLabel(theme: any, label: string, focused: boolean): string {
 }
 
 const SELECTED_ITEM_PREFIX = "› ";
-const DESCRIPTION_FIELD_HEIGHT = 8;
-const PAGE_CONTENT_MIN_HEIGHT = 19;
+const DEFAULT_TERMINAL_ROWS = 24;
+const MAX_TERMINAL_ROWS = 500;
+const MIN_DESCRIPTION_FIELD_HEIGHT = 2;
 
 class FixedHeightField implements Component {
   private child: Component;
@@ -95,6 +96,10 @@ class FixedHeightField implements Component {
   constructor(child: Component, height: number) {
     this.child = child;
     this.height = height;
+  }
+
+  setHeight(height: number): void {
+    this.height = Math.max(1, Math.floor(height));
   }
 
   invalidate(): void {
@@ -145,7 +150,7 @@ class FixedHeightField implements Component {
   }
 }
 
-class ReservedLineText implements Component {
+class ReservedText implements Component {
   private text = "";
   private paddingX: number;
 
@@ -168,9 +173,12 @@ class ReservedLineText implements Component {
       return [`${left}${" ".repeat(innerWidth)}${right}`];
     }
 
-    const content = truncateToWidth(this.text, innerWidth);
-    const trailingPadding = Math.max(0, innerWidth - visibleWidth(content));
-    return [`${left}${content}${" ".repeat(trailingPadding)}${right}`];
+    const contentLines = wrapTextWithAnsi(this.text, Math.max(1, innerWidth));
+    return contentLines.map((content) => {
+      const truncated = truncateToWidth(content, innerWidth);
+      const trailingPadding = Math.max(0, innerWidth - visibleWidth(truncated));
+      return `${left}${truncated}${" ".repeat(trailingPadding)}${right}`;
+    });
   }
 }
 
@@ -208,19 +216,20 @@ export async function showTaskForm(
     const container = new Container();
     const headerContainer = new Container();
     const formContainer = new Container();
+    const contextContainer = new Container();
     const footerContainer = new Container();
-    const paddedFormContainer = new MinHeightContainer(formContainer, PAGE_CONTENT_MIN_HEIGHT);
 
     container.addChild(headerContainer);
-    container.addChild(paddedFormContainer);
+    container.addChild(formContainer);
+    container.addChild(contextContainer);
     container.addChild(footerContainer);
 
     const pageTitleText = new Text("", 1, 0);
     const selectedTaskText = new Text("", 0, 0);
     const titleLabel = new Text("", 0, 0);
     const descLabel = new Text("", 0, 0);
-    const helpText = new ReservedLineText(KEYBOARD_HELP_PADDING_X);
-    const shortcutsText = new ReservedLineText(KEYBOARD_HELP_PADDING_X);
+    const helpText = new ReservedText(KEYBOARD_HELP_PADDING_X);
+    const shortcutsText = new ReservedText(KEYBOARD_HELP_PADDING_X);
 
     let focus: FormFocus = mode === "create" ? "title" : "nav";
     let tuiFocused = false;
@@ -263,7 +272,8 @@ export async function showTaskForm(
       paddingX: 2,
       indentX: 2,
     });
-    const descEditorField = new FixedHeightField(descEditor, DESCRIPTION_FIELD_HEIGHT);
+    const titleCompactField = new FixedHeightField(titleEditor, 2);
+    const descEditorField = new FixedHeightField(descEditor, MIN_DESCRIPTION_FIELD_HEIGHT);
     descEditor.setText(descValue);
     descEditor.disableSubmit = true;
     descEditor.onChange = (text: string) => {
@@ -374,8 +384,8 @@ export async function showTaskForm(
             multiline ? `${theme.bold(label)}:\n${value}` : `${theme.bold(label)}: ${value}`
           )
           .join("\n");
-        formContainer.addChild(new Spacer(1));
-        formContainer.addChild(new Text(richText, 2, 0));
+        contextContainer.addChild(new Spacer(1));
+        contextContainer.addChild(new Text(richText, 2, 0));
       }
     }
 
@@ -479,7 +489,101 @@ export async function showTaskForm(
         tuiFocused = value;
         renderLayout();
       },
-      render: (w: number) => container.render(w).map((line: string) => truncateToWidth(line, w)),
+      render: (w: number) => {
+        const terminalRowsValue = tui.terminal?.rows;
+        const terminalRows =
+          typeof terminalRowsValue === "number" &&
+          Number.isFinite(terminalRowsValue) &&
+          terminalRowsValue > 0
+            ? Math.min(Math.floor(terminalRowsValue), MAX_TERMINAL_ROWS)
+            : DEFAULT_TERMINAL_ROWS;
+
+        const bounded = (lines: string[]) =>
+          lines.map((line: string) => truncateToWidth(line, w));
+        const headerLines = headerContainer.render(w);
+        const footerLines = footerContainer.render(w);
+        const chromeRows = headerLines.length + footerLines.length;
+
+        descEditorField.setHeight(MIN_DESCRIPTION_FIELD_HEIGHT);
+        const minimumFormRows = formContainer.render(w).length;
+        const normalLayoutFits = chromeRows + minimumFormRows <= terminalRows;
+
+        if (focus !== "nav" && !normalLayoutFits) {
+          const activeLabelLines = (focus === "title" ? titleLabel : descLabel).render(w);
+          const activeEditorLines =
+            focus === "title" ? titleCompactField.render(w) : descEditorField.render(w);
+          const activeRows = activeLabelLines.length + activeEditorLines.length;
+
+          if (activeRows + footerLines.length <= terminalRows) {
+            let remainder = terminalRows - activeRows - footerLines.length;
+            const compactHeaderLines = headerLines.slice(0, remainder);
+            remainder -= compactHeaderLines.length;
+
+            const inactiveLines =
+              focus === "title"
+                ? [...descLabel.render(w), ...descEditorField.render(w)]
+                : [...titleLabel.render(w), ...titleCompactField.render(w)];
+            const compactInactiveLines = inactiveLines.slice(0, remainder);
+            const formLines =
+              focus === "title"
+                ? [...activeLabelLines, ...activeEditorLines, ...compactInactiveLines]
+                : [...compactInactiveLines, ...activeLabelLines, ...activeEditorLines];
+
+            return bounded([...compactHeaderLines, ...formLines, ...footerLines]);
+          }
+
+          let remainder = terminalRows;
+          const cursorLineIndex = activeEditorLines.findIndex((line) =>
+            line.includes("\x1b[7m")
+          );
+          const prioritizedEditorLines =
+            cursorLineIndex < 0
+              ? activeEditorLines
+              : [
+                  activeEditorLines[cursorLineIndex],
+                  ...activeEditorLines.filter((_, index) => index !== cursorLineIndex),
+                ];
+          const compactEditorLines = prioritizedEditorLines.slice(0, remainder);
+          remainder -= compactEditorLines.length;
+          const compactLabelLines = activeLabelLines.slice(0, remainder);
+          remainder -= compactLabelLines.length;
+          const primaryHelpLines = helpText.render(w).slice(0, remainder);
+
+          return bounded([...compactLabelLines, ...compactEditorLines, ...primaryHelpLines]);
+        }
+
+        if (terminalRows < chromeRows) {
+          const footerBudget = Math.min(terminalRows, footerLines.length);
+          const headerBudget = terminalRows - footerBudget;
+          return bounded([
+            ...headerLines.slice(0, headerBudget),
+            ...footerLines.slice(footerLines.length - footerBudget),
+          ]);
+        }
+
+        const contentBudget = terminalRows - chromeRows;
+        const targetContentRows = Math.max(
+          0,
+          Math.ceil((terminalRows * 2) / 3) - chromeRows
+        );
+
+        descEditorField.setHeight(1);
+        const minimumFormLines = formContainer.render(w);
+        const nonDescriptionRows = Math.max(0, minimumFormLines.length - 1);
+        const availableDescriptionRows = Math.max(1, contentBudget - nonDescriptionRows);
+        const targetDescriptionRows = Math.max(
+          MIN_DESCRIPTION_FIELD_HEIGHT,
+          targetContentRows - nonDescriptionRows
+        );
+        descEditorField.setHeight(Math.min(availableDescriptionRows, targetDescriptionRows));
+
+        const formLines = formContainer.render(w);
+        const essentialLines = formLines.slice(0, contentBudget);
+        const contextBudget = Math.max(0, contentBudget - essentialLines.length);
+        const contextLines = contextContainer.render(w).slice(0, contextBudget);
+
+        return bounded([...headerLines, ...essentialLines, ...contextLines, ...footerLines]);
+      },
       invalidate: () => container.invalidate(),
       dispose: () => {
         disposed = true;
