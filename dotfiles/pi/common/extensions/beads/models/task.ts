@@ -1,5 +1,12 @@
 export type TaskStatus = "open" | "inProgress" | "blocked" | "deferred" | "closed";
 
+export interface TaskDependency {
+  ref: string;
+  title?: string;
+  status?: string;
+  dependencyType?: string;
+}
+
 export interface Task {
   ref: string;
   id?: string;
@@ -8,9 +15,16 @@ export interface Task {
   status: TaskStatus;
   priority?: string;
   taskType?: string;
+  assignee?: string;
   owner?: string;
-  createdAt?: string;
+  labels?: string[];
   dueAt?: string;
+  acceptanceCriteria?: string;
+  design?: string;
+  notes?: string;
+  dependencies?: TaskDependency[];
+  blockedBy?: TaskDependency[];
+  createdAt?: string;
   updatedAt?: string;
   dependencyCount?: number;
   dependentCount?: number;
@@ -111,7 +125,7 @@ export function buildTaskListTextParts(task: Task): TaskListTextParts {
   return {
     identity: buildTaskIdentityText(task.priority, elements.id),
     title: elements.title,
-    meta: `${elements.status} ${elements.type}`,
+    meta: `${elements.status} ${elements.type}${task.blockedBy?.length ? ` blocked:${task.blockedBy.length}` : ""}`,
     summary: elements.summary,
   };
 }

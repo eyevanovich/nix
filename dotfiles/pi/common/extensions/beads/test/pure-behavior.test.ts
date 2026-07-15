@@ -15,7 +15,13 @@ import {
   type FormDraft,
 } from "../controllers/show.ts";
 import { PartialTaskCreateError } from "../backend/api.ts";
-import { createTaskSaveSession } from "../extension.ts";
+import {
+  createTaskSaveSession,
+  createTaskWorkHandler,
+  hydrateTaskForEdit,
+  mergeHydratedTask,
+} from "../extension.ts";
+import { buildTaskContext } from "../lib/task-context.ts";
 import { buildTaskWorkPrompt, serializeTask } from "../lib/task-serialization.ts";
 import {
   buildListRowModel,
@@ -28,7 +34,7 @@ import {
   type Task,
 } from "../models/task.ts";
 import { showTaskList } from "../ui/pages/list.ts";
-import { showTaskForm } from "../ui/pages/show.ts";
+import { buildReadOnlyTaskContext, showTaskForm } from "../ui/pages/show.ts";
 
 function deferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
@@ -47,6 +53,7 @@ async function flushMicrotasks(): Promise<void> {
 }
 
 interface TestComponent {
+  render(width: number): string[];
   handleInput(data: string): void;
   dispose?(): void;
 }
@@ -233,7 +240,7 @@ test("task list wires guarded pessimistic mutations through the page", async () 
       assert.ok(write);
       return write.promise;
     },
-    onWork: () => {},
+    onWork: async () => {},
     onInsert: () => {},
     onEdit: async () => ({ updatedTask: null, closeList: false }),
     onCreate: async () => null,
@@ -263,6 +270,48 @@ test("task list wires guarded pessimistic mutations through the page", async () 
 
   harness.component().handleInput("x");
   await page;
+});
+
+test("task list Enter starts work once, closes immediately, and surfaces rejection", async () => {
+  const harness = makeCustomUiHarness();
+  const work = deferred<void>();
+  const workedTasks: Task[] = [];
+  const task: Task = {
+    ref: "demo-work",
+    id: "demo-work",
+    title: "Work target",
+    status: "open",
+  };
+
+  const page = showTaskList(harness.ctx, {
+    title: "Tasks",
+    tasks: [task],
+    priorities: ["p0", "p1", "p2", "p3", "p4"],
+    closeKey: "x",
+    cycleStatus: (status) => status,
+    cycleTaskType: () => "task",
+    onUpdateTask: async () => {},
+    onWork: async (selected) => {
+      workedTasks.push(selected);
+      await work.promise;
+    },
+    onInsert: () => {},
+    onEdit: async () => ({ updatedTask: null, closeList: false }),
+    onCreate: async () => null,
+  });
+
+  harness.component().handleInput("\r");
+  assert.deepEqual(workedTasks, [task]);
+  assert.deepEqual(harness.doneValues, ["cancel"]);
+  await page;
+
+  work.reject(new Error("work failed"));
+  await flushMicrotasks();
+  assert.ok(
+    harness.notifications.some(
+      ({ message, level }) => level === "error" && message === "work failed"
+    )
+  );
 });
 
 test("task form blocks exit during save and keeps failures retryable", async () => {
@@ -414,16 +463,235 @@ test("task models build stable list text and encoded rows", () => {
   });
 });
 
-test("task serialization preserves metadata and escapes multiline descriptions", () => {
+test("list rows distinguish stored blocked status from active dependency blockers", () => {
+  const dependencyBlocked: Task = {
+    ref: "demo-open",
+    id: "demo-open",
+    title: "Open but blocked",
+    status: "open",
+    blockedBy: [{ ref: "demo-prereq" }],
+  };
+  const storedBlocked: Task = {
+    ref: "demo-blocked",
+    id: "demo-blocked",
+    title: "Stored blocked",
+    status: "blocked",
+  };
+
+  assert.equal(buildTaskListTextParts(dependencyBlocked).meta, "○ task blocked:1");
+  assert.equal(buildTaskListTextParts(storedBlocked).meta, "✖ task");
+});
+
+test("structured task context has stable ordering and omits sparse optional fields", () => {
+  const sparse = buildTaskContext({
+    ref: "demo-sparse",
+    title: "Sparse",
+    status: "open",
+  });
+  assert.deepEqual(sparse, [
+    { key: "id", label: "ID", value: "demo-sparse" },
+    { key: "status", label: "Status", value: "open" },
+  ]);
+
+  const rich = buildTaskContext({
+    ref: "fallback",
+    id: "demo-rich",
+    title: "Rich",
+    status: "inProgress",
+    priority: "p1",
+    taskType: "feature",
+    assignee: "agent@example.test",
+    owner: "ivan",
+    labels: ["backend", "urgent"],
+    dueAt: "2026-08-01",
+    description: "Description",
+    acceptanceCriteria: "Acceptance",
+    design: "Design",
+    notes: "Notes",
+    createdAt: "2026-07-01T00:00:00Z",
+    updatedAt: "2026-07-02T00:00:00Z",
+    dependencyCount: 2,
+    dependentCount: 1,
+    commentCount: 3,
+    blockedBy: [{ ref: "demo-prereq", title: "Foundation", status: "open" }],
+    dependencies: [
+      { ref: "demo-prereq", title: "Foundation", status: "open" },
+      { ref: "demo-related", dependencyType: "related" },
+    ],
+  });
+  assert.deepEqual(
+    rich.map(({ key }) => key),
+    [
+      "id",
+      "status",
+      "blockers",
+      "dependencies",
+      "priority",
+      "type",
+      "assignee",
+      "owner",
+      "labels",
+      "due",
+      "description",
+      "acceptanceCriteria",
+      "design",
+      "notes",
+    ]
+  );
+  assert.equal(rich.find(({ key }) => key === "blockers")?.value, "demo-prereq (Foundation; open)");
+  assert.equal(rich.find(({ key }) => key === "dependencies")?.value, "demo-related [related]");
+});
+
+test("edit hydration always calls show and exposes rich fields read-only only in edit mode", async () => {
+  const listed: Task = {
+    ref: "demo-edit",
+    id: "demo-edit",
+    title: "List title",
+    description: "List description is already present",
+    status: "open",
+  };
+  const shown: Task = {
+    ...listed,
+    title: "Shown title",
+    acceptanceCriteria: "Complete context",
+  };
+  const refs: string[] = [];
+  const hydrated = await hydrateTaskForEdit(
+    { show: async (ref) => { refs.push(ref); return shown; } },
+    listed.ref,
+    listed
+  );
+  assert.deepEqual(refs, ["demo-edit"]);
+  assert.equal(hydrated.title, "Shown title");
+  assert.deepEqual(
+    buildReadOnlyTaskContext(hydrated, "edit").map(({ key }) => key),
+    ["id", "acceptanceCriteria"]
+  );
+  assert.deepEqual(buildReadOnlyTaskContext(hydrated, "create"), []);
+});
+
+test("rich edit form render includes every read-only context field and exact ID", () => {
+  const harness = makeCustomUiHarness();
   const task: Task = {
-    ref: "junk-8dn.1",
+    ref: "fallback-ref",
+    id: "demo-rich-exact-id",
+    title: "Rich edit",
+    description: "Editable description",
+    status: "inProgress",
+    priority: "p1",
+    taskType: "feature",
+    assignee: "agent@example.test",
+    owner: "ivan",
+    labels: ["backend", "urgent"],
+    dueAt: "2026-08-01",
+    acceptanceCriteria: "All focused checks pass.",
+    design: "Hydrate before rendering.",
+    notes: "Use sanitized fixture data.",
+    blockedBy: [{ ref: "demo-prereq", title: "Foundation", status: "open" }],
+    dependencies: [
+      { ref: "demo-prereq", title: "Foundation", status: "open" },
+      { ref: "demo-related", title: "Related decision", status: "closed", dependencyType: "related" },
+    ],
+  };
+
+  void showTaskForm(harness.ctx, {
+    mode: "edit",
+    subtitle: "Edit",
+    task,
+    closeKey: "x",
+    cycleStatus: (status) => status,
+    cycleTaskType: () => "feature",
+    parsePriorityKey: () => null,
+    priorities: ["p0", "p1", "p2", "p3", "p4"],
+    onSave: async () => true,
+  });
+
+  const rendered = harness.component().render(160).join("\n");
+  const readOnlyFields = buildReadOnlyTaskContext(task, "edit");
+  assert.deepEqual(readOnlyFields.map(({ key }) => key), [
+    "id",
+    "blockers",
+    "dependencies",
+    "assignee",
+    "owner",
+    "labels",
+    "due",
+    "acceptanceCriteria",
+    "design",
+    "notes",
+  ]);
+  for (const { label, value } of readOnlyFields) {
+    assert.ok(rendered.includes(`${label}:`), `missing rendered label ${label}`);
+    assert.ok(rendered.includes(value), `missing rendered value for ${label}`);
+  }
+  assert.match(rendered, /ID: demo-rich-exact-id/);
+});
+
+test("work hydration preserves active blockers, enriches them, and handles show failure", async () => {
+  const listed: Task = {
+    ref: "demo-open",
+    id: "demo-open",
+    title: "Stale title",
+    description: "Stale description",
+    status: "open",
+    blockedBy: [{ ref: "demo-prereq" }],
+  };
+  const shown: Task = {
+    ref: "demo-open",
+    id: "demo-open",
+    title: "Hydrated title",
+    description: "Complete description",
+    status: "open",
+    dependencies: [{ ref: "demo-prereq", title: "Foundation", status: "open" }],
+  };
+  assert.deepEqual(mergeHydratedTask(listed, shown).blockedBy, [
+    { ref: "demo-prereq", title: "Foundation", status: "open" },
+  ]);
+
+  const prompts: string[] = [];
+  const notifications: string[] = [];
+  const successful = createTaskWorkHandler(
+    { show: async () => shown },
+    (prompt) => prompts.push(prompt),
+    (message) => notifications.push(message)
+  );
+  await successful(listed);
+  assert.equal(prompts.length, 1);
+  assert.match(prompts[0] ?? "", /^Work on task demo-open: Hydrated title/);
+  assert.match(prompts[0] ?? "", /WARNING:.*demo-prereq/);
+  assert.match(prompts[0] ?? "", /Active blockers: demo-prereq \(Foundation; open\)/);
+
+  const failed = createTaskWorkHandler(
+    { show: async () => { throw new Error("show failed"); } },
+    (prompt) => prompts.push(prompt),
+    (message) => notifications.push(message)
+  );
+  await failed(listed);
+  assert.equal(prompts.length, 1);
+  assert.deepEqual(notifications, ["show failed"]);
+});
+
+test("task serialization and rich work prompts preserve exact execution context", () => {
+  const task: Task = {
+    ref: "fallback-ref",
     id: "junk-8dn.1",
     title: "Portable harness",
     description: "Line one\nLine two",
     status: "inProgress",
     priority: "p1",
     taskType: "task",
+    assignee: "agent@example.test",
+    owner: "ivan",
+    labels: ["backend", "urgent"],
     dueAt: "2026-08-01",
+    acceptanceCriteria: "All focused checks pass.",
+    design: "Hydrate before rendering.",
+    notes: "Keep blocker warning actionable.",
+    blockedBy: [{ ref: "demo-prereq", title: "Foundation", status: "open" }],
+    dependencies: [
+      { ref: "demo-prereq", title: "Foundation", status: "open" },
+      { ref: "demo-related", title: "Related decision", status: "closed", dependencyType: "related" },
+    ],
   };
 
   assert.equal(
@@ -432,6 +700,14 @@ test("task serialization preserves metadata and escapes multiline descriptions",
   );
   assert.equal(
     buildTaskWorkPrompt(task),
-    "Work on task junk-8dn.1: Portable harness\n\nStatus: in-progress\nPriority: p1\n\nContext:\nLine one\nLine two"
+    "Work on task junk-8dn.1: Portable harness\n\nWARNING: This task is actively blocked by demo-prereq. Resolve or account for these blockers before proceeding.\n\nStatus: in-progress\n\nActive blockers: demo-prereq (Foundation; open)\n\nDependencies: demo-related (Related decision; closed) [related]\n\nPriority: p1\n\nType: task\n\nAssignee: agent@example.test\n\nOwner: ivan\n\nLabels: backend, urgent\n\nDue: 2026-08-01\n\nDescription:\nLine one\nLine two\n\nAcceptance criteria:\nAll focused checks pass.\n\nDesign:\nHydrate before rendering.\n\nNotes:\nKeep blocker warning actionable."
   );
+
+  const sparsePrompt = buildTaskWorkPrompt({
+    ref: "demo-sparse",
+    title: "Sparse",
+    status: "open",
+  });
+  assert.equal(sparsePrompt, "Work on task demo-sparse: Sparse\n\nStatus: open");
+  assert.doesNotMatch(sparsePrompt, /ID:|unknown|undefined|null/);
 });

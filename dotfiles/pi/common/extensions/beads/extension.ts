@@ -115,6 +115,42 @@ interface EditTaskResult {
   closeList: boolean;
 }
 
+export function mergeHydratedTask(fromList: Task | undefined, shown: Task): Task {
+  if (!fromList?.blockedBy?.length) return shown;
+
+  const dependencies = new Map(shown.dependencies?.map((dependency) => [dependency.ref, dependency]));
+  return {
+    ...shown,
+    blockedBy: fromList.blockedBy.map((blocker) => ({
+      ...blocker,
+      ...dependencies.get(blocker.ref),
+    })),
+  };
+}
+
+export async function hydrateTaskForEdit(
+  backend: Pick<TaskAdapter, "show">,
+  ref: string,
+  fromList?: Task
+): Promise<Task> {
+  return mergeHydratedTask(fromList, await backend.show(ref));
+}
+
+export function createTaskWorkHandler(
+  backend: Pick<TaskAdapter, "show">,
+  send: (prompt: string) => void,
+  notify: (message: string) => void
+): (task: Task) => Promise<void> {
+  return async (task) => {
+    try {
+      const shown = await backend.show(task.ref);
+      send(buildTaskWorkPrompt(mergeHydratedTask(task, shown)));
+    } catch (error) {
+      notify(error instanceof Error ? error.message : String(error));
+    }
+  };
+}
+
 function buildTaskUpdate(
   previous: Task,
   next: {
@@ -249,18 +285,8 @@ export default function registerExtension(
     return backend.list();
   }
 
-  async function showTask(ref: string): Promise<Task> {
-    return backend.show(ref);
-  }
-
-  function needsTaskDetailsForEdit(task: Task): boolean {
-    return task.description === undefined;
-  }
-
   async function getTaskForEdit(ref: string, fromList?: Task): Promise<Task> {
-    if (!fromList) return showTask(ref);
-    if (needsTaskDetailsForEdit(fromList)) return showTask(ref);
-    return { ...fromList };
+    return hydrateTaskForEdit(backend, ref, fromList);
   }
 
   async function updateTask(ref: string, update: TaskUpdate): Promise<void> {
@@ -349,6 +375,12 @@ export default function registerExtension(
       const tasks = await listTasks();
       ctx.ui.setStatus("tasks", undefined);
 
+      const onWork = createTaskWorkHandler(
+        backend,
+        (prompt) => pi.sendUserMessage(prompt),
+        (message) => ctx.ui.notify(message, "error")
+      );
+
       await showTaskList(ctx, {
         title: pageTitle,
         subtitle: backendLabel,
@@ -359,7 +391,7 @@ export default function registerExtension(
         cycleStatus: nextStatus,
         cycleTaskType: nextTaskType,
         onUpdateTask: updateTask,
-        onWork: (task) => pi.sendUserMessage(buildTaskWorkPrompt(task)),
+        onWork,
         onInsert: (task) => ctx.ui.pasteToEditor(`${serializeTask(task)} `),
         onEdit: (ref, task) => editTask(ctx, ref, task),
         onCreate: () => createTask(ctx),

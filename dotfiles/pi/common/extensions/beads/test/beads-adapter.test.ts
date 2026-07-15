@@ -17,7 +17,7 @@ interface CommandCall {
   timeout: number | undefined;
 }
 
-function fixture(name: "list" | "show" | "create" | "update"): CommandResult {
+function fixture(name: "list" | "blocked" | "show" | "create" | "update"): CommandResult {
   return {
     stdout: readFileSync(new URL(`./fixtures/bd-1.1/${name}.json`, import.meta.url), "utf8"),
   };
@@ -126,7 +126,7 @@ test("adapter serializes commands and continues after a rejected command", async
 });
 
 test("list uses one exact active-work query and intentionally excludes deferred and closed", async () => {
-  const harness = makeHarness([customTypes(""), fixture("list")]);
+  const harness = makeHarness([customTypes(""), fixture("list"), fixture("blocked")]);
 
   const tasks = await harness.adapter.list();
 
@@ -148,14 +148,27 @@ test("list uses one exact active-work query and intentionally excludes deferred 
       ],
       timeout: 30_000,
     },
+    {
+      command: "bd",
+      args: ["blocked", "--json"],
+      timeout: 30_000,
+    },
   ]);
   assert.equal(harness.calls.filter(({ args }) => args[0] === "list").length, 1);
   assert.ok(!harness.calls[1]?.args.includes("deferred"));
   assert.ok(!harness.calls[1]?.args.includes("closed"));
+  assert.equal(tasks.find(({ ref }) => ref === "demo-ready")?.blockedBy, undefined);
+  assert.deepEqual(tasks.find(({ ref }) => ref === "demo-open")?.blockedBy, [
+    { ref: "demo-prereq" },
+  ]);
+  assert.deepEqual(tasks.find(({ ref }) => ref === "demo-open")?.dependencies, [
+    { ref: "demo-prereq", dependencyType: "blocks" },
+  ]);
   assert.deepEqual(
     tasks.map(({ ref, status, priority }) => ({ ref, status, priority })),
     [
       { ref: "demo-active", status: "inProgress", priority: "p1" },
+      { ref: "demo-ready", status: "open", priority: "p1" },
       { ref: "demo-open", status: "open", priority: "p2" },
       { ref: "demo-blocked", status: "blocked", priority: "p0" },
     ]
@@ -170,6 +183,7 @@ test("list omits deferred and closed results even if the backend returns them", 
       { id: "demo-deferred", title: "Deferred", status: "deferred" },
       { id: "demo-closed", title: "Closed", status: "closed" },
     ]),
+    json([]),
   ]);
 
   const tasks = await harness.adapter.list();
@@ -178,7 +192,11 @@ test("list omits deferred and closed results even if the backend returns them", 
 });
 
 test("list merges trimmed unique custom types without losing bd 1.1 built-ins", async () => {
-  const harness = makeHarness([customTypes("research, bug, research, spike, decision"), json([])]);
+  const harness = makeHarness([
+    customTypes("research, bug, research, spike, decision"),
+    json([]),
+    json([]),
+  ]);
 
   await harness.adapter.list();
 
@@ -195,7 +213,7 @@ test("list merges trimmed unique custom types without losing bd 1.1 built-ins", 
 });
 
 test("empty custom type metadata preserves all bd 1.1 built-ins", async () => {
-  const harness = makeHarness([customTypes(""), json([])]);
+  const harness = makeHarness([customTypes(""), json([]), json([])]);
 
   await harness.adapter.list();
 
@@ -213,6 +231,7 @@ test("unknown backend statuses fail with the unsupported value", async () => {
   const harness = makeHarness([
     customTypes(""),
     json([{ id: "demo-unknown", title: "Unknown", status: "archived" }]),
+    json([]),
   ]);
 
   await assert.rejects(
@@ -235,7 +254,26 @@ test("show consumes the captured bd 1.1 array shape", async () => {
     status: "closed",
     priority: "p3",
     taskType: "decision",
+    assignee: "agent@example.test",
     owner: "ivan",
+    labels: ["backend", "urgent"],
+    acceptanceCriteria: "All focused checks pass.",
+    design: "Hydrate before rendering.",
+    notes: "Use sanitized fixture data.",
+    dependencies: [
+      {
+        ref: "demo-prereq",
+        title: "Required foundation",
+        status: "open",
+        dependencyType: "blocks",
+      },
+      {
+        ref: "demo-related",
+        title: "Related decision",
+        status: "closed",
+        dependencyType: "related",
+      },
+    ],
     createdAt: "2026-07-10T12:00:00Z",
     dueAt: "2026-08-01T00:00:00Z",
     updatedAt: "2026-07-14T09:30:00Z",
@@ -467,6 +505,12 @@ test("malformed JSON and unexpected bd 1.1 JSON shapes include command context",
   await assert.rejects(
     malformedList.adapter.list(),
     /Failed to parse bd output \(list active\): expected JSON array/
+  );
+
+  const malformedBlocked = makeHarness([customTypes(""), json([]), json({})]);
+  await assert.rejects(
+    malformedBlocked.adapter.list(),
+    /Failed to parse bd output \(blocked active\): expected JSON array/
   );
 
   const malformedShow = makeHarness([json({ id: "demo-1" })]);

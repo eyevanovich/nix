@@ -2,7 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import type { Task, TaskStatus } from "../../models/task.ts";
+import type { Task, TaskDependency, TaskStatus } from "../../models/task.ts";
 import { PartialTaskCreateError } from "../api.ts";
 import type {
   CreateTaskInput,
@@ -50,6 +50,18 @@ interface BeadsConfigValue {
   value: string;
 }
 
+interface BeadsListDependency {
+  depends_on_id: string;
+  type?: string;
+}
+
+interface BeadsShowDependency {
+  id: string;
+  title?: string;
+  status?: string;
+  dependency_type?: string;
+}
+
 interface BeadsIssue {
   id: string;
   title: string;
@@ -57,14 +69,26 @@ interface BeadsIssue {
   status: string;
   priority?: number;
   issue_type?: string;
+  assignee?: string;
   owner?: string;
-  created_at?: string;
+  labels?: string[];
   due_at?: string;
   due?: string;
+  acceptance_criteria?: string;
+  design?: string;
+  notes?: string;
+  dependencies?: Array<BeadsListDependency | BeadsShowDependency>;
+  created_at?: string;
   updated_at?: string;
   dependency_count?: number;
   dependent_count?: number;
   comment_count?: number;
+}
+
+interface BeadsBlockedIssue {
+  id: string;
+  blocked_by_count: number;
+  blocked_by: Array<string | BeadsShowDependency>;
 }
 
 function toPriorityLabel(value: number | undefined): string | undefined {
@@ -101,6 +125,22 @@ function toBackendStatus(status: TaskStatus): string {
   return mapped;
 }
 
+function toDependency(dependency: BeadsListDependency | BeadsShowDependency): TaskDependency {
+  if ("depends_on_id" in dependency) {
+    return { ref: dependency.depends_on_id, dependencyType: dependency.type };
+  }
+  return {
+    ref: dependency.id,
+    title: dependency.title,
+    status: dependency.status,
+    dependencyType: dependency.dependency_type,
+  };
+}
+
+function toBlockedDependency(dependency: string | BeadsShowDependency): TaskDependency {
+  return typeof dependency === "string" ? { ref: dependency } : toDependency(dependency);
+}
+
 function toTask(beadsIssue: BeadsIssue): Task {
   const task: Task = {
     ref: beadsIssue.id,
@@ -113,6 +153,14 @@ function toTask(beadsIssue: BeadsIssue): Task {
   };
 
   if (beadsIssue.issue_type !== undefined) task.taskType = beadsIssue.issue_type;
+  if (beadsIssue.assignee !== undefined) task.assignee = beadsIssue.assignee;
+  if (beadsIssue.labels?.length) task.labels = beadsIssue.labels;
+  if (beadsIssue.acceptance_criteria !== undefined)
+    task.acceptanceCriteria = beadsIssue.acceptance_criteria;
+  if (beadsIssue.design !== undefined) task.design = beadsIssue.design;
+  if (beadsIssue.notes !== undefined) task.notes = beadsIssue.notes;
+  if (beadsIssue.dependencies?.length)
+    task.dependencies = beadsIssue.dependencies.map(toDependency);
   if (beadsIssue.created_at !== undefined) task.createdAt = beadsIssue.created_at;
   if (beadsIssue.due_at !== undefined) task.dueAt = beadsIssue.due_at;
   if (beadsIssue.due !== undefined) task.dueAt = beadsIssue.due;
@@ -316,10 +364,19 @@ function initialize(pi: ExtensionAPI): TaskAdapter {
       await hydrateTaskTypes();
       const out = await execBd(makeListArgs());
       const issues = parseJsonArray<BeadsIssue>(out, "list active");
+      const blockedOut = await execBd(["blocked", "--json"]);
+      const blockedIssues = parseJsonArray<BeadsBlockedIssue>(blockedOut, "blocked active");
+      const blockersById = new Map(
+        blockedIssues.map((issue) => [issue.id, issue.blocked_by.map(toBlockedDependency)])
+      );
 
       const activeTasks = issues.map(toTask).filter((task) =>
         ACTIVE_TASK_STATUSES.includes(task.status)
       );
+      for (const task of activeTasks) {
+        const blockedBy = blockersById.get(task.id ?? task.ref);
+        if (blockedBy?.length) task.blockedBy = blockedBy;
+      }
       return sortActiveTasks(activeTasks).slice(0, MAX_LIST_RESULTS);
     },
 

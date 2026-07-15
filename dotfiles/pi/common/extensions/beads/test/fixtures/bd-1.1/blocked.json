@@ -1,0 +1,7 @@
+[
+  {
+    "id": "demo-open",
+    "blocked_by_count": 1,
+    "blocked_by": ["demo-prereq"]
+  }
+]

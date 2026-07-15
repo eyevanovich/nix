@@ -37,7 +37,7 @@ export interface ListPageConfig {
   cycleStatus: (status: TaskStatus) => TaskStatus;
   cycleTaskType: (current: string | undefined) => string;
   onUpdateTask: (ref: string, update: TaskUpdate) => Promise<void>;
-  onWork: (task: Task) => void;
+  onWork: (task: Task) => Promise<void>;
   onInsert: (task: Task) => void;
   onEdit: (
     ref: string,
@@ -503,7 +503,7 @@ export async function showTaskList(
               case "work":
                 withSelectedTask((task) => {
                   done("cancel");
-                  config.onWork(task);
+                  void config.onWork(task).catch(notifyMutationError);
                 });
                 return;
 

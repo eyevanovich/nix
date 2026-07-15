@@ -28,6 +28,10 @@ import {
   type Task,
   type TaskStatus,
 } from "../../models/task.ts";
+import {
+  buildTaskContext,
+  type TaskContextField,
+} from "../../lib/task-context.ts";
 import { BlurEditorField } from "../components/blur-editor.ts";
 import { KEYBOARD_HELP_PADDING_X, formatKeyboardHelp } from "../components/keyboard-help.ts";
 import { MinHeightContainer } from "../components/min-height.ts";
@@ -168,6 +172,13 @@ class ReservedLineText implements Component {
     const trailingPadding = Math.max(0, innerWidth - visibleWidth(content));
     return [`${left}${content}${" ".repeat(trailingPadding)}${right}`];
   }
+}
+
+export function buildReadOnlyTaskContext(task: Task, mode: FormMode): TaskContextField[] {
+  if (mode === "create") return [];
+  return buildTaskContext(task).filter(
+    ({ key }) => !["status", "priority", "type", "description"].includes(key)
+  );
 }
 
 export async function showTaskForm(
@@ -350,6 +361,19 @@ export async function showTaskForm(
     formContainer.addChild(new Spacer(1));
     formContainer.addChild(descLabel);
     formContainer.addChild(descEditorField);
+
+    if (mode === "edit") {
+      const richFields = buildReadOnlyTaskContext(task, mode);
+      if (richFields.length) {
+        const richText = richFields
+          .map(({ label, value, multiline }) =>
+            multiline ? `${theme.bold(label)}:\n${value}` : `${theme.bold(label)}: ${value}`
+          )
+          .join("\n");
+        formContainer.addChild(new Spacer(1));
+        formContainer.addChild(new Text(richText, 2, 0));
+      }
+    }
 
     footerContainer.addChild(new DynamicBorder((s: string) => theme.fg("dim", s)));
     footerContainer.addChild(helpText);

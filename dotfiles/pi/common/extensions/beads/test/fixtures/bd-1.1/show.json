@@ -6,7 +6,26 @@
     "status": "closed",
     "priority": 3,
     "issue_type": "decision",
+    "assignee": "agent@example.test",
     "owner": "ivan",
+    "labels": ["backend", "urgent"],
+    "acceptance_criteria": "All focused checks pass.",
+    "design": "Hydrate before rendering.",
+    "notes": "Use sanitized fixture data.",
+    "dependencies": [
+      {
+        "id": "demo-prereq",
+        "title": "Required foundation",
+        "status": "open",
+        "dependency_type": "blocks"
+      },
+      {
+        "id": "demo-related",
+        "title": "Related decision",
+        "status": "closed",
+        "dependency_type": "related"
+      }
+    ],
     "created_at": "2026-07-10T12:00:00Z",
     "due_at": "2026-08-01T00:00:00Z",
     "updated_at": "2026-07-14T09:30:00Z",

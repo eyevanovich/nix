@@ -81,7 +81,11 @@ outside what `bd` itself does, no dynamic code evaluation. Audited on port.
 ## Notes
 
 - The browser loads active work with one `bd list` query for exactly `open`,
-  `in_progress`, and `blocked`. Deferred and closed tasks are intentionally absent.
+  `in_progress`, and `blocked`, then one `bd blocked --json` query to attach exact
+  active blocker refs. Deferred and closed tasks are intentionally absent.
+- Dependency-blocked rows keep their stored status symbol and add `blocked:N`.
+  Opening a task or starting work hydrates it with `bd show`; work prompts include
+  rich execution context and an explicit warning with actionable blocker IDs.
 - Editable task types include the bd 1.1 built-ins (`task`, `feature`, `bug`,
   `chore`, `epic`, and `decision`) plus unique values from `types.custom`.
 - `bd` commands are serialized because its dolt backend cannot safely handle
