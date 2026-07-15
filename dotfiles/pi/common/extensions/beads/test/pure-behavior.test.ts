@@ -2,12 +2,20 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import {
+  CURSOR_MARKER,
+  KeybindingsManager,
+  TUI_KEYBINDINGS,
+  visibleWidth,
+  type KeybindingsConfig,
+} from "@earendil-works/pi-tui";
+import {
   buildListPrimaryHelpText,
   resolveListIntent,
   TaskMutationCoordinator,
   type ListControllerState,
 } from "../controllers/list.ts";
 import {
+  buildPrimaryHelpText,
   FormSaveCoordinator,
   getHeaderStatus,
   isSameDraft,
@@ -35,6 +43,7 @@ import {
 } from "../models/task.ts";
 import { showTaskList } from "../ui/pages/list.ts";
 import { buildReadOnlyTaskContext, showTaskForm } from "../ui/pages/show.ts";
+import { SelectListWithColumns } from "../ui/components/select-list-with-columns.ts";
 
 function deferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
@@ -53,16 +62,18 @@ async function flushMicrotasks(): Promise<void> {
 }
 
 interface TestComponent {
+  focused?: boolean;
   render(width: number): string[];
   handleInput(data: string): void;
   dispose?(): void;
 }
 
-function makeCustomUiHarness() {
+function makeCustomUiHarness(userBindings: KeybindingsConfig = {}) {
   let component: TestComponent | undefined;
   const doneValues: unknown[] = [];
   const notifications: Array<{ message: string; level: string }> = [];
-  const tui = { requestRender() {} };
+  const tui = { requestRender() {}, terminal: { rows: 24, columns: 80 } };
+  const keybindings = new KeybindingsManager(TUI_KEYBINDINGS, userBindings);
   const theme = {
     fg: (_color: string, text: string) => text,
     bold: (text: string) => text,
@@ -74,7 +85,7 @@ function makeCustomUiHarness() {
     },
     custom<T>(factory: (tui: unknown, theme: unknown, kb: unknown, done: (value: T) => void) => TestComponent) {
       return new Promise<T>((resolve) => {
-        component = factory(tui, theme, {}, (value) => {
+        component = factory(tui, theme, keybindings, (value) => {
           doneValues.push(value);
           component?.dispose?.();
           resolve(value);
@@ -102,6 +113,7 @@ const listState: ListControllerState = {
   closeKey: "q",
   priorities: ["p0", "p1", "p2", "p3", "p4"],
   priorityHotkeys: { "0": "p0", "1": "p1", "2": "p2", "3": "p3", "4": "p4" },
+  keybindings: new KeybindingsManager(TUI_KEYBINDINGS),
 };
 
 test("list controller resolves navigation, priority, and search intents", () => {
@@ -121,7 +133,7 @@ test("list controller help reflects enabled capabilities and filter state", () =
   const fullHelp = buildListPrimaryHelpText({ ...listState, filtered: true });
   assert.match(fullHelp, /0\/1\/2\/3\/4 priority/);
   assert.match(fullHelp, /f find/);
-  assert.match(fullHelp, /esc clear filter/);
+  assert.match(fullHelp, /escape\/ctrl\+c clear filter/);
 
   const limitedHelp = buildListPrimaryHelpText({
     ...listState,
@@ -129,6 +141,75 @@ test("list controller help reflects enabled capabilities and filter state", () =
     allowSearch: false,
   });
   assert.doesNotMatch(limitedHelp, /priority|find/);
+});
+
+test("configured standard actions drive list intents and help", () => {
+  const keybindings = new KeybindingsManager(TUI_KEYBINDINGS, {
+    "tui.select.up": ["ctrl+p"],
+    "tui.select.down": ["ctrl+n"],
+    "tui.select.confirm": ["ctrl+y"],
+    "tui.select.cancel": ["ctrl+g"],
+    "tui.editor.cursorRight": ["ctrl+r"],
+    "tui.input.tab": ["ctrl+i"],
+  });
+  const state = { ...listState, keybindings };
+
+  assert.deepEqual(resolveListIntent("\x10", state), { type: "moveSelection", delta: -1 });
+  assert.deepEqual(resolveListIntent("\x0e", state), { type: "moveSelection", delta: 1 });
+  assert.deepEqual(resolveListIntent("\x19", state), { type: "work" });
+  assert.deepEqual(resolveListIntent("\t", state), { type: "insert" });
+
+  const help = buildListPrimaryHelpText({ ...state, closeKey: "\x18" });
+  assert.match(help, /w\/ctrl\+p up/);
+  assert.match(help, /s\/ctrl\+n down/);
+  assert.match(help, /ctrl\+y work/);
+  assert.match(help, /e\/ctrl\+r edit/);
+  assert.match(help, /ctrl\+i insert/);
+  assert.match(help, /ctrl\+g cancel/);
+  assert.match(help, /ctrl\+x close/);
+});
+
+test("form help reports effective input keys and the actual browser close key", () => {
+  const keybindings = new KeybindingsManager(TUI_KEYBINDINGS, {
+    "tui.input.submit": ["ctrl+s"],
+    "tui.input.tab": ["ctrl+i"],
+    "tui.input.newLine": ["alt+enter"],
+    "tui.select.cancel": ["ctrl+g"],
+    "tui.editor.cursorLeft": ["ctrl+l"],
+  });
+
+  assert.equal(
+    buildPrimaryHelpText("nav", keybindings, "ctrl+x"),
+    "ctrl+i title • ctrl+s save • ctrl+g/ctrl+l/q back • ctrl+x close"
+  );
+  assert.equal(
+    buildPrimaryHelpText("desc", keybindings, "ctrl+x"),
+    "alt+enter newline • ctrl+s/ctrl+i save • ctrl+g back"
+  );
+});
+
+test("reserved close key wins collisions and is filtered from standard-action help", () => {
+  const keybindings = new KeybindingsManager(TUI_KEYBINDINGS, {
+    "tui.select.confirm": ["ctrl+x"],
+    "tui.select.cancel": ["ctrl+x"],
+    "tui.editor.cursorRight": ["ctrl+x"],
+    "tui.editor.cursorLeft": ["ctrl+x"],
+    "tui.input.submit": ["ctrl+x"],
+    "tui.input.tab": ["ctrl+x"],
+    "tui.input.newLine": ["ctrl+x"],
+  });
+  const state = { ...listState, closeKey: "\x18", keybindings };
+
+  assert.deepEqual(resolveListIntent("\x18", state), { type: "cancel" });
+  const listHelp = buildListPrimaryHelpText(state);
+  assert.equal(listHelp.match(/ctrl\+x/g)?.length, 1);
+  assert.match(listHelp, /\(unbound\) work/);
+  assert.match(listHelp, /\(unbound\) cancel/);
+  assert.match(listHelp, /ctrl\+x close/);
+
+  const navHelp = buildPrimaryHelpText("nav", keybindings, "ctrl+x");
+  assert.equal(navHelp, "(unbound) title • (unbound) save • q back • ctrl+x close");
+  assert.equal(buildPrimaryHelpText("title", keybindings, "ctrl+x"), "(unbound) save • (unbound) description • (unbound) back");
 });
 
 test("list mutations settle before display changes and refuse overlap", async () => {
@@ -211,6 +292,37 @@ test("form saves refuse overlap and leaving until the active save settles", asyn
     { kind: "failed", error: backendError }
   );
   assert.equal(coordinator.canStart, true);
+});
+
+test("task list honors configured ctrl+p/ctrl+n navigation and confirm", async () => {
+  const harness = makeCustomUiHarness({
+    "tui.select.up": ["ctrl+p"],
+    "tui.select.down": ["ctrl+n"],
+    "tui.select.confirm": ["ctrl+y"],
+  });
+  const tasks: Task[] = [
+    { ref: "first", title: "First", status: "open" },
+    { ref: "second", title: "Second", status: "open" },
+  ];
+  const worked: Task[] = [];
+  const page = showTaskList(harness.ctx, {
+    title: "Tasks",
+    tasks,
+    priorities: ["p0", "p1", "p2"],
+    closeKey: "\x18",
+    cycleStatus: (status) => status,
+    cycleTaskType: () => "task",
+    onUpdateTask: async () => {},
+    onWork: async (task) => { worked.push(task); },
+    onInsert: () => {},
+    onEdit: async () => ({ updatedTask: null, closeList: false }),
+    onCreate: async () => null,
+  });
+
+  harness.component().handleInput("\x0e");
+  harness.component().handleInput("\x19");
+  await page;
+  assert.deepEqual(worked, [tasks[1]]);
 });
 
 test("task list wires guarded pessimistic mutations through the page", async () => {
@@ -312,6 +424,84 @@ test("task list Enter starts work once, closes immediately, and surfaces rejecti
       ({ message, level }) => level === "error" && message === "work failed"
     )
   );
+});
+
+test("task form propagates Focusable state to the active editor cursor", async () => {
+  const harness = makeCustomUiHarness();
+  const form = showTaskForm(harness.ctx, {
+    mode: "create",
+    subtitle: "Create",
+    task: { ref: "new", title: "題名", description: "説明", status: "open" },
+    closeKey: "\x18",
+    cycleStatus: (status) => status,
+    cycleTaskType: () => "task",
+    parsePriorityKey: () => null,
+    priorities: ["p0", "p1", "p2"],
+    onSave: async () => true,
+  });
+  const component = harness.component();
+
+  component.focused = true;
+  for (const width of [0, 1]) {
+    let lines: string[] = [];
+    assert.doesNotThrow(() => {
+      lines = component.render(width);
+    });
+    for (const line of lines) {
+      assert.ok(visibleWidth(line) <= width, `${visibleWidth(line)} > ${width}`);
+    }
+  }
+  assert.ok(component.render(80).join("\n").includes(CURSOR_MARKER));
+
+  component.focused = false;
+  for (const width of [0, 1]) {
+    for (const line of component.render(width)) {
+      assert.ok(visibleWidth(line) <= width, `${visibleWidth(line)} > ${width}`);
+    }
+  }
+  assert.ok(!component.render(80).join("\n").includes(CURSOR_MARKER));
+
+  component.focused = true;
+  component.handleInput("\t");
+  assert.ok(component.render(80).join("\n").includes(CURSOR_MARKER));
+  component.handleInput("\x1b");
+  assert.ok(!component.render(80).join("\n").includes(CURSOR_MARKER));
+
+  component.handleInput("\x18");
+  assert.deepEqual(await form, { action: "close_list" });
+});
+
+test("task form applies default description newline and submit semantics", async () => {
+  const harness = makeCustomUiHarness();
+  const drafts: FormDraft[] = [];
+  const form = showTaskForm(harness.ctx, {
+    mode: "create",
+    subtitle: "Create",
+    task: { ref: "new", title: "Title", description: "", status: "open" },
+    closeKey: "\x18",
+    cycleStatus: (status) => status,
+    cycleTaskType: () => "task",
+    parsePriorityKey: () => null,
+    priorities: ["p0", "p1", "p2"],
+    onSave: async (draft) => {
+      drafts.push(draft);
+      return true;
+    },
+  });
+  const component = harness.component();
+
+  component.focused = true;
+  component.handleInput("\t");
+  component.handleInput("A");
+  component.handleInput("\x0a");
+  component.handleInput("B");
+  component.handleInput("\r");
+  await flushMicrotasks();
+
+  assert.equal(drafts.length, 1);
+  assert.equal(drafts[0]?.description, "A\nB");
+  component.handleInput("\x18");
+  assert.deepEqual(await form, { action: "close_list" });
 });
 
 test("task form blocks exit during save and keeps failures retryable", async () => {
@@ -456,11 +646,73 @@ test("task models build stable list text and encoded rows", () => {
 
   const row = buildListRowModel(task, { maxLabelWidth: 40 });
   assert.equal(row.ref, task.ref);
-  assert.equal(stripAnsi(row.label).length, 40);
+  assert.equal(visibleWidth(row.label), 40);
   assert.deepEqual(decodeDescription(row.description), {
     meta: "◑ feat",
     summary: "First line",
   });
+});
+
+test("ANSI and wide-character list rows align and never exceed narrow widths", () => {
+  const cjkRow = buildListRowModel(
+    { ref: "wide", title: "漢字", status: "open", priority: "p1" },
+    { maxLabelWidth: 14 }
+  );
+  assert.equal(visibleWidth(cjkRow.label), 14);
+
+  const ansi = (text: string) => `\x1b[31m${text}\x1b[0m`;
+  const list = new SelectListWithColumns(
+    [
+      { value: "wide", label: `${ansi("漢字")} title`, description: ansi("説明 text") },
+      { value: "plain", label: "plain", description: "description" },
+    ],
+    2,
+    {
+      selectedPrefix: ansi,
+      selectedText: ansi,
+      description: ansi,
+      scrollInfo: ansi,
+      noMatch: ansi,
+    },
+    new KeybindingsManager(TUI_KEYBINDINGS),
+    { valueMaxWidth: 10, valueColumnWidth: 12, minDescriptionWidth: 1, minWidthForDescription: 0 }
+  );
+
+  for (const width of [0, 1, 4, 12, 24]) {
+    for (const line of list.render(width)) {
+      assert.ok(visibleWidth(line) <= width, `${visibleWidth(line)} > ${width}: ${line}`);
+    }
+  }
+});
+
+test("task list page wraps ANSI and CJK content within every terminal width", async () => {
+  const harness = makeCustomUiHarness();
+  const page = showTaskList(harness.ctx, {
+    title: "任務",
+    tasks: [{
+      ref: "wide",
+      title: "\x1b[31m漢字の長い題名\x1b[0m",
+      description: "説明説明説明 \x1b[32mstyled words\x1b[0m",
+      status: "open",
+    }],
+    priorities: ["p0", "p1", "p2"],
+    closeKey: "\x18",
+    cycleStatus: (status) => status,
+    cycleTaskType: () => "task",
+    onUpdateTask: async () => {},
+    onWork: async () => {},
+    onInsert: () => {},
+    onEdit: async () => ({ updatedTask: null, closeList: false }),
+    onCreate: async () => null,
+  });
+
+  for (const width of [0, 1, 8, 20, 40]) {
+    for (const line of harness.component().render(width)) {
+      assert.ok(visibleWidth(line) <= width, `${visibleWidth(line)} > ${width}`);
+    }
+  }
+  harness.component().handleInput("\x18");
+  await page;
 });
 
 test("list rows distinguish stored blocked status from active dependency blockers", () => {

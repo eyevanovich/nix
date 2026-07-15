@@ -1,4 +1,4 @@
-import { Key, matchesKey } from "@earendil-works/pi-tui";
+import type { Keybinding, KeybindingsManager } from "@earendil-works/pi-tui";
 
 export type ListIntent =
   | { type: "cancel" }
@@ -26,6 +26,7 @@ export interface ListControllerState {
   closeKey: string;
   priorities: string[];
   priorityHotkeys?: Record<string, string>;
+  keybindings: Pick<KeybindingsManager, "matches" | "getKeys">;
 }
 
 export type TaskMutationOutcome =
@@ -103,6 +104,35 @@ function buildPriorityHelpText(
   return `1-${priorities.length} priority`;
 }
 
+function matchesAction(
+  data: string,
+  state: ListControllerState,
+  action: Keybinding
+): boolean {
+  return state.keybindings.matches(data, action);
+}
+
+function displayKey(data: string): string {
+  if (data.length === 1 && data.charCodeAt(0) >= 1 && data.charCodeAt(0) <= 26) {
+    return `ctrl+${String.fromCharCode(data.charCodeAt(0) + 96)}`;
+  }
+  return data;
+}
+
+function actionKeyLabels(state: ListControllerState, action: Keybinding): string[] {
+  const closeKeyLabel = displayKey(state.closeKey);
+  return [...new Set(state.keybindings.getKeys(action))].filter((key) => key !== closeKeyLabel);
+}
+
+function actionKeys(state: ListControllerState, action: Keybinding): string {
+  const keys = actionKeyLabels(state, action);
+  return keys.length > 0 ? keys.join("/") : "(unbound)";
+}
+
+function combinedKeys(...keys: string[]): string {
+  return [...new Set(keys)].join("/");
+}
+
 function isPrintable(data: string): boolean {
   return data.length === 1 && data.charCodeAt(0) >= 32 && data.charCodeAt(0) < 127;
 }
@@ -127,19 +157,19 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
   },
   {
     context: "search",
-    help: "esc cancel",
-    match: (data) => matchesKey(data, Key.escape),
+    help: (state) => `${actionKeys(state, "tui.select.cancel")} cancel`,
+    match: (data, state) => matchesAction(data, state, "tui.select.cancel"),
     intent: () => ({ type: "searchCancel" }),
   },
   {
     context: "search",
-    help: "enter apply",
-    match: (data) => matchesKey(data, Key.enter),
+    help: (state) => `${actionKeys(state, "tui.select.confirm")} apply`,
+    match: (data, state) => matchesAction(data, state, "tui.select.confirm"),
     intent: () => ({ type: "searchApply" }),
   },
   {
     context: "search",
-    match: (data) => matchesKey(data, Key.backspace),
+    match: (data, state) => matchesAction(data, state, "tui.editor.deleteCharBackward"),
     intent: () => ({ type: "searchBackspace" }),
   },
   {
@@ -150,20 +180,34 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
   },
   {
     context: "default",
-    help: "w/s navigate",
-    match: (data) => data in MOVE_KEYS,
-    intent: (data) => ({ type: "moveSelection", delta: MOVE_KEYS[data] ?? 1 }),
+    match: (data, state) => data === state.closeKey,
+    intent: () => ({ type: "cancel" }),
   },
   {
     context: "default",
-    help: "enter work",
-    match: (data) => matchesKey(data, Key.enter),
+    help: (state) =>
+      `${combinedKeys("w", ...actionKeyLabels(state, "tui.select.up"))} up • ${combinedKeys("s", ...actionKeyLabels(state, "tui.select.down"))} down`,
+    match: (data, state) =>
+      data in MOVE_KEYS ||
+      matchesAction(data, state, "tui.select.up") ||
+      matchesAction(data, state, "tui.select.down"),
+    intent: (data, state) => ({
+      type: "moveSelection",
+      delta:
+        data === "w" || data === "W" || matchesAction(data, state, "tui.select.up") ? -1 : 1,
+    }),
+  },
+  {
+    context: "default",
+    help: (state) => `${actionKeys(state, "tui.select.confirm")} work`,
+    match: (data, state) => matchesAction(data, state, "tui.select.confirm"),
     intent: () => ({ type: "work" }),
   },
   {
     context: "default",
-    help: "e edit",
-    match: (data) => data === "e" || data === "E" || matchesKey(data, Key.right),
+    help: (state) => `${combinedKeys("e", ...actionKeyLabels(state, "tui.editor.cursorRight"))} edit`,
+    match: (data, state) =>
+      data === "e" || data === "E" || matchesAction(data, state, "tui.editor.cursorRight"),
     intent: () => ({ type: "edit" }),
   },
   {
@@ -212,14 +256,9 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
   },
   {
     context: "default",
-    help: "tab insert",
-    match: (data) => matchesKey(data, Key.tab),
+    help: (state) => `${actionKeys(state, "tui.input.tab")} insert`,
+    match: (data, state) => matchesAction(data, state, "tui.input.tab"),
     intent: () => ({ type: "insert" }),
-  },
-  {
-    context: "default",
-    match: (data, state) => data === state.closeKey,
-    intent: () => ({ type: "cancel" }),
   },
 ];
 
@@ -240,8 +279,10 @@ export function buildListPrimaryHelpText(state: ListControllerState): string {
     .map((s) => (typeof s.help === "function" ? s.help(state) : (s.help as string)));
 
   if (context === "default") {
-    parts.push(state.filtered ? "esc clear filter" : "esc cancel");
+    const cancelKeys = actionKeys(state, "tui.select.cancel");
+    parts.push(state.filtered ? `${cancelKeys} clear filter` : `${cancelKeys} cancel`);
   }
+  parts.push(`${displayKey(state.closeKey)} close`);
 
   return parts.join(" • ");
 }

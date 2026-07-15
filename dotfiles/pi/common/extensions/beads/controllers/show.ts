@@ -1,3 +1,4 @@
+import type { Keybinding, KeybindingsManager } from "@earendil-works/pi-tui";
 import type { TaskStatus } from "../models/task.ts";
 
 export type FormFocus = "nav" | "title" | "desc";
@@ -90,10 +91,49 @@ export function getHeaderStatus(
   return undefined;
 }
 
-export function buildPrimaryHelpText(focus: FormFocus): string {
-  if (focus === "title") return "enter save • tab description • esc back";
-  if (focus === "desc") return "enter newline • tab save • esc back";
-  return "tab title • enter save • esc/q back • ctrl+e close";
+type FormKeybindings = Pick<KeybindingsManager, "getKeys">;
+
+function actionKeyLabels(
+  keybindings: FormKeybindings,
+  action: Keybinding,
+  closeKeyLabel: string
+): string[] {
+  return [...new Set(keybindings.getKeys(action))].filter((key) => key !== closeKeyLabel);
+}
+
+function actionKeys(
+  keybindings: FormKeybindings,
+  action: Keybinding,
+  closeKeyLabel: string
+): string {
+  const keys = actionKeyLabels(keybindings, action, closeKeyLabel);
+  return keys.length > 0 ? keys.join("/") : "(unbound)";
+}
+
+function combinedKeys(...keys: string[]): string {
+  return [...new Set(keys)].join("/");
+}
+
+export function buildPrimaryHelpText(
+  focus: FormFocus,
+  keybindings: FormKeybindings,
+  closeKeyLabel: string
+): string {
+  const tab = actionKeys(keybindings, "tui.input.tab", closeKeyLabel);
+  const cancel = actionKeys(keybindings, "tui.select.cancel", closeKeyLabel);
+  const submit = actionKeys(keybindings, "tui.input.submit", closeKeyLabel);
+  if (focus === "title") {
+    return `${submit} save • ${tab} description • ${cancel} back`;
+  }
+  if (focus === "desc") {
+    return `${actionKeys(keybindings, "tui.input.newLine", closeKeyLabel)} newline • ${combinedKeys(submit, tab)} save • ${cancel} back`;
+  }
+  const back = combinedKeys(
+    ...actionKeyLabels(keybindings, "tui.select.cancel", closeKeyLabel),
+    ...actionKeyLabels(keybindings, "tui.editor.cursorLeft", closeKeyLabel),
+    "q"
+  );
+  return `${tab} title • ${submit} save • ${back} back • ${closeKeyLabel} close`;
 }
 
 function buildPriorityHelpText(

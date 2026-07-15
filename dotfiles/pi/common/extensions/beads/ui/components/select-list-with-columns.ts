@@ -1,8 +1,8 @@
 import {
-  Key,
-  matchesKey,
   truncateToWidth,
+  visibleWidth,
   type Component,
+  type KeybindingsManager,
   type SelectItem,
   type SelectListTheme,
 } from "@earendil-works/pi-tui";
@@ -39,6 +39,7 @@ export class SelectListWithColumns implements Component {
   private maxVisible = 5;
   private theme: SelectListTheme;
   private layout: ResolvedSelectListColumnLayout;
+  private keybindings: Pick<KeybindingsManager, "matches">;
 
   public onSelect?: (item: SelectItem) => void;
   public onCancel?: () => void;
@@ -48,12 +49,14 @@ export class SelectListWithColumns implements Component {
     items: SelectItem[],
     maxVisible: number,
     theme: SelectListTheme,
+    keybindings: Pick<KeybindingsManager, "matches">,
     layout: SelectListColumnLayout = {}
   ) {
     this.items = items;
     this.filteredItems = items;
     this.maxVisible = maxVisible;
     this.theme = theme;
+    this.keybindings = keybindings;
     this.layout = {
       ...DEFAULT_COLUMN_LAYOUT,
       ...layout,
@@ -72,7 +75,7 @@ export class SelectListWithColumns implements Component {
     const lines: string[] = [];
 
     if (this.filteredItems.length === 0) {
-      lines.push(this.theme.noMatch("  No matching commands"));
+      lines.push(truncateToWidth(this.theme.noMatch("  No matching commands"), width, ""));
       return lines;
     }
 
@@ -101,11 +104,16 @@ export class SelectListWithColumns implements Component {
         continue;
       }
 
-      const maxValueWidth = Math.min(this.layout.valueMaxWidth, width - prefix.length - 4);
+      const prefixWidth = visibleWidth(prefix);
+      const maxValueWidth = Math.max(
+        0,
+        Math.min(this.layout.valueMaxWidth, width - prefixWidth - 4)
+      );
       const truncatedValue = truncateToWidth(displayValue, maxValueWidth, "");
-      const spacing = " ".repeat(Math.max(1, this.layout.valueColumnWidth - truncatedValue.length));
-      const descriptionStart = prefix.length + truncatedValue.length + spacing.length;
-      const descriptionWidth = width - descriptionStart - 2;
+      const valueWidth = visibleWidth(truncatedValue);
+      const spacing = " ".repeat(Math.max(1, this.layout.valueColumnWidth - valueWidth));
+      const descriptionStart = prefixWidth + valueWidth + spacing.length;
+      const descriptionWidth = Math.max(0, width - descriptionStart - 2);
 
       if (descriptionWidth <= this.layout.minDescriptionWidth) {
         lines.push(this.renderValueOnlyLine(prefix, displayValue, width, isSelected));
@@ -114,42 +122,60 @@ export class SelectListWithColumns implements Component {
 
       const truncatedDesc = truncateToWidth(descriptionSingleLine, descriptionWidth, "");
       if (isSelected) {
-        lines.push(this.theme.selectedText(`${prefix}${truncatedValue}${spacing}${truncatedDesc}`));
+        lines.push(
+          truncateToWidth(
+            this.theme.selectedText(`${prefix}${truncatedValue}${spacing}${truncatedDesc}`),
+            width,
+            ""
+          )
+        );
       } else {
-        lines.push(`${prefix}${truncatedValue}${this.theme.description(spacing + truncatedDesc)}`);
+        lines.push(
+          truncateToWidth(
+            `${prefix}${truncatedValue}${this.theme.description(spacing + truncatedDesc)}`,
+            width,
+            ""
+          )
+        );
       }
     }
 
     if (startIndex > 0 || endIndex < this.filteredItems.length) {
       const scrollText = `  (${this.selectedIndex + 1}/${this.filteredItems.length})`;
-      lines.push(this.theme.scrollInfo(truncateToWidth(scrollText, width - 2, "")));
+      lines.push(
+        truncateToWidth(
+          this.theme.scrollInfo(truncateToWidth(scrollText, Math.max(0, width - 2), "")),
+          width,
+          ""
+        )
+      );
     }
 
     return lines;
   }
 
   handleInput(keyData: string): void {
-    if (matchesKey(keyData, Key.up)) {
+    if (this.keybindings.matches(keyData, "tui.select.up")) {
       this.selectedIndex =
         this.selectedIndex === 0 ? this.filteredItems.length - 1 : this.selectedIndex - 1;
       this.notifySelectionChange();
       return;
     }
 
-    if (matchesKey(keyData, Key.down)) {
+    if (this.keybindings.matches(keyData, "tui.select.down")) {
       this.selectedIndex =
         this.selectedIndex === this.filteredItems.length - 1 ? 0 : this.selectedIndex + 1;
       this.notifySelectionChange();
       return;
     }
 
-    if (matchesKey(keyData, Key.enter)) {
+    if (this.keybindings.matches(keyData, "tui.select.confirm")) {
       const selectedItem = this.filteredItems[this.selectedIndex];
       if (selectedItem && this.onSelect) this.onSelect(selectedItem);
       return;
     }
 
-    if (matchesKey(keyData, Key.escape) || keyData === "\u0003") {
+    if (this.keybindings.matches(keyData, "tui.select.cancel")) {
       if (this.onCancel) this.onCancel();
     }
   }
@@ -165,9 +191,9 @@ export class SelectListWithColumns implements Component {
     width: number,
     isSelected: boolean
   ): string {
-    const maxWidth = width - prefix.length - 2;
-    const line = `${prefix}${truncateToWidth(displayValue, maxWidth, "")}`;
-    return isSelected ? this.theme.selectedText(line) : line;
+    const maxWidth = Math.max(0, width - visibleWidth(prefix));
+    const line = truncateToWidth(`${prefix}${truncateToWidth(displayValue, maxWidth, "")}`, width, "");
+    return isSelected ? truncateToWidth(this.theme.selectedText(line), width, "") : line;
   }
 
   private notifySelectionChange(): void {

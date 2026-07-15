@@ -1,12 +1,18 @@
 import { DynamicBorder, type ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
-import { Container, Spacer, Text, truncateToWidth } from "@earendil-works/pi-tui";
+import {
+  Container,
+  Spacer,
+  Text,
+  truncateToWidth,
+  visibleWidth,
+  wrapTextWithAnsi,
+} from "@earendil-works/pi-tui";
 import { toKebabCase, type Task, type TaskStatus } from "../../models/task.ts";
 import type { TaskUpdate } from "../../backend/api.ts";
 import {
   DESCRIPTION_PART_SEPARATOR,
   buildListRowModel,
   decodeDescription,
-  stripAnsi,
 } from "../../models/list-item.ts";
 import {
   buildListPrimaryHelpText,
@@ -102,11 +108,11 @@ export async function showTaskList(
     }
 
     const getMaxLabelWidth = () =>
-      Math.max(...displayTasks.map((i) => stripAnsi(buildListRowModel(i).label).length));
+      Math.max(0, ...displayTasks.map((i) => visibleWidth(buildListRowModel(i).label)));
 
     let selectedRef: string | undefined;
     const result = await ctx.ui.custom<"cancel" | "select" | "create">(
-      (tui: any, theme: any, _kb: any, done: any) => {
+      (tui: any, theme: any, keybindings: any, done: any) => {
         const container = new Container();
         let searching = false;
         let searchBuffer = "";
@@ -174,6 +180,7 @@ export async function showTaskList(
           items,
           Math.min(items.length, 10),
           selectListTheme,
+          keybindings,
           TASK_LIST_ROW_LAYOUT
         );
 
@@ -215,45 +222,8 @@ export async function showTaskList(
         };
 
         const wrapText = (text: string, width: number, maxLines: number): string[] => {
-          const lines: string[] = [];
-          const safeWidth = Math.max(1, width);
-
           if (text.length === 0) return [""];
-
-          const words = text.split(" ");
-          let currentLine = "";
-
-          const flushLine = () => {
-            if (lines.length < maxLines) lines.push(currentLine);
-            currentLine = "";
-          };
-
-          for (const word of words) {
-            const candidate = currentLine ? `${currentLine} ${word}` : word;
-
-            if (stripAnsi(candidate).length <= safeWidth) {
-              currentLine = candidate;
-              continue;
-            }
-
-            if (currentLine) {
-              flushLine();
-              if (lines.length >= maxLines) break;
-            }
-
-            let remaining = word;
-            while (stripAnsi(remaining).length > safeWidth) {
-              const chunk = remaining.slice(0, safeWidth);
-              if (lines.length < maxLines) lines.push(chunk);
-              if (lines.length >= maxLines) break;
-              remaining = remaining.slice(safeWidth);
-            }
-            if (lines.length >= maxLines) break;
-            currentLine = remaining;
-          }
-
-          if (currentLine && lines.length < maxLines) lines.push(currentLine);
-          return lines.slice(0, maxLines);
+          return wrapTextWithAnsi(text, Math.max(1, width)).slice(0, maxLines);
         };
 
         const buildDescText = (descLines: string[], width: number): string => {
@@ -329,6 +299,7 @@ export async function showTaskList(
                 closeKey: config.closeKey,
                 priorities: config.priorities,
                 priorityHotkeys: config.priorityHotkeys,
+                keybindings,
               })
             )
           );
@@ -395,6 +366,7 @@ export async function showTaskList(
             items,
             Math.min(items.length, 10),
             selectListTheme,
+            keybindings,
             TASK_LIST_ROW_LAYOUT
           );
 
@@ -452,6 +424,7 @@ export async function showTaskList(
               closeKey: config.closeKey,
               priorities: config.priorities,
               priorityHotkeys: config.priorityHotkeys,
+              keybindings,
             });
 
             switch (intent.type) {

@@ -33,25 +33,32 @@ loading tasks. Missing prerequisites are reported without entering the browser.
 
 | Key | Action |
 |-----|--------|
-| `w` / `s` | Navigate |
+| Configured `tui.select.up` / `tui.select.down` keys, `w` / `s` | Navigate |
 | `space` | Cycle status (open → in-progress → blocked → deferred → closed) |
 | `0`–`4` | Set priority |
 | `t` | Cycle type |
 | `e` / `→` | Edit task |
-| `enter` | Claim task and send it to the work prompt |
-| `tab` | Insert task ref and close |
+| Configured `tui.select.confirm` keys | Claim task and send it to the work prompt |
+| Configured `tui.input.tab` keys | Insert task ref and close |
 | `c` | Create task |
 | `f` | Search/filter |
 | `j` / `k` | Scroll description |
-| `esc` | Back / clear filter |
+| Configured `tui.select.cancel` keys | Back / clear filter |
+| `ctrl+x` | Close browser |
 
 **Edit view**
 
 | Key | Action |
 |-----|--------|
-| `tab` | Switch focus (title ↔ description) |
-| `enter` | Save |
-| `esc` | Back to nav |
+| Configured `tui.input.tab` keys | Switch focus / save description |
+| Configured `tui.input.submit` keys | Save |
+| Configured `tui.input.newLine` keys | Insert a description newline |
+| Configured `tui.select.cancel` keys | Back to nav |
+| `ctrl+x` | Close browser |
+
+The browser reads Pi's effective `~/.pi/agent/keybindings.json` mappings for these
+standard TUI actions. The `w` / `s` navigation aliases and browser-specific action
+keys remain fixed.
 
 ## Development
 

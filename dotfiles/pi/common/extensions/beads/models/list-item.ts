@@ -1,3 +1,4 @@
+import { visibleWidth } from "@earendil-works/pi-tui";
 import { buildTaskListTextParts, type Task } from "./task.ts";
 
 export interface TaskListRowOptions {
@@ -29,11 +30,11 @@ export function buildListRowModel(task: Task, options: TaskListRowOptions = {}):
   const { maxLabelWidth } = options;
   const parts = buildTaskListTextParts(task);
   const baseLabel = `${parts.identity} ${parts.title}`;
-  const visibleWidth = stripAnsi(baseLabel).length;
+  const labelWidth = visibleWidth(baseLabel);
 
   let label = baseLabel;
-  if (maxLabelWidth !== undefined && visibleWidth < maxLabelWidth) {
-    label += " ".repeat(maxLabelWidth - visibleWidth);
+  if (maxLabelWidth !== undefined && labelWidth < maxLabelWidth) {
+    label += " ".repeat(maxLabelWidth - labelWidth);
   }
 
   return {

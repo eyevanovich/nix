@@ -1,13 +1,13 @@
 import { DynamicBorder, type ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import {
   Container,
-  Key,
   Spacer,
   Text,
-  matchesKey,
   truncateToWidth,
   visibleWidth,
   type Component,
+  type Focusable,
+  type KeybindingsManager,
 } from "@earendil-works/pi-tui";
 import {
   buildPrimaryHelpText,
@@ -204,7 +204,7 @@ export async function showTaskForm(
   let statusValue = task.status;
   let priorityValue = task.priority;
 
-  return ctx.ui.custom<TaskFormResult>((tui: any, theme: any, _kb: any, done: any) => {
+  return ctx.ui.custom<TaskFormResult>((tui: any, theme: any, keybindings: KeybindingsManager, done: any) => {
     const container = new Container();
     const headerContainer = new Container();
     const formContainer = new Container();
@@ -223,6 +223,7 @@ export async function showTaskForm(
     const shortcutsText = new ReservedLineText(KEYBOARD_HELP_PADDING_X);
 
     let focus: FormFocus = mode === "create" ? "title" : "nav";
+    let tuiFocused = false;
     let saveIndicator: "saving" | "saved" | "error" | undefined;
     let saveIndicatorTimer: ReturnType<typeof setTimeout> | undefined;
     let disposed = false;
@@ -316,8 +317,8 @@ export async function showTaskForm(
     };
 
     const renderLayout = () => {
-      titleEditor.focused = focus === "title";
-      descEditor.focused = focus === "desc";
+      titleEditor.focused = tuiFocused && focus === "title";
+      descEditor.focused = tuiFocused && focus === "desc";
 
       const rowParts = buildTaskListTextParts({
         ...task,
@@ -343,7 +344,10 @@ export async function showTaskForm(
       titleLabel.setText(fieldLabel(theme, "Title", focus === "title"));
       descLabel.setText(fieldLabel(theme, "Description", focus === "desc"));
 
-      helpText.setText(formatKeyboardHelp(theme, buildPrimaryHelpText(focus)));
+      const closeKeyLabel = closeKey === "\x18" ? "ctrl+x" : closeKey;
+      helpText.setText(
+        formatKeyboardHelp(theme, buildPrimaryHelpText(focus, keybindings, closeKeyLabel))
+      );
       const secondaryHelp = buildSecondaryHelpText(focus, priorities, priorityHotkeys);
       shortcutsText.setText(secondaryHelp ? formatKeyboardHelp(theme, secondaryHelp) : "");
 
@@ -387,15 +391,18 @@ export async function showTaskForm(
       tui.requestRender();
     };
 
+    const matches = (data: string, action: Parameters<KeybindingsManager["matches"]>[1]) =>
+      keybindings.matches(data, action);
+
     const handleTitleInput = (data: string) => {
-      if (matchesKey(data, Key.enter)) {
+      if (matches(data, "tui.input.submit")) {
         focus = "nav";
         void triggerSave();
         renderLayout();
         return;
       }
 
-      if (matchesKey(data, Key.tab)) {
+      if (matches(data, "tui.input.tab")) {
         focus = "desc";
         renderLayout();
         return;
@@ -406,13 +413,13 @@ export async function showTaskForm(
     };
 
     const handleDescInput = (data: string) => {
-      if (matchesKey(data, Key.enter)) {
+      if (matches(data, "tui.input.newLine")) {
         descEditor.insertTextAtCursor("\n");
         requestRender();
         return;
       }
 
-      if (matchesKey(data, Key.tab)) {
+      if (matches(data, "tui.input.submit") || matches(data, "tui.input.tab")) {
         focus = "nav";
         void triggerSave();
         renderLayout();
@@ -424,20 +431,20 @@ export async function showTaskForm(
     };
 
     const handleNavInput = (data: string) => {
-      if (matchesKey(data, Key.enter)) {
+      if (matches(data, "tui.input.submit")) {
         void triggerSave();
         return;
       }
 
-      if (matchesKey(data, Key.tab)) {
+      if (matches(data, "tui.input.tab")) {
         focus = "title";
         renderLayout();
         return;
       }
 
       if (
-        matchesKey(data, Key.escape) ||
-        matchesKey(data, Key.left) ||
+        matches(data, "tui.select.cancel") ||
+        matches(data, "tui.editor.cursorLeft") ||
         data === "q" ||
         data === "Q"
       ) {
@@ -464,11 +471,21 @@ export async function showTaskForm(
       }
     };
 
-    return {
+    const component: Component & Focusable & { dispose(): void } = {
+      get focused() {
+        return tuiFocused;
+      },
+      set focused(value: boolean) {
+        tuiFocused = value;
+        renderLayout();
+      },
       render: (w: number) => container.render(w).map((line: string) => truncateToWidth(line, w)),
       invalidate: () => container.invalidate(),
       dispose: () => {
         disposed = true;
+        tuiFocused = false;
+        titleEditor.focused = false;
+        descEditor.focused = false;
         saveCoordinator.dispose();
         if (saveIndicatorTimer) clearTimeout(saveIndicatorTimer);
       },
@@ -483,7 +500,7 @@ export async function showTaskForm(
           return;
         }
 
-        if (focus !== "nav" && matchesKey(data, Key.escape)) {
+        if (focus !== "nav" && matches(data, "tui.select.cancel")) {
           focus = "nav";
           renderLayout();
           return;
@@ -502,5 +519,6 @@ export async function showTaskForm(
         handleNavInput(data);
       },
     };
+    return component;
   });
 }
