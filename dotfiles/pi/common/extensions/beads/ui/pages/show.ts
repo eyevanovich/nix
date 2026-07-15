@@ -12,6 +12,7 @@ import {
 import {
   buildPrimaryHelpText,
   buildSecondaryHelpText,
+  FormSaveCoordinator,
   getHeaderStatus,
   isSameDraft,
   normalizeDraft,
@@ -84,10 +85,13 @@ const DESCRIPTION_FIELD_HEIGHT = 8;
 const PAGE_CONTENT_MIN_HEIGHT = 19;
 
 class FixedHeightField implements Component {
-  constructor(
-    private child: Component,
-    private height: number
-  ) {}
+  private child: Component;
+  private height: number;
+
+  constructor(child: Component, height: number) {
+    this.child = child;
+    this.height = height;
+  }
 
   invalidate(): void {
     this.child.invalidate();
@@ -139,8 +143,11 @@ class FixedHeightField implements Component {
 
 class ReservedLineText implements Component {
   private text = "";
+  private paddingX: number;
 
-  constructor(private paddingX = 1) {}
+  constructor(paddingX = 1) {
+    this.paddingX = paddingX;
+  }
 
   setText(text: string): void {
     this.text = text;
@@ -207,8 +214,8 @@ export async function showTaskForm(
     let focus: FormFocus = mode === "create" ? "title" : "nav";
     let saveIndicator: "saving" | "saved" | "error" | undefined;
     let saveIndicatorTimer: ReturnType<typeof setTimeout> | undefined;
-    let saving = false;
     let disposed = false;
+    const saveCoordinator = new FormSaveCoordinator();
 
     const editorTheme = {
       borderColor: (s: string) => theme.fg("accent", s),
@@ -262,33 +269,31 @@ export async function showTaskForm(
     let lastSavedDraft: FormDraft = currentDraft();
 
     const triggerSave = async () => {
-      if (saving || disposed) return;
+      if (!saveCoordinator.canStart) return;
 
       const draft = currentDraft();
       if (isSameDraft(draft, lastSavedDraft)) return;
 
-      saving = true;
       if (saveIndicatorTimer) clearTimeout(saveIndicatorTimer);
       saveIndicator = "saving";
       renderLayout();
 
-      try {
-        const didSave = await onSave(draft);
-        if (disposed) return;
-        if (!didSave) {
-          saveIndicator = undefined;
-          return;
-        }
+      const outcome = await saveCoordinator.run(() => onSave(draft));
+      if (disposed || outcome.kind === "ignored") return;
+
+      if (outcome.kind === "failed") {
+        saveIndicator = "error";
+        ctx.ui.notify(
+          outcome.error instanceof Error ? outcome.error.message : String(outcome.error),
+          "error"
+        );
+      } else if (!outcome.value) {
+        saveIndicator = undefined;
+      } else {
         lastSavedDraft = normalizeDraft(draft);
         saveIndicator = "saved";
-      } catch (e) {
-        if (disposed) return;
-        saveIndicator = "error";
-        ctx.ui.notify(e instanceof Error ? e.message : String(e), "error");
-      } finally {
-        saving = false;
-        if (!disposed) renderLayout();
       }
+      renderLayout();
 
       if (saveIndicator === "saved" && !disposed) {
         saveIndicatorTimer = setTimeout(() => {
@@ -440,9 +445,15 @@ export async function showTaskForm(
       invalidate: () => container.invalidate(),
       dispose: () => {
         disposed = true;
+        saveCoordinator.dispose();
         if (saveIndicatorTimer) clearTimeout(saveIndicatorTimer);
       },
       handleInput: (data: string) => {
+        if (saveCoordinator.isSaving) {
+          ctx.ui.notify("Save in progress; wait for it to finish", "warning");
+          return;
+        }
+
         if (data === closeKey) {
           done({ action: "close_list" });
           return;

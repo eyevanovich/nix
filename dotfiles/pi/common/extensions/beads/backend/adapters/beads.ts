@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import type { Task, TaskStatus } from "../../models/task.ts";
+import { PartialTaskCreateError } from "../api.ts";
 import type {
   CreateTaskInput,
   TaskAdapter,
@@ -240,15 +241,25 @@ function isApplicable(cwd = process.cwd()): boolean {
 }
 
 function initialize(pi: ExtensionAPI): TaskAdapter {
-  async function execBd(args: string[], timeout = 30_000): Promise<string> {
-    const result = await pi.exec("bd", args, { timeout });
-    if (result.code !== 0) {
-      const details = (result.stderr || result.stdout || "").trim();
-      throw new Error(
-        details.length > 0 ? details : `bd ${args.join(" ")} failed (code ${result.code})`
-      );
-    }
-    return result.stdout;
+  let commandQueue: Promise<void> = Promise.resolve();
+
+  function execBd(args: string[], timeout = 30_000): Promise<string> {
+    const command = commandQueue.then(async () => {
+      const result = await pi.exec("bd", args, { timeout });
+      if (result.code !== 0) {
+        const details = (result.stderr || result.stdout || "").trim();
+        throw new Error(
+          details.length > 0 ? details : `bd ${args.join(" ")} failed (code ${result.code})`
+        );
+      }
+      return result.stdout;
+    });
+
+    commandQueue = command.then(
+      () => undefined,
+      () => undefined
+    );
+    return command;
   }
 
   async function update(ref: string, update: TaskUpdate): Promise<void> {
@@ -256,6 +267,14 @@ function initialize(pi: ExtensionAPI): TaskAdapter {
     if (args.length === 0) return;
 
     await execBd(["update", ref, ...args]);
+  }
+
+  async function show(ref: string): Promise<Task> {
+    const out = await execBd(["show", ref, "--json"]);
+    const beadsIssues = parseJsonArray<BeadsIssue>(out, `show ${ref}`);
+    const task = beadsIssues[0];
+    if (!task) throw new Error(`Task not found: ${ref}`);
+    return toTask(task);
   }
 
   return {
@@ -283,13 +302,7 @@ function initialize(pi: ExtensionAPI): TaskAdapter {
       return sortActiveTasks([...dedupedById.values()]).slice(0, MAX_LIST_RESULTS);
     },
 
-    async show(ref: string): Promise<Task> {
-      const out = await execBd(["show", ref, "--json"]);
-      const beadsIssues = parseJsonArray<BeadsIssue>(out, `show ${ref}`);
-      const task = beadsIssues[0];
-      if (!task) throw new Error(`Task not found: ${ref}`);
-      return toTask(task);
-    },
+    show,
 
     update,
 
@@ -317,12 +330,8 @@ function initialize(pi: ExtensionAPI): TaskAdapter {
       }
 
       const out = await execBd(createArgs);
-      const created = toTask(parseJsonObject<BeadsIssue>(out, "create"));
-
-      if (status !== "open") {
-        await update(created.ref, { status });
-        created.status = status;
-      }
+      const createdSnapshot = toTask(parseJsonObject<BeadsIssue>(out, "create"));
+      const created = { ...createdSnapshot };
 
       created.title = title;
       created.description = input.description ?? "";
@@ -337,6 +346,21 @@ function initialize(pi: ExtensionAPI): TaskAdapter {
 
       if (input.dueAt !== undefined) {
         created.dueAt = input.dueAt;
+      }
+
+      if (status !== created.status) {
+        try {
+          await update(created.ref, { status });
+          created.status = status;
+        } catch (error) {
+          let persistedTask = createdSnapshot;
+          try {
+            persistedTask = await show(created.ref);
+          } catch {
+            // The successful create response is the best known persisted state.
+          }
+          throw new PartialTaskCreateError(persistedTask, status, error);
+        }
       }
 
       return created;

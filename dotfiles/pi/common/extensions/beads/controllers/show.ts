@@ -19,6 +19,41 @@ export interface HeaderStatus {
   color: HeaderStatusColor;
 }
 
+export type FormSaveOutcome<T> =
+  | { kind: "ignored" }
+  | { kind: "succeeded"; value: T }
+  | { kind: "failed"; error: unknown };
+
+export class FormSaveCoordinator {
+  private saving = false;
+  private disposed = false;
+
+  get isSaving(): boolean {
+    return this.saving;
+  }
+
+  get canStart(): boolean {
+    return !this.saving && !this.disposed;
+  }
+
+  dispose(): void {
+    this.disposed = true;
+  }
+
+  async run<T>(save: () => Promise<T>): Promise<FormSaveOutcome<T>> {
+    if (!this.canStart) return { kind: "ignored" };
+
+    this.saving = true;
+    try {
+      return { kind: "succeeded", value: await save() };
+    } catch (error) {
+      return { kind: "failed", error };
+    } finally {
+      this.saving = false;
+    }
+  }
+}
+
 const FOCUS_LABELS: Record<Exclude<FormFocus, "nav">, string> = {
   title: "Title",
   desc: "Description",

@@ -12,6 +12,7 @@ import {
   buildListPrimaryHelpText,
   buildListSecondaryHelpText,
   resolveListIntent,
+  TaskMutationCoordinator,
 } from "../../controllers/list.ts";
 import { KEYBOARD_HELP_PADDING_X, formatKeyboardHelp } from "../components/keyboard-help.ts";
 import { MinHeightContainer } from "../components/min-height.ts";
@@ -85,6 +86,7 @@ export async function showTaskList(
   const { title, subtitle, tasks, allowPriority = true, allowSearch = true } = config;
 
   const displayTasks = [...tasks];
+  const mutationCoordinator = new TaskMutationCoordinator();
   let filterTerm = config.filterTerm || "";
   let rememberedSelectedRef: string | undefined;
 
@@ -109,6 +111,7 @@ export async function showTaskList(
         let searching = false;
         let searchBuffer = "";
         let descScroll = 0;
+        let disposed = false;
 
         const headerContainer = new Container();
         const listAreaContainer = new Container();
@@ -357,6 +360,33 @@ export async function showTaskList(
           run(task);
         };
 
+        const notifyMutationError = (error: unknown) => {
+          ctx.ui.notify(error instanceof Error ? error.message : String(error), "error");
+        };
+
+        const startTaskMutation = (
+          task: Task,
+          update: TaskUpdate,
+          applyPersistedUpdate: () => void
+        ) => {
+          if (mutationCoordinator.isInFlight(task.ref)) {
+            ctx.ui.notify(`Task ${task.ref} is still saving`, "warning");
+            return;
+          }
+
+          void mutationCoordinator
+            .run(
+              task.ref,
+              () => config.onUpdateTask(task.ref, update),
+              () => {
+                applyPersistedUpdate();
+                if (!disposed) rebuildAndRender();
+              },
+              notifyMutationError
+            )
+            .catch(notifyMutationError);
+        };
+
         const rebuildAndRender = () => {
           items = getItems();
           const prevSelected = selectList.getSelectedItem();
@@ -410,6 +440,9 @@ export async function showTaskList(
             return container.render(w).map((l: string) => truncateToWidth(l, w));
           },
           invalidate: () => container.invalidate(),
+          dispose: () => {
+            disposed = true;
+          },
           handleInput: (data: string) => {
             const intent = resolveListIntent(data, {
               searching,
@@ -476,6 +509,10 @@ export async function showTaskList(
 
               case "edit":
                 withSelectedTask((task) => {
+                  if (mutationCoordinator.isInFlight(task.ref)) {
+                    ctx.ui.notify(`Task ${task.ref} is still saving`, "warning");
+                    return;
+                  }
                   selectedRef = task.ref;
                   done("select");
                 });
@@ -484,18 +521,18 @@ export async function showTaskList(
               case "toggleStatus":
                 withSelectedTask((task) => {
                   const newStatus = config.cycleStatus(task.status);
-                  task.status = newStatus;
-                  void config.onUpdateTask(task.ref, { status: newStatus });
-                  rebuildAndRender();
+                  startTaskMutation(task, { status: newStatus }, () => {
+                    task.status = newStatus;
+                  });
                 });
                 return;
 
               case "setPriority":
                 withSelectedTask((task) => {
                   if (task.priority === intent.priority) return;
-                  task.priority = intent.priority;
-                  void config.onUpdateTask(task.ref, { priority: intent.priority });
-                  rebuildAndRender();
+                  startTaskMutation(task, { priority: intent.priority }, () => {
+                    task.priority = intent.priority;
+                  });
                 });
                 return;
 
@@ -524,9 +561,9 @@ export async function showTaskList(
               case "toggleType":
                 withSelectedTask((task) => {
                   const newType = config.cycleTaskType(task.taskType);
-                  task.taskType = newType;
-                  void config.onUpdateTask(task.ref, { taskType: newType });
-                  rebuildAndRender();
+                  startTaskMutation(task, { taskType: newType }, () => {
+                    task.taskType = newType;
+                  });
                 });
                 return;
 

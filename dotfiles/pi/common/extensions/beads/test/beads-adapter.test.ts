@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { PartialTaskCreateError } from "../backend/api.ts";
 import beadsInitializer from "../backend/adapters/beads.ts";
 
 interface CommandResult {
@@ -49,6 +50,78 @@ function makeHarness(results: CommandResult[]) {
 function json(value: unknown): CommandResult {
   return { stdout: JSON.stringify(value) };
 }
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
+async function flushMicrotasks(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
+test("adapter serializes commands and continues after a rejected command", async () => {
+  const firstResult = deferred<{
+    stdout: string;
+    stderr: string;
+    code: number;
+    killed: boolean;
+  }>();
+  const secondResult = deferred<{
+    stdout: string;
+    stderr: string;
+    code: number;
+    killed: boolean;
+  }>();
+  const results = [firstResult, secondResult];
+  const calls: CommandCall[] = [];
+
+  const pi = {
+    exec(command: string, args: string[], options?: { timeout?: number }) {
+      calls.push({ command, args: [...args], timeout: options?.timeout });
+      const result = results.shift();
+      if (!result) throw new Error(`Unexpected command: ${command} ${args.join(" ")}`);
+      return result.promise;
+    },
+  } as unknown as ExtensionAPI;
+  const adapter = beadsInitializer.initialize(pi);
+
+  const failedUpdate = adapter.update("demo-1", { status: "closed" });
+  const shownTask = adapter.show("demo-2");
+  const rejectedUpdate = assert.rejects(failedUpdate, /first command failed/);
+
+  await flushMicrotasks();
+  assert.equal(calls.length, 1);
+
+  firstResult.resolve({
+    stdout: "",
+    stderr: "first command failed",
+    code: 2,
+    killed: false,
+  });
+  await rejectedUpdate;
+  await flushMicrotasks();
+
+  assert.equal(calls.length, 2);
+  assert.deepEqual(calls.map(({ args }) => args), [
+    ["update", "demo-1", "--status", "closed"],
+    ["show", "demo-2", "--json"],
+  ]);
+
+  secondResult.resolve({
+    stdout: JSON.stringify([{ id: "demo-2", title: "Queued", status: "open" }]),
+    stderr: "",
+    code: 0,
+    killed: false,
+  });
+  assert.equal((await shownTask).ref, "demo-2");
+});
 
 test("list runs status queries sequentially, maps issues, deduplicates, and sorts", async () => {
   const harness = makeHarness([
@@ -198,6 +271,121 @@ test("create builds exact argv and applies a non-open status", async () => {
       dueAt: "2026-08-01",
     }
   );
+});
+
+test("partial create failure refreshes the exact persisted task state", async () => {
+  const harness = makeHarness([
+    json({ id: "demo-partial", title: "Create response", status: "open", priority: 4 }),
+    { code: 2, stderr: "status update failed" },
+    json([
+      {
+        id: "demo-partial",
+        title: "Backend-normalized",
+        description: "Persisted details",
+        status: "open",
+        priority: 3,
+        issue_type: "feature",
+      },
+    ]),
+  ]);
+
+  await assert.rejects(
+    harness.adapter.create({
+      title: "Partial",
+      description: "Requested details",
+      status: "blocked",
+      priority: "p1",
+      taskType: "bug",
+    }),
+    (error: unknown) => {
+      assert.ok(error instanceof PartialTaskCreateError);
+      assert.equal(error.requestedStatus, "blocked");
+      assert.deepEqual(error.createdTask, {
+        ref: "demo-partial",
+        id: "demo-partial",
+        title: "Backend-normalized",
+        description: "Persisted details",
+        status: "open",
+        owner: undefined,
+        priority: "p3",
+        taskType: "feature",
+      });
+      assert.match(error.message, /demo-partial was created with status open/);
+      assert.match(error.message, /setting status to blocked failed: status update failed/);
+      return true;
+    }
+  );
+
+  assert.deepEqual(
+    harness.calls.map(({ args }) => args),
+    [
+      [
+        "create",
+        "--title",
+        "Partial",
+        "--description",
+        "Requested details",
+        "--priority",
+        "1",
+        "--type",
+        "bug",
+        "--json",
+      ],
+      ["update", "demo-partial", "--status", "blocked"],
+      ["show", "demo-partial", "--json"],
+    ]
+  );
+});
+
+test("partial create refresh failure falls back to the unmodified create response", async () => {
+  const harness = makeHarness([
+    json({ id: "demo-fallback", title: "Backend snapshot", status: "open", priority: 4 }),
+    { code: 2, stderr: "status update failed" },
+    { code: 3, stderr: "refresh failed" },
+  ]);
+
+  await assert.rejects(
+    harness.adapter.create({
+      title: "Requested title",
+      description: "Requested details",
+      status: "blocked",
+      priority: "p1",
+      taskType: "bug",
+    }),
+    (error: unknown) => {
+      assert.ok(error instanceof PartialTaskCreateError);
+      assert.deepEqual(error.createdTask, {
+        ref: "demo-fallback",
+        id: "demo-fallback",
+        title: "Backend snapshot",
+        description: "",
+        status: "open",
+        owner: undefined,
+        priority: "p4",
+      });
+      assert.match(error.message, /setting status to blocked failed: status update failed/);
+      assert.doesNotMatch(error.message, /refresh failed/);
+      assert.equal((error.cause as Error).message, "status update failed");
+      return true;
+    }
+  );
+
+  assert.deepEqual(harness.calls.map(({ args }) => args), [
+    [
+      "create",
+      "--title",
+      "Requested title",
+      "--description",
+      "Requested details",
+      "--priority",
+      "1",
+      "--type",
+      "bug",
+      "--json",
+    ],
+    ["update", "demo-fallback", "--status", "blocked"],
+    ["show", "demo-fallback", "--json"],
+  ]);
 });
 
 test("update translates all supported fields and trims the title", async () => {

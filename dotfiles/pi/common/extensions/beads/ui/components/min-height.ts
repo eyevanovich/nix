@@ -1,10 +1,13 @@
 import type { Component } from "@earendil-works/pi-tui";
 
 export class MinHeightContainer implements Component {
-  constructor(
-    private child: Component,
-    private minHeight: number
-  ) {}
+  private child: Component;
+  private minHeight: number;
+
+  constructor(child: Component, minHeight: number) {
+    this.child = child;
+    this.minHeight = minHeight;
+  }
 
   invalidate(): void {
     this.child.invalidate();

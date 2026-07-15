@@ -28,6 +28,40 @@ export interface ListControllerState {
   priorityHotkeys?: Record<string, string>;
 }
 
+export type TaskMutationOutcome =
+  | { kind: "busy" }
+  | { kind: "succeeded" }
+  | { kind: "failed"; error: unknown };
+
+export class TaskMutationCoordinator {
+  private readonly inFlight = new Set<string>();
+
+  isInFlight(ref: string): boolean {
+    return this.inFlight.has(ref);
+  }
+
+  async run(
+    ref: string,
+    persist: () => Promise<void>,
+    onSuccess: () => void,
+    onFailure: (error: unknown) => void
+  ): Promise<TaskMutationOutcome> {
+    if (this.inFlight.has(ref)) return { kind: "busy" };
+
+    this.inFlight.add(ref);
+    try {
+      await persist();
+      onSuccess();
+      return { kind: "succeeded" };
+    } catch (error) {
+      onFailure(error);
+      return { kind: "failed", error };
+    } finally {
+      this.inFlight.delete(ref);
+    }
+  }
+}
+
 type ShortcutContext = "default" | "search";
 
 interface ShortcutDefinition {

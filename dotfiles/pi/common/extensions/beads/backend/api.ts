@@ -20,6 +20,22 @@ export interface CreateTaskInput extends TaskUpdate {
   title: string;
 }
 
+export class PartialTaskCreateError extends Error {
+  readonly createdTask: Task;
+  readonly requestedStatus: TaskStatus;
+
+  constructor(createdTask: Task, requestedStatus: TaskStatus, cause: unknown) {
+    const details = cause instanceof Error ? cause.message : String(cause);
+    super(
+      `Task ${createdTask.ref} was created with status ${createdTask.status}, but setting status to ${requestedStatus} failed: ${details}`,
+      { cause }
+    );
+    this.name = "PartialTaskCreateError";
+    this.createdTask = createdTask;
+    this.requestedStatus = requestedStatus;
+  }
+}
+
 export interface TaskAdapter {
   readonly id: string;
   readonly statusMap: TaskStatusMap;

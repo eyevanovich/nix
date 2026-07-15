@@ -7,7 +7,9 @@ import type { Task, TaskStatus } from "./models/task.ts";
 import { buildTaskWorkPrompt, serializeTask } from "./lib/task-serialization.ts";
 import { showTaskList } from "./ui/pages/list.ts";
 import { showTaskForm } from "./ui/pages/show.ts";
-import type { TaskAdapterCapability, TaskUpdate } from "./backend/api.ts";
+import { PartialTaskCreateError } from "./backend/api.ts";
+import type { TaskAdapter, TaskAdapterCapability, TaskUpdate } from "./backend/api.ts";
+import type { FormDraft } from "./controllers/show.ts";
 
 const CTRL_X = "\x18";
 
@@ -185,6 +187,46 @@ function applyDraftToTask(
   return nextTask;
 }
 
+export function createTaskSaveSession(backend: Pick<TaskAdapter, "create" | "update">) {
+  let createdTask: Task | null = null;
+
+  return {
+    get createdTask(): Task | null {
+      return createdTask;
+    },
+
+    async save(draft: FormDraft): Promise<boolean> {
+      const title = draft.title.trim();
+      if (title.length === 0) throw new Error("Title is required");
+
+      if (!createdTask) {
+        try {
+          createdTask = await backend.create({
+            title,
+            description: draft.description,
+            status: draft.status,
+            priority: draft.priority,
+            taskType: draft.taskType,
+          });
+        } catch (error) {
+          if (error instanceof PartialTaskCreateError) {
+            createdTask = error.createdTask;
+          }
+          throw error;
+        }
+        return true;
+      }
+
+      const update = buildTaskUpdate(createdTask, draft);
+      if (!hasTaskUpdate(update)) return false;
+
+      await backend.update(createdTask.ref, update);
+      createdTask = applyDraftToTask(createdTask, draft);
+      return true;
+    },
+  };
+}
+
 export interface TaskBrowserDependencies {
   checkCapability?: (cwd: string) => TaskAdapterCapability;
 }
@@ -272,7 +314,7 @@ export default function registerExtension(
   }
 
   async function createTask(ctx: ExtensionCommandContext): Promise<Task | null> {
-    let createdTask: Task | null = null;
+    const saveSession = createTaskSaveSession(backend);
 
     await showTaskForm(ctx, {
       mode: "create",
@@ -291,46 +333,10 @@ export default function registerExtension(
       parsePriorityKey: nextPriorityFromKey,
       priorities: backend.priorities,
       priorityHotkeys: backend.priorityHotkeys,
-      onSave: async (draft) => {
-        const title = draft.title.trim();
-        if (title.length === 0) {
-          throw new Error("Title is required");
-        }
-
-        if (!createdTask) {
-          createdTask = await backend.create({
-            title,
-            description: draft.description,
-            status: draft.status,
-            priority: draft.priority,
-            taskType: draft.taskType,
-          });
-          return true;
-        }
-
-        const update = buildTaskUpdate(createdTask, {
-          title,
-          description: draft.description,
-          status: draft.status,
-          priority: draft.priority,
-          taskType: draft.taskType,
-        });
-
-        if (!hasTaskUpdate(update)) return false;
-
-        await updateTask(createdTask.ref, update);
-        createdTask = applyDraftToTask(createdTask, {
-          title,
-          description: draft.description,
-          status: draft.status,
-          priority: draft.priority,
-          taskType: draft.taskType,
-        });
-        return true;
-      },
+      onSave: saveSession.save,
     });
 
-    return createdTask;
+    return saveSession.createdTask;
   }
 
   async function browseTasks(ctx: ExtensionCommandContext): Promise<void> {
