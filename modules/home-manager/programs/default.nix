@@ -3,7 +3,6 @@
     ./bat.nix
     ./helix.nix
     ./zellij.nix
-    ./herdr.nix
     ./karabiner.nix
     ./git.nix
     ./wezterm.nix
