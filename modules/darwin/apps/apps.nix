@@ -162,7 +162,6 @@ in {
         "claude-code@latest"
         "codex"
         "zed"
-        "cmux"
       ]
       ++ lib.optionals (profile == "personal") [
         "steam"
