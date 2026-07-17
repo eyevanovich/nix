@@ -7,7 +7,10 @@
   ...
 }: let
   trustedHomebrewTaps =
-    ["gentleman-programming/tap"]
+    [
+      "gentleman-programming/tap"
+      "manaflow-ai/cmux"
+    ]
     ++ lib.optionals (profile == "work") ["messense/macos-cross-toolchains" "skyhook-io/tap"];
 in {
   environment.variables.HOMEBREW_NO_ANALYTICS = "1";
@@ -102,6 +105,7 @@ in {
     taps =
       [
         "gentleman-programming/tap"
+        "manaflow-ai/cmux"
       ]
       ++ lib.optionals (profile == "work") [
         "messense/macos-cross-toolchains"
@@ -162,6 +166,7 @@ in {
         "claude-code@latest"
         "codex"
         "zed"
+        "cmux"
       ]
       ++ lib.optionals (profile == "personal") [
         "steam"

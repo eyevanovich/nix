@@ -51,6 +51,10 @@
       url = "github:skyhook-io/homebrew-tap";
       flake = false;
     };
+    homebrew-cmux = {
+      url = "github:manaflow-ai/cmux";
+      flake = false;
+    };
 
     # adds the home-manager flake as an input
     home-manager = {
@@ -82,6 +86,7 @@
     homebrew-gentleman-programming,
     homebrew-docker-tap,
     homebrew-skyhook-io,
+    homebrew-cmux,
     nix-homebrew,
     scls,
     ...
@@ -125,6 +130,7 @@
                   "homebrew/homebrew-bundle" = homebrew-bundle;
                   "docker/homebrew-tap" = homebrew-docker-tap;
                   "gentleman-programming/homebrew-tap" = homebrew-gentleman-programming;
+                  "manaflow-ai/cmux" = homebrew-cmux;
                 }
                 // (
                   if profile == "work"

@@ -106,6 +106,22 @@
         "type": "github"
       }
     },
+    "homebrew-cmux": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1784258652,
+        "narHash": "sha256-XX+yaHXBv6IYt8Bc+kmW08Hp0P2To1NGpx747FGtAx0=",
+        "owner": "manaflow-ai",
+        "repo": "cmux",
+        "rev": "82d7c998f9d1163656054ba553bbdad32e7a2433",
+        "type": "github"
+      },
+      "original": {
+        "owner": "manaflow-ai",
+        "repo": "cmux",
+        "type": "github"
+      }
+    },
     "homebrew-core": {
       "flake": false,
       "locked": {
@@ -267,6 +283,7 @@
         "home-manager": "home-manager",
         "homebrew-bundle": "homebrew-bundle",
         "homebrew-cask": "homebrew-cask",
+        "homebrew-cmux": "homebrew-cmux",
         "homebrew-core": "homebrew-core",
         "homebrew-docker-tap": "homebrew-docker-tap",
         "homebrew-gentleman-programming": "homebrew-gentleman-programming",
