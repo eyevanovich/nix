@@ -115,6 +115,7 @@ in {
         "codanna"
         "pi-coding-agent"
         "gentleman-programming/tap/engram"
+        "herdr"
       ]
       ++ lib.optionals (profile == "work") [
         "messense/macos-cross-toolchains/aarch64-unknown-linux-gnu"
