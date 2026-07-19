@@ -116,6 +116,7 @@ in {
         "pi-coding-agent"
         "gentleman-programming/tap/engram"
         "herdr"
+        "tmux"
       ]
       ++ lib.optionals (profile == "work") [
         "messense/macos-cross-toolchains/aarch64-unknown-linux-gnu"

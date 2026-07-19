@@ -4,6 +4,7 @@
     ./helix.nix
     ./zellij.nix
     ./herdr.nix
+    ./mux-run.nix
     ./karabiner.nix
     ./git.nix
     ./wezterm.nix

@@ -37,6 +37,16 @@
             "command": "bd prime"
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gh-axi",
+            "timeout": 10
+          }
+        ]
       }
     ]
   },

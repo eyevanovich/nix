@@ -1,3 +1,6 @@
 {config, ...}: {
-  home.file.".config/herdr/config.toml".source = "${config.xdg.configHome}/nix/dotfiles/herdr/config.toml";
+  home.file.".config/herdr/config.toml" = {
+    source = "${config.xdg.configHome}/nix/dotfiles/herdr/config.toml";
+    force = true;
+  };
 }

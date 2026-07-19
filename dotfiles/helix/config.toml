@@ -139,16 +139,16 @@ o = ":config-open"
 l = ":o ~/.config/helix/languages.toml"
 
 [keys.normal.space.o]
-g = ":sh zellij run -fc --height 100%% --width 100%% -x 0 -y 0 -- lazygit"
-f = ":sh zellij run -fc -- yazi"
-m = ":sh zellij run -fc -- glow -p ./README.md"
+g = ":sh mux-run popup --fullscreen -- lazygit"
+f = ":sh mux-run popup -- yazi"
+m = ":sh mux-run popup -- glow -p ./README.md"
 r = ":set whitespace.render none"
 w = ":set whitespace.render all"
 
 [keys.normal.space.a]
 g =[":sh go mod tidy", ":reload-all", ":lsp-restart"]
 r = [":reload-all"]
-l = ":sh zellij run -d right -- revive -formatter stylish ./..."
+l = ":sh mux-run split right -- revive -formatter stylish ./..."
 
 [keys.normal.space]
 W = ":write"

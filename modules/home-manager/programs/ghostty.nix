@@ -10,7 +10,7 @@ in {
     installBatSyntax = false;
     settings = {
       theme = "catppuccin-mocha";
-      font-size = 10;
+      font-size = 13;
       font-family = "FiraCode Nerd Font Mono";
       macos-titlebar-style = "tabs";
     };
