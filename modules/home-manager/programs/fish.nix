@@ -18,7 +18,7 @@
         export GIT_TERMINAL_PROMPT=0
       ''
       + lib.optionalString (profile == "personal") ''
-        set -x SSH_AUTH_SOCK /Users/ipiesh/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh      ''
+        set -gx SSH_AUTH_SOCK /Users/ipiesh/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh      ''
       + ''
 
         alias config='/usr/bin/git --git-dir=/Users/ipiesh/.cfg/.git/ --work-tree=/Users/ipiesh'
