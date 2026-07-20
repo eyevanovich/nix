@@ -172,6 +172,22 @@ test("configured standard actions drive list intents and help", () => {
   assert.match(help, /ctrl\+x close/);
 });
 
+test("up/down collisions keep first-match movement and reachable help", () => {
+  const keybindings = new KeybindingsManager(TUI_KEYBINDINGS, {
+    "tui.select.up": ["ctrl+n"],
+    "tui.select.down": ["ctrl+n"],
+  });
+  const state = { ...listState, keybindings };
+
+  assert.deepEqual(resolveListIntent("\x0e", state), {
+    type: "moveSelection",
+    delta: -1,
+  });
+  const help = buildListPrimaryHelpText(state);
+  assert.match(help, /w\/ctrl\+n up • s down/);
+  assert.doesNotMatch(help, /s\/ctrl\+n down/);
+});
+
 test("form help reports effective input keys and the actual browser close key", () => {
   const keybindings = new KeybindingsManager(TUI_KEYBINDINGS, {
     "tui.input.submit": ["ctrl+s"],
@@ -189,6 +205,71 @@ test("form help reports effective input keys and the actual browser close key", 
     buildPrimaryHelpText("desc", keybindings, "ctrl+x"),
     "alt+enter newline • ctrl+s/ctrl+i save • ctrl+g back"
   );
+});
+
+test("submit/tab collisions keep submit behavior and reachable form help", async () => {
+  const userBindings: KeybindingsConfig = {
+    "tui.input.submit": ["ctrl+s"],
+    "tui.input.tab": ["ctrl+s"],
+  };
+  const keybindings = new KeybindingsManager(TUI_KEYBINDINGS, userBindings);
+
+  assert.equal(
+    buildPrimaryHelpText("title", keybindings, "ctrl+x"),
+    "ctrl+s save • (unbound) description • escape/ctrl+c back"
+  );
+  assert.equal(
+    buildPrimaryHelpText("nav", keybindings, "ctrl+x"),
+    "(unbound) title • ctrl+s save • escape/ctrl+c/left/ctrl+b/q back • ctrl+x close"
+  );
+
+  const titleHarness = makeCustomUiHarness(userBindings);
+  const titleDrafts: FormDraft[] = [];
+  const titleForm = showTaskForm(titleHarness.ctx, {
+    mode: "create",
+    subtitle: "Create",
+    task: { ref: "new", title: "Title", description: "", status: "open" },
+    closeKey: "\x18",
+    cycleStatus: (status) => status,
+    cycleTaskType: () => "task",
+    parsePriorityKey: () => null,
+    priorities: ["p0", "p1", "p2"],
+    onSave: async (draft) => {
+      titleDrafts.push(draft);
+      return true;
+    },
+  });
+  titleHarness.component().focused = true;
+  titleHarness.component().handleInput("X");
+  titleHarness.component().handleInput("\x13");
+  await flushMicrotasks();
+  assert.equal(titleDrafts.length, 1);
+  titleHarness.component().handleInput("\x18");
+  assert.deepEqual(await titleForm, { action: "close_list" });
+
+  const navHarness = makeCustomUiHarness(userBindings);
+  const navDrafts: FormDraft[] = [];
+  const navForm = showTaskForm(navHarness.ctx, {
+    mode: "edit",
+    subtitle: "Edit",
+    task: { ref: "demo", title: "Title", description: "", status: "open" },
+    closeKey: "\x18",
+    cycleStatus: (status) => (status === "open" ? "closed" : "open"),
+    cycleTaskType: () => "task",
+    parsePriorityKey: () => null,
+    priorities: ["p0", "p1", "p2"],
+    onSave: async (draft) => {
+      navDrafts.push(draft);
+      return true;
+    },
+  });
+  navHarness.component().focused = true;
+  navHarness.component().handleInput(" ");
+  navHarness.component().handleInput("\x13");
+  await flushMicrotasks();
+  assert.equal(navDrafts.length, 1);
+  navHarness.component().handleInput("\x18");
+  assert.deepEqual(await navForm, { action: "close_list" });
 });
 
 test("reserved close key wins collisions and is filtered from standard-action help", () => {

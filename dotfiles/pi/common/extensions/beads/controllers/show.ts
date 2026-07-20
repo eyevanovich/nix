@@ -1,5 +1,9 @@
-import type { Keybinding, KeybindingsManager } from "@earendil-works/pi-tui";
+import type { KeybindingsManager } from "@earendil-works/pi-tui";
 import type { TaskStatus } from "../models/task.ts";
+import {
+  formatActionKeyLabels,
+  resolveReachableActionKeyLabels,
+} from "./keybindings.ts";
 
 export type FormFocus = "nav" | "title" | "desc";
 export type FormMode = "edit" | "create";
@@ -93,23 +97,6 @@ export function getHeaderStatus(
 
 type FormKeybindings = Pick<KeybindingsManager, "getKeys">;
 
-function actionKeyLabels(
-  keybindings: FormKeybindings,
-  action: Keybinding,
-  closeKeyLabel: string
-): string[] {
-  return [...new Set(keybindings.getKeys(action))].filter((key) => key !== closeKeyLabel);
-}
-
-function actionKeys(
-  keybindings: FormKeybindings,
-  action: Keybinding,
-  closeKeyLabel: string
-): string {
-  const keys = actionKeyLabels(keybindings, action, closeKeyLabel);
-  return keys.length > 0 ? keys.join("/") : "(unbound)";
-}
-
 function combinedKeys(...keys: string[]): string {
   return [...new Set(keys)].join("/");
 }
@@ -119,21 +106,38 @@ export function buildPrimaryHelpText(
   keybindings: FormKeybindings,
   closeKeyLabel: string
 ): string {
-  const tab = actionKeys(keybindings, "tui.input.tab", closeKeyLabel);
-  const cancel = actionKeys(keybindings, "tui.select.cancel", closeKeyLabel);
-  const submit = actionKeys(keybindings, "tui.input.submit", closeKeyLabel);
   if (focus === "title") {
-    return `${submit} save • ${tab} description • ${cancel} back`;
+    const [cancel, submit, tab] = resolveReachableActionKeyLabels(
+      keybindings,
+      ["tui.select.cancel", "tui.input.submit", "tui.input.tab"],
+      [closeKeyLabel]
+    );
+    return `${formatActionKeyLabels(submit ?? [])} save • ${formatActionKeyLabels(tab ?? [])} description • ${formatActionKeyLabels(cancel ?? [])} back`;
   }
   if (focus === "desc") {
-    return `${actionKeys(keybindings, "tui.input.newLine", closeKeyLabel)} newline • ${combinedKeys(submit, tab)} save • ${cancel} back`;
+    const [cancel, newLine, save] = resolveReachableActionKeyLabels(
+      keybindings,
+      [
+        "tui.select.cancel",
+        "tui.input.newLine",
+        ["tui.input.submit", "tui.input.tab"],
+      ],
+      [closeKeyLabel]
+    );
+    return `${formatActionKeyLabels(newLine ?? [])} newline • ${formatActionKeyLabels(save ?? [])} save • ${formatActionKeyLabels(cancel ?? [])} back`;
   }
-  const back = combinedKeys(
-    ...actionKeyLabels(keybindings, "tui.select.cancel", closeKeyLabel),
-    ...actionKeyLabels(keybindings, "tui.editor.cursorLeft", closeKeyLabel),
-    "q"
+  const [submit, tab, cancel, cursorLeft] = resolveReachableActionKeyLabels(
+    keybindings,
+    [
+      "tui.input.submit",
+      "tui.input.tab",
+      "tui.select.cancel",
+      "tui.editor.cursorLeft",
+    ],
+    [closeKeyLabel]
   );
-  return `${tab} title • ${submit} save • ${back} back • ${closeKeyLabel} close`;
+  const back = combinedKeys(...(cancel ?? []), ...(cursorLeft ?? []), "q");
+  return `${formatActionKeyLabels(tab ?? [])} title • ${formatActionKeyLabels(submit ?? [])} save • ${back} back • ${closeKeyLabel} close`;
 }
 
 function buildPriorityHelpText(

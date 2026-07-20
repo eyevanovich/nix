@@ -58,8 +58,11 @@ loading tasks. Missing prerequisites are reported without entering the browser.
 | `ctrl+x` | Close browser |
 
 The browser reads Pi's effective `~/.pi/agent/keybindings.json` mappings for these
-standard TUI actions. The `w` / `s` navigation aliases and browser-specific action
-keys remain fixed.
+standard TUI actions. Like Pi 0.80's `KeybindingsManager`, a configured key may
+match more than one action. The browser resolves such collisions by its documented
+input order (for example, up before down and submit before tab); help shows the key
+only for the first reachable action in the current view. The `w` / `s` navigation
+aliases and browser-specific action keys remain fixed.
 
 ## Development
 

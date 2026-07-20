@@ -1,4 +1,8 @@
 import type { Keybinding, KeybindingsManager } from "@earendil-works/pi-tui";
+import {
+  formatActionKeyLabels,
+  resolveReachableActionKeyLabels,
+} from "./keybindings.ts";
 
 export type ListIntent =
   | { type: "cancel" }
@@ -119,14 +123,29 @@ function displayKey(data: string): string {
   return data;
 }
 
+const ACTION_PRECEDENCE: Record<ShortcutContext, readonly Keybinding[]> = {
+  default: [
+    "tui.select.up",
+    "tui.select.down",
+    "tui.select.confirm",
+    "tui.editor.cursorRight",
+    "tui.input.tab",
+    "tui.select.cancel",
+  ],
+  search: ["tui.select.cancel", "tui.select.confirm"],
+};
+
 function actionKeyLabels(state: ListControllerState, action: Keybinding): string[] {
-  const closeKeyLabel = displayKey(state.closeKey);
-  return [...new Set(state.keybindings.getKeys(action))].filter((key) => key !== closeKeyLabel);
+  const context: ShortcutContext = state.searching ? "search" : "default";
+  const actions = ACTION_PRECEDENCE[context];
+  const resolved = resolveReachableActionKeyLabels(state.keybindings, actions, [
+    displayKey(state.closeKey),
+  ]);
+  return resolved[actions.indexOf(action)] ?? [];
 }
 
 function actionKeys(state: ListControllerState, action: Keybinding): string {
-  const keys = actionKeyLabels(state, action);
-  return keys.length > 0 ? keys.join("/") : "(unbound)";
+  return formatActionKeyLabels(actionKeyLabels(state, action));
 }
 
 function combinedKeys(...keys: string[]): string {
