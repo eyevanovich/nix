@@ -1,4 +1,5 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { resolve } from "node:path";
 import type {
   TaskAdapterCapability,
   TrackerDetection,
@@ -8,6 +9,11 @@ import type {
 export interface ProviderResolution {
   provider: TrackerProvider;
   detection: TrackerDetection;
+}
+
+export interface TrackerChoiceMemory {
+  get(repositoryKey: string): string | undefined;
+  set(repositoryKey: string, providerId: string): void;
 }
 
 export async function detectProviders(
@@ -52,7 +58,8 @@ function supportsInteractiveUi(ctx: Pick<ExtensionContext, "mode" | "ui">): bool
 export async function openResolvedTaskBrowser(
   ctx: Pick<ExtensionContext, "mode" | "cwd" | "ui">,
   providers: readonly TrackerProvider[],
-  openBrowser: (provider: TrackerProvider) => Promise<void>
+  openBrowser: (provider: TrackerProvider) => Promise<void>,
+  choiceMemory?: TrackerChoiceMemory
 ): Promise<void> {
   if (!supportsInteractiveUi(ctx)) return;
 
@@ -72,10 +79,47 @@ export async function openResolvedTaskBrowser(
   }
 
   if (ready.length > 1) {
-    ctx.ui.notify(
-      "Multiple task trackers are available. Use an explicit tracker command.",
-      "warning"
-    );
+    const roots = new Set(ready.map(({ detection }) => resolve(detection.repository.root)));
+    const repositoryKey = roots.size === 1 ? roots.values().next().value : undefined;
+    const rememberedId = repositoryKey ? choiceMemory?.get(repositoryKey) : undefined;
+    let selected = rememberedId
+      ? ready.find(({ provider }) => provider.id === rememberedId)
+      : undefined;
+
+    if (!selected) {
+      const labelCounts = new Map<string, number>();
+      for (const { provider } of ready) {
+        labelCounts.set(provider.label, (labelCounts.get(provider.label) ?? 0) + 1);
+      }
+      const usedDisplays = new Set<string>();
+      const options = ready.map((resolution) => {
+        const baseDisplay = labelCounts.get(resolution.provider.label) === 1
+          ? resolution.provider.label
+          : `${resolution.provider.label} (${resolution.provider.id})`;
+        let display = baseDisplay;
+        let suffix = 2;
+        while (usedDisplays.has(display)) {
+          display = `${baseDisplay} [${suffix}]`;
+          suffix += 1;
+        }
+        usedDisplays.add(display);
+        return { resolution, display };
+      });
+      const display = await ctx.ui.select(
+        "Choose task tracker",
+        options.map((option) => option.display)
+      );
+      if (!display) return;
+      selected = options.find((option) => option.display === display)?.resolution;
+      if (!selected) return;
+      if (repositoryKey) choiceMemory?.set(repositoryKey, selected.provider.id);
+    }
+
+    try {
+      await openBrowser(selected.provider);
+    } catch (error) {
+      ctx.ui.notify(error instanceof Error ? error.message : String(error), "error");
+    }
     return;
   }
 

@@ -265,6 +265,7 @@ export default function registerExtension(
     createBeadsProvider(pi, [PROMPTS_DIR]),
     createGitLabProvider(pi, [PROMPTS_DIR]),
   ];
+  const trackerChoices = new Map<string, string>();
 
   pi.on("resources_discover", () => ({
     promptPaths: [...new Set(providers.flatMap((provider) => provider.promptPaths))],
@@ -443,7 +444,12 @@ export default function registerExtension(
   pi.registerCommand("tasks", {
     description: "Open task list",
     handler: async (_rawArgs, ctx) => {
-      await openResolvedTaskBrowser(ctx, providers, (provider) => openProvider(ctx, provider));
+      await openResolvedTaskBrowser(
+        ctx,
+        providers,
+        (provider) => openProvider(ctx, provider),
+        trackerChoices
+      );
     },
   });
 
@@ -471,8 +477,11 @@ export default function registerExtension(
     description: "Open task list",
     handler: async (ctx) => {
       const commandContext = ctx as ExtensionCommandContext;
-      await openResolvedTaskBrowser(commandContext, providers, (provider) =>
-        openProvider(commandContext, provider)
+      await openResolvedTaskBrowser(
+        commandContext,
+        providers,
+        (provider) => openProvider(commandContext, provider),
+        trackerChoices
       );
     },
   });

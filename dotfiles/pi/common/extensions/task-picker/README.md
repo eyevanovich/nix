@@ -31,7 +31,12 @@ The GitLab provider lists every open project issue with explicit pagination. It 
 - `/execute-beads [bead-id-or-search ...]` — run the bundled Beads execution workflow
 - `/execute-gitlab-issue <host/project#iid-or-url>` — run the bundled GitLab execution workflow
 
-When both providers apply, Milestone 2 reports the ambiguity and asks for an explicit tracker command. The session-scoped chooser is delivered separately in Milestone 3.
+When both providers apply, `/tasks` and `ctrl+e` show a compact tracker chooser.
+The selection is remembered by normalized Git repository root for the lifetime of
+that Pi extension session, including nested directories in the same repository.
+It is not written to disk or carried into a reloaded or replacement session.
+Explicit `/beads-tasks` and `/gitlab-issues` commands bypass the chooser without
+changing the remembered selection.
 
 > **Note:** pi has no conflict-free `ctrl+<letter>` left — every non-control-code
 > letter is bound by either the app or the emacs-style editor. `ctrl+e` overrides
