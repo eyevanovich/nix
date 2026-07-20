@@ -1,7 +1,6 @@
-{
-  profile,
-  lib,
-  ...
+{ profile
+, lib
+, ...
 }: {
   programs.delta = {
     enableGitIntegration = true;
@@ -18,10 +17,19 @@
     # extraConfig = {
     # };
 
-    signing.format = null;
+    signing =
+      if profile == "personal"
+      then {
+        format = "ssh";
+        key = "~/.ssh/id_ed25519_git_signing";
+        signByDefault = true;
+      }
+      else {
+        format = null;
+      };
 
     includes = lib.optionals (profile == "work") [
-      {path = "~/.config/git/local.conf";}
+      { path = "~/.config/git/local.conf"; }
     ];
 
     ignores = [
@@ -54,6 +62,8 @@
         update = "submodule update --init --recursive";
         foreach = "submodule foreach";
       };
+    } // lib.optionalAttrs (profile == "personal") {
+      gpg.ssh.allowedSignersFile = "~/.ssh/git_allowed_signers";
     };
   };
 }

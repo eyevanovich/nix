@@ -46,6 +46,7 @@
     supabase-cli
     tea
     glab
+    gitleaks
 
     # dev tools
     direnv
