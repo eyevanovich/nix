@@ -52,6 +52,9 @@ interface ShowTaskFormOptions {
   parsePriorityKey: (data: string) => string | null;
   priorities: string[];
   priorityHotkeys?: Record<string, string>;
+  allowStatus?: boolean;
+  allowPriority?: boolean;
+  allowTaskType?: boolean;
   onSave: (draft: FormDraft) => Promise<boolean>;
 }
 
@@ -203,6 +206,9 @@ export async function showTaskForm(
     parsePriorityKey,
     priorities,
     priorityHotkeys,
+    allowStatus = true,
+    allowPriority = true,
+    allowTaskType = true,
     onSave,
   } = options;
 
@@ -358,7 +364,11 @@ export async function showTaskForm(
       helpText.setText(
         formatKeyboardHelp(theme, buildPrimaryHelpText(focus, keybindings, closeKeyLabel))
       );
-      const secondaryHelp = buildSecondaryHelpText(focus, priorities, priorityHotkeys);
+      const secondaryHelp = buildSecondaryHelpText(focus, priorities, priorityHotkeys, {
+        allowStatus,
+        allowPriority,
+        allowTaskType,
+      });
       shortcutsText.setText(secondaryHelp ? formatKeyboardHelp(theme, secondaryHelp) : "");
 
       container.invalidate();
@@ -462,19 +472,19 @@ export async function showTaskForm(
         return;
       }
 
-      if (data === "t" || data === "T") {
+      if (allowTaskType && (data === "t" || data === "T")) {
         taskTypeValue = cycleTaskType(taskTypeValue);
         renderLayout();
         return;
       }
 
-      if (data === " ") {
+      if (allowStatus && data === " ") {
         statusValue = cycleStatus(statusValue);
         renderLayout();
         return;
       }
 
-      const priority = parsePriorityKey(data);
+      const priority = allowPriority ? parsePriorityKey(data) : null;
       if (priority !== null) {
         priorityValue = priority;
         renderLayout();

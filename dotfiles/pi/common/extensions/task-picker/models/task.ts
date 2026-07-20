@@ -7,6 +7,16 @@ export interface TaskDependency {
   dependencyType?: string;
 }
 
+export interface GitLabTaskMetadata {
+  project: string;
+  iid: number;
+  webUrl?: string;
+  assignees?: string[];
+  milestone?: string;
+  weight?: number;
+  issueType?: string;
+}
+
 export interface Task {
   ref: string;
   id?: string;
@@ -29,6 +39,7 @@ export interface Task {
   dependencyCount?: number;
   dependentCount?: number;
   commentCount?: number;
+  gitlab?: GitLabTaskMetadata;
 }
 
 interface TaskListElements {
@@ -108,7 +119,7 @@ function buildTaskListElements(task: Task): TaskListElements {
     id: task.id ? stripIdPrefix(task.id) : undefined,
     title: task.title,
     status: formatTaskStatusSymbol(task.status),
-    type: formatTaskTypeCode(task.taskType),
+    type: task.gitlab ? "" : formatTaskTypeCode(task.taskType),
     summary: firstLine(task.description),
   };
 }
@@ -116,7 +127,9 @@ function buildTaskListElements(task: Task): TaskListElements {
 export function buildTaskIdentityText(priority: string | undefined, idText?: string): string {
   if (!idText) return formatTaskPriority(priority);
   const mutedId = `${MUTED_TEXT}${idText}${ANSI_RESET}`;
-  return `${formatTaskPriority(priority)} ${mutedId}`;
+  return priority || !idText.startsWith("#")
+    ? `${formatTaskPriority(priority)} ${mutedId}`
+    : mutedId;
 }
 
 export function buildTaskListTextParts(task: Task): TaskListTextParts {
@@ -125,7 +138,7 @@ export function buildTaskListTextParts(task: Task): TaskListTextParts {
   return {
     identity: buildTaskIdentityText(task.priority, elements.id),
     title: elements.title,
-    meta: `${elements.status} ${elements.type}${task.blockedBy?.length ? ` blocked:${task.blockedBy.length}` : ""}`,
+    meta: `${elements.status}${elements.type ? ` ${elements.type}` : ""}${task.blockedBy?.length ? ` blocked:${task.blockedBy.length}` : ""}`,
     summary: elements.summary,
   };
 }

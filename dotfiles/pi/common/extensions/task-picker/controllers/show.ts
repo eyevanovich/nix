@@ -156,11 +156,26 @@ function buildPriorityHelpText(
   return `1-${priorities.length} priority`;
 }
 
+export interface FormCapabilities {
+  allowStatus?: boolean;
+  allowPriority?: boolean;
+  allowTaskType?: boolean;
+}
+
 export function buildSecondaryHelpText(
   focus: FormFocus,
   priorities: string[],
-  priorityHotkeys?: Record<string, string>
+  priorityHotkeys?: Record<string, string>,
+  capabilities: FormCapabilities = {}
 ): string {
   if (focus !== "nav") return "";
-  return `space status • ${buildPriorityHelpText(priorities, priorityHotkeys)} • t type`;
+  return [
+    capabilities.allowStatus === false ? null : "space status",
+    capabilities.allowPriority === false
+      ? null
+      : buildPriorityHelpText(priorities, priorityHotkeys),
+    capabilities.allowTaskType === false ? null : "t type",
+  ]
+    .filter(Boolean)
+    .join(" • ");
 }

@@ -303,13 +303,13 @@ function isApplicable(cwd = process.cwd()): boolean {
   return checkBeadsCapability(cwd).kind === "ready";
 }
 
-function initialize(pi: ExtensionAPI): TaskAdapter {
+function initialize(pi: ExtensionAPI, cwd?: string): TaskAdapter {
   let commandQueue: Promise<void> = Promise.resolve();
   const taskTypes = [...BUILT_IN_TASK_TYPES];
 
   function execBd(args: string[], timeout = 30_000): Promise<string> {
     const command = commandQueue.then(async () => {
-      const result = await pi.exec("bd", args, { timeout });
+      const result = await pi.exec("bd", args, cwd ? { timeout, cwd } : { timeout });
       if (result.code !== 0) {
         const details = (result.stderr || result.stdout || "").trim();
         throw new Error(

@@ -1,7 +1,7 @@
 {
-  "name": "pi-beads",
+  "name": "pi-task-picker",
   "version": "0.2.0",
-  "description": "pi extension for beads (bd) task management",
+  "description": "Tracker-neutral Pi task picker with Beads and GitLab support",
   "type": "module",
   "license": "MIT",
   "engines": {
@@ -9,7 +9,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "node --test test/beads-adapter.test.ts test/pure-behavior.test.ts test/runtime-capability.test.ts",
+    "test": "node --test test/beads-adapter.test.ts test/gitlab-adapter.test.ts test/pure-behavior.test.ts test/runtime-capability.test.ts test/routing-capability.test.ts",
     "check": "npm run typecheck && npm test"
   },
   "pi": {

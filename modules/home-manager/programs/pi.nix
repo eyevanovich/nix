@@ -64,7 +64,7 @@
       "${piDir}/keybindings.json" = link "${dotfiles}/common/keybindings.json";
       "${piDir}/uber-go-style.json" = link "${dotfiles}/common/uber-go-style.json";
       "${piDir}/permission-gate.json" = link "${dotfiles}/common/permission-gate.json";
-      "${piDir}/extensions/beads" = link "${dotfiles}/common/extensions/beads";
+      "${piDir}/extensions/task-picker" = link "${dotfiles}/common/extensions/task-picker";
       "${piDir}/extensions/subagent/config.json" =
         link "${dotfiles}/common/extensions/subagent/config.json";
       "${piDir}/extensions/zellij" = link "${dotfiles}/common/extensions/zellij";
@@ -96,6 +96,10 @@
   legacyPaths = [
     "${piDir}/extensions/zellij.ts"
     "${piDir}/extensions/permission-gate.ts"
+  ];
+
+  retiredPaths = [
+    "${piDir}/extensions/beads"
   ];
 
   piPackages =
@@ -154,6 +158,16 @@ in {
     ${lib.concatMapStringsSep "\n" (rel: ''
       backup_managed_path "$HOME/${rel}"
     '') (managedPaths ++ legacyPaths)}
+
+    ${lib.concatMapStringsSep "\n" (rel: ''
+        retired="$HOME/${rel}"
+        if [ -L "$retired" ]; then
+          rm "$retired"
+        else
+          backup_managed_path "$retired"
+        fi
+      '')
+      retiredPaths}
   '';
 
   home.activation.piPackages = lib.hm.dag.entryAfter ["writeBoundary"] ''

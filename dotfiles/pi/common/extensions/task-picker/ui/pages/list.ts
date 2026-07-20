@@ -38,6 +38,10 @@ export interface ListPageConfig {
   tasks: Task[];
   allowPriority?: boolean;
   allowSearch?: boolean;
+  allowEdit?: boolean;
+  allowStatus?: boolean;
+  allowTaskType?: boolean;
+  allowCreate?: boolean;
   filterTerm?: string;
   priorities: string[];
   priorityHotkeys?: Record<string, string>;
@@ -91,7 +95,17 @@ export async function showTaskList(
   ctx: ExtensionCommandContext,
   config: ListPageConfig
 ): Promise<void> {
-  const { title, subtitle, tasks, allowPriority = true, allowSearch = true } = config;
+  const {
+    title,
+    subtitle,
+    tasks,
+    allowPriority = true,
+    allowSearch = true,
+    allowEdit = true,
+    allowStatus = true,
+    allowTaskType = true,
+    allowCreate = true,
+  } = config;
 
   const displayTasks = [...tasks];
   const mutationCoordinator = new TaskMutationCoordinator();
@@ -267,7 +281,7 @@ export async function showTaskList(
 
         const helpText = new Text("", KEYBOARD_HELP_PADDING_X, 0);
         const shortcutsText = new Text(
-          formatKeyboardHelp(theme, buildListSecondaryHelpText()),
+          formatKeyboardHelp(theme, buildListSecondaryHelpText({ allowStatus })),
           KEYBOARD_HELP_PADDING_X,
           0
         );
@@ -291,6 +305,10 @@ export async function showTaskList(
                 filtered: !!filterTerm,
                 allowPriority,
                 allowSearch,
+                allowEdit,
+                allowStatus,
+                allowTaskType,
+                allowCreate,
                 closeKey: config.closeKey,
                 priorities: config.priorities,
                 priorityHotkeys: config.priorityHotkeys,
@@ -480,6 +498,10 @@ export async function showTaskList(
               filtered: !!filterTerm,
               allowSearch,
               allowPriority,
+              allowEdit,
+              allowStatus,
+              allowTaskType,
+              allowCreate,
               closeKey: config.closeKey,
               priorities: config.priorities,
               priorityHotkeys: config.priorityHotkeys,

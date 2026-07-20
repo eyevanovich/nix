@@ -15,7 +15,12 @@ export type TaskContextKey =
   | "description"
   | "acceptanceCriteria"
   | "design"
-  | "notes";
+  | "notes"
+  | "project"
+  | "webUrl"
+  | "milestone"
+  | "weight"
+  | "issueType";
 
 export interface TaskContextField {
   key: TaskContextKey;
@@ -71,6 +76,11 @@ export function buildTaskContext(task: Task): TaskContextField[] {
   add(fields, "acceptanceCriteria", "Acceptance criteria", task.acceptanceCriteria, true);
   add(fields, "design", "Design", task.design, true);
   add(fields, "notes", "Notes", task.notes, true);
+  add(fields, "project", "Project", task.gitlab?.project);
+  add(fields, "webUrl", "Web URL", task.gitlab?.webUrl);
+  add(fields, "milestone", "Milestone", task.gitlab?.milestone);
+  add(fields, "weight", "Weight", task.gitlab?.weight?.toString());
+  add(fields, "issueType", "Issue type", task.gitlab?.issueType);
 
   return fields;
 }

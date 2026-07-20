@@ -27,6 +27,10 @@ export interface ListControllerState {
   filtered: boolean;
   allowSearch: boolean;
   allowPriority: boolean;
+  allowEdit?: boolean;
+  allowStatus?: boolean;
+  allowTaskType?: boolean;
+  allowCreate?: boolean;
   closeKey: string;
   priorities: string[];
   priorityHotkeys?: Record<string, string>;
@@ -225,8 +229,10 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
   {
     context: "default",
     help: (state) => `${combinedKeys("e", ...actionKeyLabels(state, "tui.editor.cursorRight"))} edit`,
+    showInHelp: (state) => state.allowEdit !== false,
     match: (data, state) =>
-      data === "e" || data === "E" || matchesAction(data, state, "tui.editor.cursorRight"),
+      state.allowEdit !== false &&
+      (data === "e" || data === "E" || matchesAction(data, state, "tui.editor.cursorRight")),
     intent: () => ({ type: "edit" }),
   },
   {
@@ -253,7 +259,7 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
   },
   {
     context: "default",
-    match: (data) => data === " ",
+    match: (data, state) => state.allowStatus !== false && data === " ",
     intent: () => ({ type: "toggleStatus" }),
   },
   {
@@ -264,13 +270,16 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
   {
     context: "default",
     help: "t type",
-    match: (data) => data === "t" || data === "T",
+    showInHelp: (state) => state.allowTaskType !== false,
+    match: (data, state) =>
+      state.allowTaskType !== false && (data === "t" || data === "T"),
     intent: () => ({ type: "toggleType" }),
   },
   {
     context: "default",
     help: "c create",
-    match: (data) => data === "c" || data === "C",
+    showInHelp: (state) => state.allowCreate !== false,
+    match: (data, state) => state.allowCreate !== false && (data === "c" || data === "C"),
     intent: () => ({ type: "create" }),
   },
   {
@@ -306,6 +315,10 @@ export function buildListPrimaryHelpText(state: ListControllerState): string {
   return parts.join(" • ");
 }
 
-export function buildListSecondaryHelpText(): string {
-  return "space status • j/k scroll";
+export function buildListSecondaryHelpText(
+  state?: Pick<ListControllerState, "allowStatus">
+): string {
+  return [state?.allowStatus === false ? null : "space status", "j/k scroll"]
+    .filter(Boolean)
+    .join(" • ");
 }
