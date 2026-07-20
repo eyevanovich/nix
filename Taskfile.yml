@@ -41,9 +41,20 @@ tasks:
 #  nix related commands
 ############################################################################
   update:
-    desc: "update flake lock file"
+    desc: "Update all flake inputs"
     cmds:
     - nix flake update
+
+  update-nixpkgs:
+    desc: "Update only the nixpkgs input"
+    cmds:
+    - nix flake update nixpkgs
+
+  upgrade:
+    desc: "Update nixpkgs and rebuild the current host"
+    cmds:
+      - task: update-nixpkgs
+      - task: rebuild
 
   history:
     desc: "View nix system history"

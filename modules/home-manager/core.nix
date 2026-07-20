@@ -19,81 +19,90 @@
   # changes in each release.
   home.stateVersion = "23.11";
 
-  home.packages = with pkgs; [
-    # utils
-    jq
-    yq-go
-    kubectx
-    awscli
-    fzf
-    nmap
-    revive
-    wget
+  home.packages = with pkgs;
+    [
+      # utils
+      jq
+      yq-go
+      kubectx
+      awscli
+      fzf
+      nmap
+      revive
+      wget
 
-    # devops
-    terraform
-    terraform-docs
-    packer
-    kubectl
-    kustomize
-    gh
-    k9s
-    dive
-    docker-slim
-    tilt
-    localstack
-    git-lfs
-    supabase-cli
-    tea
-    glab
-    gitleaks
+      # devops
+      terraform
+      terraform-docs
+      packer
+      kubectl
+      kustomize
+      gh
+      k9s
+      dive
+      docker-slim
+      tilt
+      localstack
+      git-lfs
+      supabase-cli
+      tea
+      glab
+      gitleaks
 
-    # dev tools
-    direnv
-    pre-commit
-    shellcheck
-    bat
-    eza
-    ripgrep
-    fnm
+      # dev tools
+      direnv
+      pre-commit
+      shellcheck
+      bat
+      eza
+      ripgrep
+      fnm
+      pi-coding-agent
+      claude-code
+      herdr
+      tmux
 
-    # langs
-    go
-    cargo
-    rustc
-    rustfmt
-    rust-analyzer
-    clippy
-    python313
-    uv
-    bun
-    nodejs
+      # langs
+      go
+      cargo
+      rustc
+      rustfmt
+      rust-analyzer
+      clippy
+      python313
+      uv
+      bun
+      nodejs
 
-    # database
-    redis
-    mysql84
-    dolt
+      # database
+      redis
+      mysql84
+      dolt
 
-    # productivity
-    glow
-    btop
-    yazi
-    tealdeer
-    lazygit
-    fd
-    devbox
-    go-task
-    navi
-    _7zz # 7-Zip
+      # productivity
+      glow
+      btop
+      yazi
+      tealdeer
+      lazygit
+      fd
+      devbox
+      go-task
+      navi
+      _7zz # 7-Zip
 
-    # media
-    ffmpeg
+      # media
+      ffmpeg
 
-    # misc
-    cowsay
-    tree
-    fastfetch
-    grc
-    scls.defaultPackage.${pkgs.stdenv.hostPlatform.system}
-  ];
+      # misc
+      cowsay
+      tree
+      fastfetch
+      grc
+      scls.defaultPackage.${pkgs.stdenv.hostPlatform.system}
+    ]
+    ++ lib.optionals (profile == "work") [
+      azure-cli
+      xmlstarlet
+    ];
 }

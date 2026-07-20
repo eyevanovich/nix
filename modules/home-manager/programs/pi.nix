@@ -158,8 +158,8 @@ in {
   '';
 
   home.activation.piPackages = lib.hm.dag.entryAfter ["writeBoundary"] ''
-    piBin="/opt/homebrew/bin/pi"
-    piPath="${pkgs.git}/bin:${pkgs.nodejs}/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+    piBin="${pkgs.pi-coding-agent}/bin/pi"
+    piPath="${pkgs.pi-coding-agent}/bin:${pkgs.git}/bin:${pkgs.nodejs}/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
     if [ -x "$piBin" ]; then
       piList="$(env PATH="$piPath" "$piBin" list 2>/dev/null || true)"
 

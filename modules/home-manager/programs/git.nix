@@ -1,6 +1,7 @@
-{ profile
-, lib
-, ...
+{
+  profile,
+  lib,
+  ...
 }: {
   programs.delta = {
     enableGitIntegration = true;
@@ -29,41 +30,43 @@
       };
 
     includes = lib.optionals (profile == "work") [
-      { path = "~/.config/git/local.conf"; }
+      {path = "~/.config/git/local.conf";}
     ];
 
     ignores = [
       ".DS_Store"
     ];
 
-    settings = {
-      init.defaultBranch = "main";
-      push.autoSetupRemote = true;
-      pull.rebase = true;
-      user.name = "Ivan Miles Piesh";
-      user.email =
-        if profile == "work"
-        then "ipiesh@skysound.com"
-        else "ivan@ivanpiesh.info";
+    settings =
+      {
+        init.defaultBranch = "main";
+        push.autoSetupRemote = true;
+        pull.rebase = true;
+        user.name = "Ivan Miles Piesh";
+        user.email =
+          if profile == "work"
+          then "ipiesh@skysound.com"
+          else "ivan@ivanpiesh.info";
 
-      alias = {
-        # common aliases
-        br = "branch";
-        co = "checkout";
-        st = "status";
-        ls = "log --pretty=format:\"%C(yellow)%h%Cred%d\\\\ %Creset%s%Cblue\\\\ [%cn]\" --decorate";
-        ll = "log --pretty=format:\"%C(yellow)%h%Cred%d\\\\ %Creset%s%Cblue\\\\ [%cn]\" --decorate --numstat";
-        cm = "commit -m";
-        ca = "commit -am";
-        dc = "diff --cached";
-        amend = "commit --amend -m";
+        alias = {
+          # common aliases
+          br = "branch";
+          co = "checkout";
+          st = "status";
+          ls = "log --pretty=format:\"%C(yellow)%h%Cred%d\\\\ %Creset%s%Cblue\\\\ [%cn]\" --decorate";
+          ll = "log --pretty=format:\"%C(yellow)%h%Cred%d\\\\ %Creset%s%Cblue\\\\ [%cn]\" --decorate --numstat";
+          cm = "commit -m";
+          ca = "commit -am";
+          dc = "diff --cached";
+          amend = "commit --amend -m";
 
-        # aliases for submodule
-        update = "submodule update --init --recursive";
-        foreach = "submodule foreach";
+          # aliases for submodule
+          update = "submodule update --init --recursive";
+          foreach = "submodule foreach";
+        };
+      }
+      // lib.optionalAttrs (profile == "personal") {
+        gpg.ssh.allowedSignersFile = "~/.ssh/git_allowed_signers";
       };
-    } // lib.optionalAttrs (profile == "personal") {
-      gpg.ssh.allowedSignersFile = "~/.ssh/git_allowed_signers";
-    };
   };
 }
