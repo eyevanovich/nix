@@ -1,10 +1,11 @@
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
+import { fileURLToPath } from "node:url";
 import initializeAdapter, {
   checkAdapterCapability,
   openTaskBrowserWhenAvailable,
 } from "./backend/resolver.ts";
 import type { Task, TaskStatus } from "./models/task.ts";
-import { buildTaskWorkPrompt, serializeTask } from "./lib/task-serialization.ts";
+import { serializeTask } from "./lib/task-serialization.ts";
 import { showTaskList } from "./ui/pages/list.ts";
 import { showTaskForm } from "./ui/pages/show.ts";
 import { PartialTaskCreateError } from "./backend/api.ts";
@@ -12,6 +13,7 @@ import type { TaskAdapter, TaskAdapterCapability, TaskUpdate } from "./backend/a
 import type { FormDraft } from "./controllers/show.ts";
 
 const CTRL_X = "\x18";
+const PROMPTS_DIR = fileURLToPath(new URL("./prompts", import.meta.url));
 
 function parsePriorityKey(
   data: string,
@@ -137,18 +139,10 @@ export async function hydrateTaskForEdit(
 }
 
 export function createTaskWorkHandler(
-  backend: Pick<TaskAdapter, "claim" | "show">,
-  send: (prompt: string) => void,
-  notify: (message: string) => void
+  send: (prompt: string) => void
 ): (task: Task) => Promise<void> {
   return async (task) => {
-    try {
-      await backend.claim(task.ref);
-      const shown = await backend.show(task.ref);
-      send(buildTaskWorkPrompt(mergeHydratedTask(task, shown)));
-    } catch (error) {
-      notify(error instanceof Error ? error.message : String(error));
-    }
+    send(`/execute-beads ${task.id ?? task.ref}`);
   };
 }
 
@@ -276,6 +270,10 @@ export default function registerExtension(
   const checkCapability = dependencies.checkCapability ?? checkAdapterCapability;
   validateBackendConfiguration(backend);
 
+  pi.on("resources_discover", () => ({
+    promptPaths: [PROMPTS_DIR],
+  }));
+
   const nextStatus = (status: TaskStatus): TaskStatus => cycleStatus(status, backend.statusMap);
   const nextTaskType = (current: string | undefined): string =>
     cycleTaskType(current, backend.taskTypes);
@@ -376,11 +374,7 @@ export default function registerExtension(
       const tasks = await listTasks();
       ctx.ui.setStatus("tasks", undefined);
 
-      const onWork = createTaskWorkHandler(
-        backend,
-        (prompt) => pi.sendUserMessage(prompt),
-        (message) => ctx.ui.notify(message, "error")
-      );
+      const onWork = createTaskWorkHandler((prompt) => pi.sendUserMessage(prompt));
 
       await showTaskList(ctx, {
         title: pageTitle,

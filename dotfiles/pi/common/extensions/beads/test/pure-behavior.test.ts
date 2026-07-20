@@ -30,7 +30,7 @@ import {
   mergeHydratedTask,
 } from "../extension.ts";
 import { buildTaskContext } from "../lib/task-context.ts";
-import { buildTaskWorkPrompt, serializeTask } from "../lib/task-serialization.ts";
+import { serializeTask } from "../lib/task-serialization.ts";
 import {
   buildListRowModel,
   decodeDescription,
@@ -1156,97 +1156,29 @@ test("rich edit form render includes every read-only context field and exact ID"
   assert.match(rendered, /ID: demo-rich-exact-id/);
 });
 
-test("work claims first, preserves hydrated blockers, and stops on claim or show failure", async () => {
-  const listed: Task = {
-    ref: "demo-open",
-    id: "demo-open",
-    title: "Stale title",
-    description: "Stale description",
-    status: "open",
-    blockedBy: [{ ref: "demo-prereq" }],
-  };
-  const shown: Task = {
-    ref: "demo-open",
-    id: "demo-open",
-    title: "Hydrated title",
-    description: "Complete description",
-    status: "open",
-    dependencies: [{ ref: "demo-prereq", title: "Foundation", status: "open" }],
-  };
-  assert.deepEqual(mergeHydratedTask(listed, shown).blockedBy, [
-    { ref: "demo-prereq", title: "Foundation", status: "open" },
-  ]);
-
+test("work delegates the exact task ID to the bundled execute-beads workflow", async () => {
   const prompts: string[] = [];
-  const notifications: string[] = [];
-  const calls: string[] = [];
-  const successful = createTaskWorkHandler(
-    {
-      claim: async (ref) => { calls.push(`claim:${ref}`); },
-      show: async (ref) => { calls.push(`show:${ref}`); return shown; },
-    },
-    (prompt) => prompts.push(prompt),
-    (message) => notifications.push(message)
-  );
-  await successful(listed);
-  assert.deepEqual(calls, ["claim:demo-open", "show:demo-open"]);
-  assert.equal(prompts.length, 1);
-  assert.match(prompts[0] ?? "", /^Work on task demo-open: Hydrated title/);
-  assert.match(prompts[0] ?? "", /WARNING:.*demo-prereq/);
-  assert.match(prompts[0] ?? "", /Active blockers: demo-prereq \(Foundation; open\)/);
-  assert.doesNotMatch(prompts[0] ?? "", /bd prime|execute-beads/i);
+  const work = createTaskWorkHandler((prompt) => prompts.push(prompt));
 
-  await successful({ ...listed, assignee: "ivan" });
-  assert.deepEqual(calls, [
-    "claim:demo-open",
-    "show:demo-open",
-    "claim:demo-open",
-    "show:demo-open",
+  await work({
+    ref: "fallback-ref",
+    id: "demo-open",
+    title: "Selected task",
+    status: "open",
+  });
+  await work({
+    ref: "demo-fallback",
+    title: "Selected task without ID",
+    status: "open",
+  });
+
+  assert.deepEqual(prompts, [
+    "/execute-beads demo-open",
+    "/execute-beads demo-fallback",
   ]);
-  assert.equal(prompts.length, 2);
-
-  const failedCalls: string[] = [];
-  const failed = createTaskWorkHandler(
-    {
-      claim: async (ref) => {
-        failedCalls.push(`claim:${ref}`);
-        throw new Error("issue already claimed by another actor");
-      },
-      show: async (ref) => {
-        failedCalls.push(`show:${ref}`);
-        return shown;
-      },
-    },
-    (prompt) => prompts.push(prompt),
-    (message) => notifications.push(message)
-  );
-  await failed(listed);
-  assert.deepEqual(failedCalls, ["claim:demo-open"]);
-  assert.equal(prompts.length, 2);
-  assert.deepEqual(notifications, ["issue already claimed by another actor"]);
-
-  const showFailedCalls: string[] = [];
-  const showFailedNotifications: string[] = [];
-  const showFailed = createTaskWorkHandler(
-    {
-      claim: async (ref) => {
-        showFailedCalls.push(`claim:${ref}`);
-      },
-      show: async (ref) => {
-        showFailedCalls.push(`show:${ref}`);
-        throw new Error("failed to load claimed issue");
-      },
-    },
-    (prompt) => prompts.push(prompt),
-    (message) => showFailedNotifications.push(message)
-  );
-  await showFailed(listed);
-  assert.deepEqual(showFailedCalls, ["claim:demo-open", "show:demo-open"]);
-  assert.equal(prompts.length, 2);
-  assert.deepEqual(showFailedNotifications, ["failed to load claimed issue"]);
 });
 
-test("task serialization and rich work prompts preserve exact execution context", () => {
+test("task serialization preserves exact task context", () => {
   const task: Task = {
     ref: "fallback-ref",
     id: "junk-8dn.1",
@@ -1273,16 +1205,4 @@ test("task serialization and rich work prompts preserve exact execution context"
     serializeTask(task),
     'task(id=junk-8dn.1, title="Portable harness", status=in-progress, priority=p1, type=task, description="Line one\\nLine two", due="2026-08-01")'
   );
-  assert.equal(
-    buildTaskWorkPrompt(task),
-    "Work on task junk-8dn.1: Portable harness\n\nWARNING: This task is actively blocked by demo-prereq. Resolve or account for these blockers before proceeding.\n\nStatus: in-progress\n\nActive blockers: demo-prereq (Foundation; open)\n\nDependencies: demo-related (Related decision; closed) [related]\n\nPriority: p1\n\nType: task\n\nAssignee: agent@example.test\n\nOwner: ivan\n\nLabels: backend, urgent\n\nDue: 2026-08-01\n\nDescription:\nLine one\nLine two\n\nAcceptance criteria:\nAll focused checks pass.\n\nDesign:\nHydrate before rendering.\n\nNotes:\nKeep blocker warning actionable."
-  );
-
-  const sparsePrompt = buildTaskWorkPrompt({
-    ref: "demo-sparse",
-    title: "Sparse",
-    status: "open",
-  });
-  assert.equal(sparsePrompt, "Work on task demo-sparse: Sparse\n\nStatus: open");
-  assert.doesNotMatch(sparsePrompt, /ID:|unknown|undefined|null/);
 });

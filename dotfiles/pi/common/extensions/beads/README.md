@@ -19,6 +19,7 @@ loading tasks. Missing prerequisites are reported without entering the browser.
 
 - `/beads-tasks` — open the task list
 - `ctrl+e` — also opens the task list
+- `/execute-beads [bead-id-or-search ...]` — run the bundled approval-gated execution workflow
 
 > **Note:** pi has no conflict-free `ctrl+<letter>` left — every non-control-code
 > letter is bound by either the app or the emacs-style editor. `ctrl+e` overrides
@@ -38,7 +39,7 @@ loading tasks. Missing prerequisites are reported without entering the browser.
 | `0`–`4` | Set priority |
 | `t` | Cycle type |
 | `e` / `→` | Edit task |
-| Configured `tui.select.confirm` keys | Claim task and send it to the work prompt |
+| Configured `tui.select.confirm` keys | Run `/execute-beads <task-id>` |
 | Configured `tui.input.tab` keys | Insert task ref and close |
 | `c` | Create task |
 | `f` | Search/filter |
@@ -98,14 +99,12 @@ outside what `bd` itself does, no dynamic code evaluation. Audited on port.
   When a focused form becomes compact, its active editor and footer help take
   priority over inactive fields and header chrome.
 - Dependency-blocked rows keep their stored status symbol and add `blocked:N`.
-  Starting work closes the list immediately, then atomically claims the selected
-  issue before hydrating it with `bd show`. Re-entering an issue already owned by
-  the same actor is idempotent; a competing owner or any other claim failure is
-  reported as an error and prevents hydration and prompt submission. Successful
-  work prompts retain rich task context and actionable blocker IDs.
-- Beads context setup remains explicit and session-level: run `bd prime` yourself
-  when needed. The browser neither runs nor injects it, and task-specific work
-  prompts remain separate from `/execute-beads`.
+  Starting work closes the list immediately and submits `/execute-beads <task-id>`.
+  The bundled workflow owns target resolution, readiness checks, claiming,
+  hydration, approval, execution, review, and closure.
+- The `execute-beads.md` prompt is bundled under `prompts/` and contributed through
+  Pi's resource discovery API, so the picker and manual `/execute-beads` invocation
+  always use the same workflow.
 - Editable task types include the bd 1.1 built-ins (`task`, `feature`, `bug`,
   `chore`, `epic`, and `decision`) plus unique values from `types.custom`.
 - `bd` commands are serialized because its dolt backend cannot safely handle
