@@ -70,6 +70,10 @@
       "${piDir}/extensions/zellij" = link "${dotfiles}/common/extensions/zellij";
     };
 
+  profileFiles = {
+    "${piDir}/task-picker.json" = link "${dotfiles}/${profile}/task-picker.json";
+  };
+
   personalFiles = lib.optionalAttrs (profile == "personal") {
     "${piDir}/extensions/uber-go-style" =
       link "${dotfiles}/personal/extensions/uber-go-style";
@@ -88,7 +92,7 @@
       link "${dotfiles}/work/extensions/mysql-connector";
   };
 
-  homeFiles = commonFiles // personalFiles // workFiles // profileAppendSystem;
+  homeFiles = commonFiles // profileFiles // personalFiles // workFiles // profileAppendSystem;
   managedPaths = builtins.attrNames homeFiles;
 
   # Legacy loose extension files from pre-Nix machines. Back these up to avoid

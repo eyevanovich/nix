@@ -22,6 +22,8 @@ loading tasks. Missing prerequisites are reported without entering the browser.
 
 The GitLab provider lists every open project issue with explicit pagination. It supports creating issues, editing title and description, and closing or reopening. Labels, assignees, milestone, weight, due date, web URL, and issue type are display-only in the picker. GitLab-specific priority and type controls are intentionally absent.
 
+The execution workflow reads `~/.pi/agent/task-picker.json`, linked by Home Manager from the active profile. Version 1 supports `gitlab.workStatus.mode` values `scoped-labels` and `none`. The personal profile verifies and applies its configured scoped labels; the work profile self-assigns without automated status mutation. Missing or invalid configuration stops before mutation rather than guessing a fallback.
+
 ## Usage
 
 - `/tasks` — detect the available task tracker and open its task list
@@ -125,9 +127,9 @@ All tracker commands use argv arrays with no shell interpolation. The extension 
   manual execution use the same workflows.
 - GitLab work dispatch uses the canonical issue URL so self-managed hosts remain
   explicit. The workflow resolves the authenticated username without token output,
-  preserves existing assignees, verifies the existing `status::in-progress` label,
-  and applies it before plan approval. Starting a `status::deferred` issue requires
-  an explicit confirmation; completion uses the native closed issue state.
+  preserves existing assignees, and follows the active profile's work-status mode.
+  Scoped-label mode verifies configured labels and guards deferred work before
+  mutation; none mode leaves status untouched. Completion uses native close.
 - Editable task types include the bd 1.1 built-ins (`task`, `feature`, `bug`,
   `chore`, `epic`, and `decision`) plus unique values from `types.custom`.
 - `bd` commands are serialized because its dolt backend cannot safely handle

@@ -6,29 +6,35 @@ Use triage and pi-subagents. Lead with decisions and required evidence. Keep all
 
 Goal: the parent owns exact issue resolution, scope, approval, integration, validation, review, and the final answer. Subagents provide bounded context, implementation, and independent review. Never inspect, print, copy, or manage GitLab tokens.
 
-## Resolve and inspect the issue
+## Resolve configuration and inspect the issue
+
+Before any mutation, read `~/.pi/agent/task-picker.json` with a file-reading tool, not shell output. Parse it as JSON and accept only `version: 1` with `gitlab.workStatus.mode` equal to `scoped-labels` or `none`. A missing, malformed, or unsupported configuration must stop with an actionable diagnostic before assignment or status mutation. Never guess or fall back to another mode.
+
+For `scoped-labels`, require non-empty string values for `inProgressLabel` and `deferredLabel`; retain their exact values as `<in-progress-label>` and `<deferred-label>`. For `none`, do not read or infer configured work-status label values, list project labels for status discovery, use labels as workflow-status guards, mutate status, or probe enterprise native status.
 
 Require exactly one canonical `host/group/project#iid` reference or canonical GitLab issue URL. Parse and retain the exact host, project path, IID, and canonical `https://<host>/<group/project>` project URL. Resolve the project explicitly and run `glab issue view <iid> --repo <project-url> --output json` before any mutation. Validate the returned project, host, and IID against the target. Stop with an actionable diagnostic for a missing, inaccessible, or malformed issue. Every subsequent issue and label command must use that same full project URL; never fall back to an unqualified project path or the current directory's host.
 
-Inspect state, assignees, and current labels without changing anything. Resolve the authenticated user on the target host with `glab api --hostname <host> user --output json` and parse `.username` from JSON without shell interpolation or token output.
+Inspect state, assignees, and current labels without changing anything. Normal issue hydration may include ordinary labels as read-only issue context. In `none` mode, those labels must not drive work-status behavior. Resolve the authenticated user on the target host with `glab api --hostname <host> user --output json` and parse `.username` from JSON without shell interpolation or token output.
 
-List all existing project labels with `glab label list --repo <project-url> --output json --per-page 100 --page <page>`, starting at page 1 and requesting successive pages until a page contains fewer than 100 labels. Verify the exact existing label `status::in-progress` is present. If it is missing, stop with an actionable error; never create, rename, substitute, or guess a label.
+Only in `scoped-labels` mode, list all existing project labels with `glab label list --repo <project-url> --output json --per-page 100 --page <page>`, starting at page 1 and requesting successive pages until a page contains fewer than 100 labels. Verify both configured labels by exact name. If `<in-progress-label>` is absent, stop with an actionable error. If `<deferred-label>` is absent but the issue does not currently use it, continue because only the in-progress label is required for the mutation. Never create, rename, substitute, or guess a label.
 
 ## Clear all pre-mutation guards
 
-Do not reopen, assign, or label the issue until every applicable guard below is approved:
+Do not reopen, assign, or mutate status until every applicable guard below is approved:
 
 - If the issue is closed, ask before reopening it.
 - If another user owns it or assignment would conflict with existing work, report the exact non-secret ownership evidence and ask before proceeding. Do not silently override ownership.
-- If the issue currently has `status::deferred`, ask exactly: `This issue is deferred. Starting it will replace status::deferred with status::in-progress. Continue?`
+- Only in `scoped-labels` mode, if the issue currently has `<deferred-label>`, ask exactly: `This issue is deferred (<deferred-label>). Starting it will replace <deferred-label> with <in-progress-label>. Continue?` Substitute the resolved exact label names before asking.
 
-A no or cancellation at any pre-mutation guard performs no reopen, assignment, or label mutation and must not add a noisy issue comment.
+A no or cancellation at any pre-mutation guard performs no reopen, assignment, or status mutation and must not add a noisy issue comment.
 
 ## Apply start mutations
 
-After every guard is cleared, reopen the issue first if that was explicitly approved. Assign additively with `glab issue update <iid> --repo <project-url> --assignee +<username>` so existing assignees are preserved. Then apply the approved exact label with `glab issue update <iid> --repo <project-url> --label status::in-progress`.
+After every guard is cleared, reopen the issue first if that was explicitly approved. Assign additively with `glab issue update <iid> --repo <project-url> --assignee +<username>` so existing assignees are preserved.
 
-Rely on GitLab scoped-label replacement to replace `status::deferred` or another existing `status::*` value. Do not manually remove scoped status labels. Hydrate the issue again after assignment and labeling. If any mutation partially succeeded, report the exact persisted state rather than pretending the whole start operation failed.
+In `scoped-labels` mode, then apply the configured label with `glab issue update <iid> --repo <project-url> --label <in-progress-label>`. Rely on GitLab scoped-label replacement to replace `<deferred-label>` or another label in the same scope. Never create, rename, or manually remove status labels.
+
+In `none` mode, skip project-label listing for status discovery, every label-based workflow guard, and every status mutation. Ordinary labels from issue hydration remain read-only context only. Self-assignment and the rest of this workflow still apply. Hydrate the issue again after the applicable start mutations. If any mutation partially succeeded, report the exact persisted state rather than pretending the whole start operation failed.
 
 ## Build context and approve the plan
 
@@ -52,6 +58,6 @@ If execution is blocked or validation/review fails after work begins, leave one 
 
 ## Finish
 
-Close the issue with `glab issue close <iid> --repo <project-url>` only after the approved outcome is implemented, acceptance criteria pass, integrated validation succeeds, and required review findings are resolved. Hydrate once more with the same full project URL to verify the closed state. Otherwise leave it open and report the remaining work.
+Close the issue with `glab issue close <iid> --repo <project-url>` only after the approved outcome is implemented, acceptance criteria pass, integrated validation succeeds, and required review findings are resolved. Native close is completion in both modes; do not set a completion label or enterprise native work-item status. Hydrate once more with the same full project URL to verify the closed state. Otherwise leave it open and report the remaining work.
 
 Final answer: exact issue reference, outcome, changed artifacts, validation/check results, review outcome, deferred items, remaining risks, and final GitLab state.

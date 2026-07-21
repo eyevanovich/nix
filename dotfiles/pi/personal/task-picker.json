@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "gitlab": {
+    "workStatus": {
+      "mode": "scoped-labels",
+      "inProgressLabel": "status::in-progress",
+      "deferredLabel": "status::deferred"
+    }
+  }
+}

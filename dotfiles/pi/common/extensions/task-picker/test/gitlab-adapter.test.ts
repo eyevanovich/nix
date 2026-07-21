@@ -407,45 +407,83 @@ test("GitLab repository selector preserves a self-managed host without project w
   });
 });
 
-test("GitLab execution workflow guards and applies the approved status label", () => {
+test("profile task-picker configs select scoped labels only for personal", () => {
+  const personal = JSON.parse(
+    readFileSync(new URL("../../../../personal/task-picker.json", import.meta.url), "utf8")
+  );
+  const work = JSON.parse(
+    readFileSync(new URL("../../../../work/task-picker.json", import.meta.url), "utf8")
+  );
+
+  assert.deepEqual(personal, {
+    version: 1,
+    gitlab: {
+      workStatus: {
+        mode: "scoped-labels",
+        inProgressLabel: "status::in-progress",
+        deferredLabel: "status::deferred",
+      },
+    },
+  });
+  assert.deepEqual(work, {
+    version: 1,
+    gitlab: { workStatus: { mode: "none" } },
+  });
+});
+
+test("GitLab execution workflow resolves profile status behavior before mutation", () => {
   const prompt = readFileSync(
     new URL("../prompts/execute-gitlab-issue.md", import.meta.url),
     "utf8"
   );
+  const guardHeading = prompt.indexOf("## Clear all pre-mutation guards");
   const mutationHeading = prompt.indexOf("## Apply start mutations");
   const firstMutation = prompt.indexOf("glab issue update <iid>");
 
+  assert.match(prompt, /read `~\/\.pi\/agent\/task-picker\.json` with a file-reading tool, not shell output/);
+  assert.match(prompt, /accept only `version: 1`/);
+  assert.match(prompt, /`scoped-labels` or `none`/);
+  assert.match(prompt, /missing, malformed, or unsupported configuration must stop/);
   assert.match(prompt, /glab api --hostname <host> user --output json/);
   assert.match(
     prompt,
     /glab label list --repo <project-url> --output json --per-page 100 --page <page>/
   );
-  assert.match(prompt, /Verify the exact existing label `status::in-progress` is present/);
+  assert.match(prompt, /Verify both configured labels by exact name/);
   assert.match(
     prompt,
-    /If it is missing, stop with an actionable error; never create, rename, substitute, or guess a label/
-  );
-  assert.match(
-    prompt,
-    /This issue is deferred\. Starting it will replace status::deferred with status::in-progress\. Continue\?/
+    /This issue is deferred \(<deferred-label>\)\. Starting it will replace <deferred-label> with <in-progress-label>\. Continue\?/
   );
   assert.match(prompt, /glab issue update <iid> --repo <project-url> --assignee \+<username>/);
   assert.match(
     prompt,
-    /glab issue update <iid> --repo <project-url> --label status::in-progress/
+    /glab issue update <iid> --repo <project-url> --label <in-progress-label>/
   );
-  assert.match(prompt, /Rely on GitLab scoped-label replacement/);
-  assert.match(prompt, /Do not manually remove scoped status labels/);
+  assert.match(
+    prompt,
+    /For `none`, do not read or infer configured work-status label values, list project labels for status discovery, use labels as workflow-status guards, mutate status, or probe enterprise native status/
+  );
+  assert.match(
+    prompt,
+    /Normal issue hydration may include ordinary labels as read-only issue context\. In `none` mode, those labels must not drive work-status behavior/
+  );
+  assert.match(
+    prompt,
+    /In `none` mode, skip project-label listing for status discovery, every label-based workflow guard, and every status mutation/
+  );
+  assert.match(prompt, /Ordinary labels from issue hydration remain read-only context only/);
+  assert.match(prompt, /Only in `scoped-labels` mode, list all existing project labels/);
+  assert.match(prompt, /Only in `scoped-labels` mode, if the issue currently has `<deferred-label>`/);
   assert.match(prompt, /glab issue close <iid> --repo <project-url>/);
   assert.match(prompt, /never fall back to an unqualified project path/);
-  assert.doesNotMatch(prompt, /candidate|plausible|ambiguous/i);
-  assert.doesNotMatch(prompt, /status::done/i);
+  assert.match(prompt, /Never inspect, print, copy, or manage GitLab tokens/);
+  assert.doesNotMatch(prompt, /status::in-progress|status::deferred|status::done/);
+  assert.doesNotMatch(prompt, /graphql|workItemUpdate|glab work-items/i);
 
-  assert.ok(mutationHeading > prompt.indexOf("## Clear all pre-mutation guards"));
+  assert.ok(guardHeading > prompt.indexOf("task-picker.json"));
+  assert.ok(mutationHeading > guardHeading);
   assert.ok(mutationHeading > prompt.indexOf("If the issue is closed"));
   assert.ok(mutationHeading > prompt.indexOf("If another user owns it"));
-  assert.ok(mutationHeading > prompt.indexOf("If the issue currently has `status::deferred`"));
-  assert.ok(mutationHeading > prompt.indexOf("Verify the exact existing label"));
   assert.ok(firstMutation > mutationHeading);
 });
 
