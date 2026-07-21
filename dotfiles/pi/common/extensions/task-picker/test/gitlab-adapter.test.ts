@@ -407,17 +407,46 @@ test("GitLab repository selector preserves a self-managed host without project w
   });
 });
 
-test("GitLab execution workflow retains the canonical host for every mutation", () => {
+test("GitLab execution workflow guards and applies the approved status label", () => {
   const prompt = readFileSync(
     new URL("../prompts/execute-gitlab-issue.md", import.meta.url),
     "utf8"
   );
+  const mutationHeading = prompt.indexOf("## Apply start mutations");
+  const firstMutation = prompt.indexOf("glab issue update <iid>");
 
   assert.match(prompt, /glab api --hostname <host> user --output json/);
-  assert.match(prompt, /glab issue update <iid> --repo <project-url> --assignee/);
-  assert.match(prompt, /glab label list --repo <project-url>/);
+  assert.match(
+    prompt,
+    /glab label list --repo <project-url> --output json --per-page 100 --page <page>/
+  );
+  assert.match(prompt, /Verify the exact existing label `status::in-progress` is present/);
+  assert.match(
+    prompt,
+    /If it is missing, stop with an actionable error; never create, rename, substitute, or guess a label/
+  );
+  assert.match(
+    prompt,
+    /This issue is deferred\. Starting it will replace status::deferred with status::in-progress\. Continue\?/
+  );
+  assert.match(prompt, /glab issue update <iid> --repo <project-url> --assignee \+<username>/);
+  assert.match(
+    prompt,
+    /glab issue update <iid> --repo <project-url> --label status::in-progress/
+  );
+  assert.match(prompt, /Rely on GitLab scoped-label replacement/);
+  assert.match(prompt, /Do not manually remove scoped status labels/);
   assert.match(prompt, /glab issue close <iid> --repo <project-url>/);
   assert.match(prompt, /never fall back to an unqualified project path/);
+  assert.doesNotMatch(prompt, /candidate|plausible|ambiguous/i);
+  assert.doesNotMatch(prompt, /status::done/i);
+
+  assert.ok(mutationHeading > prompt.indexOf("## Clear all pre-mutation guards"));
+  assert.ok(mutationHeading > prompt.indexOf("If the issue is closed"));
+  assert.ok(mutationHeading > prompt.indexOf("If another user owns it"));
+  assert.ok(mutationHeading > prompt.indexOf("If the issue currently has `status::deferred`"));
+  assert.ok(mutationHeading > prompt.indexOf("Verify the exact existing label"));
+  assert.ok(firstMutation > mutationHeading);
 });
 
 test("GitLab execution request uses the canonical issue URL on the exact host", async () => {

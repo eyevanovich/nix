@@ -124,9 +124,10 @@ All tracker commands use argv arrays with no shell interpolation. The extension 
   `prompts/` and contributed through Pi's resource discovery API, so picker and
   manual execution use the same workflows.
 - GitLab work dispatch uses the canonical issue URL so self-managed hosts remain
-  explicit. The workflow resolves the authenticated username without token output, preserves existing
-  assignees, inspects existing labels, and asks rather than guessing an ambiguous
-  in-progress label.
+  explicit. The workflow resolves the authenticated username without token output,
+  preserves existing assignees, verifies the existing `status::in-progress` label,
+  and applies it before plan approval. Starting a `status::deferred` issue requires
+  an explicit confirmation; completion uses the native closed issue state.
 - Editable task types include the bd 1.1 built-ins (`task`, `feature`, `bug`,
   `chore`, `epic`, and `decision`) plus unique values from `types.custom`.
 - `bd` commands are serialized because its dolt backend cannot safely handle

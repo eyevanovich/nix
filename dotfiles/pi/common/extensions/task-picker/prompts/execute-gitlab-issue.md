@@ -6,17 +6,29 @@ Use triage and pi-subagents. Lead with decisions and required evidence. Keep all
 
 Goal: the parent owns exact issue resolution, scope, approval, integration, validation, review, and the final answer. Subagents provide bounded context, implementation, and independent review. Never inspect, print, copy, or manage GitLab tokens.
 
-## Resolve and start the issue
+## Resolve and inspect the issue
 
 Require exactly one canonical `host/group/project#iid` reference or canonical GitLab issue URL. Parse and retain the exact host, project path, IID, and canonical `https://<host>/<group/project>` project URL. Resolve the project explicitly and run `glab issue view <iid> --repo <project-url> --output json` before any mutation. Validate the returned project, host, and IID against the target. Stop with an actionable diagnostic for a missing, inaccessible, or malformed issue. Every subsequent issue and label command must use that same full project URL; never fall back to an unqualified project path or the current directory's host.
 
-Inspect state and assignees before changing anything. If the issue is closed, ask before reopening it. If another user owns it or assignment would conflict with existing work, report the exact non-secret ownership evidence and ask before proceeding. Do not silently override ownership.
+Inspect state, assignees, and current labels without changing anything. Resolve the authenticated user on the target host with `glab api --hostname <host> user --output json` and parse `.username` from JSON without shell interpolation or token output.
 
-Resolve the authenticated user on the target host with `glab api --hostname <host> user --output json` and parse `.username` from JSON without shell interpolation or token output. Assign additively with `glab issue update <iid> --repo <project-url> --assignee +<username>` so existing assignees are preserved.
+List all existing project labels with `glab label list --repo <project-url> --output json --per-page 100 --page <page>`, starting at page 1 and requesting successive pages until a page contains fewer than 100 labels. Verify the exact existing label `status::in-progress` is present. If it is missing, stop with an actionable error; never create, rename, substitute, or guess a label.
 
-List existing project labels with `glab label list --repo <project-url> --output json --per-page 100`, paging further when a full page is returned. Identify plausible in-progress labels only from those existing labels. Never create, rename, or guess a label. If exactly one candidate is unambiguous, present its exact name as part of the plan. If none or more than one is plausible, show the compact candidate list and ask the user to choose. Apply only the approved exact label using `glab issue update <iid> --repo <project-url> --label <label>`.
+## Clear all pre-mutation guards
 
-After assignment and labeling, hydrate the issue again. If either mutation partially succeeded, report the persisted state explicitly rather than pretending the whole start operation failed.
+Do not reopen, assign, or label the issue until every applicable guard below is approved:
+
+- If the issue is closed, ask before reopening it.
+- If another user owns it or assignment would conflict with existing work, report the exact non-secret ownership evidence and ask before proceeding. Do not silently override ownership.
+- If the issue currently has `status::deferred`, ask exactly: `This issue is deferred. Starting it will replace status::deferred with status::in-progress. Continue?`
+
+A no or cancellation at any pre-mutation guard performs no reopen, assignment, or label mutation and must not add a noisy issue comment.
+
+## Apply start mutations
+
+After every guard is cleared, reopen the issue first if that was explicitly approved. Assign additively with `glab issue update <iid> --repo <project-url> --assignee +<username>` so existing assignees are preserved. Then apply the approved exact label with `glab issue update <iid> --repo <project-url> --label status::in-progress`.
+
+Rely on GitLab scoped-label replacement to replace `status::deferred` or another existing `status::*` value. Do not manually remove scoped status labels. Hydrate the issue again after assignment and labeling. If any mutation partially succeeded, report the exact persisted state rather than pretending the whole start operation failed.
 
 ## Build context and approve the plan
 
