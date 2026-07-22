@@ -44,8 +44,8 @@ changing the remembered selection.
 > letter is bound by either the app or the emacs-style editor. `ctrl+e` overrides
 > the editor's *cursor-to-line-end*; the extension wins the binding, and the
 > **End** key still jumps to line-end, so the loss is negligible. To rebind, edit
-> the `pi.registerShortcut(...)` block in `extension.ts` — `/tasks` and `/beads-tasks` work
-> regardless.
+> the `pi.registerShortcut(...)` block in `extension.ts` — `/tasks`, `/beads-tasks`,
+> and `/gitlab-issues` work regardless.
 
 ## Keybindings
 
@@ -127,9 +127,9 @@ All tracker commands use argv arrays with no shell interpolation. The extension 
   When a focused form becomes compact, its active editor and footer help take
   priority over inactive fields and header chrome.
 - Dependency-blocked rows keep their stored status symbol and add `blocked:N`.
-  Starting work closes the list immediately and submits `/execute-beads <task-id>`.
-  The bundled workflow owns target resolution, readiness checks, claiming,
-  hydration, approval, execution, review, and closure.
+  The bundled Beads workflow owns target resolution, readiness checks, claiming,
+  hydration, approval, execution, review, and closure; isolated and fallback
+  dispatch follow the behavior described above.
 - The `execute-beads.md` and `execute-gitlab-issue.md` prompts are bundled under
   `prompts/` and contributed through Pi's resource discovery API, so picker and
   manual execution use the same workflows.
