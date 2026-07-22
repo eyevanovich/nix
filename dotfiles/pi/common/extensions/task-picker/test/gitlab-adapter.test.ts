@@ -422,6 +422,7 @@ test("profile task-picker configs select scoped labels only for personal", () =>
         mode: "scoped-labels",
         inProgressLabel: "status::in-progress",
         deferredLabel: "status::deferred",
+        readyForReviewLabel: "status::ready-for-review",
       },
     },
   });
@@ -449,7 +450,14 @@ test("GitLab execution workflow resolves profile status behavior before mutation
     prompt,
     /glab label list --repo <project-url> --output json --per-page 100 --page <page>/
   );
-  assert.match(prompt, /Verify both configured labels by exact name/);
+  assert.match(prompt, /Verify the configured labels by exact name/);
+  assert.match(prompt, /also require a non-empty `readyForReviewLabel`/);
+  assert.match(prompt, /stop before assignment or status mutation if `<ready-for-review-label>` is absent/);
+  assert.match(prompt, /git ls-remote --exit-code origin HEAD/);
+  assert.match(prompt, /run `no-mistakes rerun`/);
+  assert.match(prompt, /keep the issue open/);
+  assert.match(prompt, /--label <ready-for-review-label>/);
+  assert.match(prompt, /phase `ready-for-review`/);
   assert.match(
     prompt,
     /This issue is deferred \(<deferred-label>\)\. Starting it will replace <deferred-label> with <in-progress-label>\. Continue\?/

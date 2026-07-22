@@ -18,7 +18,8 @@ import {
   type ListControllerState,
 } from "../controllers/list.ts";
 import { KeybindingsManager, TUI_KEYBINDINGS } from "@earendil-works/pi-tui";
-import registerExtension from "../extension.ts";
+import registerExtension, { dispatchTaskWork } from "../extension.ts";
+import type { WorkRunner } from "../work-runner/types.ts";
 
 function provider(id: string, detection: TrackerDetection): TrackerProvider {
   return {
@@ -444,6 +445,66 @@ test("ready-provider browser failures are reported without rejecting", async () 
     { message: "connect failed", level: "error" },
     { message: "explicit connect failed", level: "error" },
   ]);
+});
+
+test("work-runner fallback dispatches the exact existing prompt", async () => {
+  const sent: string[] = [];
+  const prompt = "/execute-beads nix-123";
+  const workRunner: WorkRunner = {
+    start: async () => ({ kind: "fallback" }),
+  };
+
+  const result = await dispatchTaskWork(
+    workRunner,
+    {
+      providerId: "beads",
+      task: { ref: "nix-123", title: "Task", status: "open" },
+      execution: { prompt },
+      cwd: "/repo",
+    },
+    (message) => sent.push(message)
+  );
+
+  assert.deepEqual(result, { kind: "fallback" });
+  assert.deepEqual(sent, [prompt]);
+});
+
+test("launched work-runner path does not dispatch in the parent session", async () => {
+  const sent: string[] = [];
+  const workRunner: WorkRunner = {
+    start: async (input) => ({
+      kind: "launched",
+      recordPath: "/state/run.json",
+      record: {
+        version: 1,
+        id: "run",
+        providerId: input.providerId,
+        taskRef: input.task.ref,
+        primaryRoot: "/repo",
+        prompt: input.execution.prompt,
+        branch: "task-picker/run",
+        phase: "launched",
+        createdAt: "2026-07-20T00:00:00Z",
+        updatedAt: "2026-07-20T00:00:00Z",
+        leaseAttempted: true,
+        leasePath: "/pool/run",
+      },
+    }),
+  };
+
+  const result = await dispatchTaskWork(
+    workRunner,
+    {
+      providerId: "gitlab",
+      task: { ref: "project#1", title: "Task", status: "open" },
+      execution: { prompt: "/execute-gitlab-issue https://example/project/-/issues/1" },
+      cwd: "/repo",
+    },
+    (message) => sent.push(message)
+  );
+
+  assert.equal(result.kind, "launched");
+  assert.deepEqual(sent, []);
 });
 
 test("Beads backend emits the exact compatibility execution request", async () => {

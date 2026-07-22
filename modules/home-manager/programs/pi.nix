@@ -132,9 +132,11 @@
 
   # Extensions needing runtime npm deps: gitignored node_modules, reinstalled
   # on activation. path is relative to ~/.pi/agent.
-  npmExtensions = lib.optionals (profile == "work") [
-    "extensions/mysql-connector"
-  ];
+  npmExtensions =
+    ["extensions/task-picker"]
+    ++ lib.optionals (profile == "work") [
+      "extensions/mysql-connector"
+    ];
 in {
   home.file = homeFiles;
 

@@ -22,7 +22,7 @@ loading tasks. Missing prerequisites are reported without entering the browser.
 
 The GitLab provider lists every open project issue with explicit pagination. It supports creating issues, editing title and description, and closing or reopening. Labels, assignees, milestone, weight, due date, web URL, and issue type are display-only in the picker. GitLab-specific priority and type controls are intentionally absent.
 
-The execution workflow reads `~/.pi/agent/task-picker.json`, linked by Home Manager from the active profile. Version 1 supports `gitlab.workStatus.mode` values `scoped-labels` and `none`. The personal profile verifies and applies its configured scoped labels; the work profile self-assigns without automated status mutation. Missing or invalid configuration stops before mutation rather than guessing a fallback.
+The execution workflow reads `~/.pi/agent/task-picker.json`, linked by Home Manager from the active profile. Version 1 supports `gitlab.workStatus.mode` values `scoped-labels` and `none`. The personal profile verifies and applies its configured scoped labels, including `readyForReviewLabel` after isolated validation; the work profile self-assigns without automated status mutation. Missing or invalid configuration stops before mutation rather than guessing a fallback.
 
 ## Usage
 
@@ -44,8 +44,8 @@ changing the remembered selection.
 > letter is bound by either the app or the emacs-style editor. `ctrl+e` overrides
 > the editor's *cursor-to-line-end*; the extension wins the binding, and the
 > **End** key still jumps to line-end, so the loss is negligible. To rebind, edit
-> the `pi.registerShortcut(...)` block in `extension.ts` — `/tasks` and `/beads-tasks` work
-> regardless.
+> the `pi.registerShortcut(...)` block in `extension.ts` — `/tasks`, `/beads-tasks`,
+> and `/gitlab-issues` work regardless.
 
 ## Keybindings
 
@@ -83,6 +83,14 @@ input order (for example, up before down and submit before tab); help shows the 
 only for the first reachable action in the current view. The `w` / `s` navigation
 aliases and browser-specific action keys remain fixed.
 
+## Isolated Treehouse runs
+
+Starting work from the picker uses an isolated interactive run when all of these are available: an active Zellij session, `treehouse get --lease` support, working `pi` and `zellij` commands, and a runnable repository-scoped no-mistakes gate with `axi run --intent` and `axi respond` support. If any prerequisite is unavailable before allocation, the picker silently preserves the original behavior. After the task-picker modal closes, it submits the selected tracker's bundled execution prompt in the current Pi session so Pi expands and runs `/execute-beads` or `/execute-gitlab-issue` normally.
+
+An eligible run leases a clean linked worktree, creates a `task-picker/<run-id>` branch, and opens a named Zellij tab with an interactive Pi worker and a live status pane. The status pane refreshes the durable run phase, Git state, and no-mistakes status every few seconds. The worker follows the normal tracker workflow through explicit approval and review, verifies unattended remote access after approval and again before delivery, then owns the task commit and every no-mistakes gate call. A locked or denied SSH agent pauses the run for a decision instead of turning the first trusted-main fetch failure into a terminal implementation failure. A GitLab `checks-passed` outcome leaves the issue open and, for scoped-label profiles, applies the configured ready-for-review label. Beads remain open without an invented tracker status.
+
+Run records are written atomically under `${PI_CODING_AGENT_DIR:-~/.pi/agent}/task-picker-runs/`. Tabs and leases are intentionally retained for review, failures, and decision waits. A post-allocation error reports the record path; inspect that record and the Treehouse/Zellij state before manually returning or closing anything. Automatic release and parent-session gate forwarding are not part of this first experiment.
+
 ## Development
 
 Install the locked development dependencies, then run the combined validation:
@@ -119,9 +127,9 @@ All tracker commands use argv arrays with no shell interpolation. The extension 
   When a focused form becomes compact, its active editor and footer help take
   priority over inactive fields and header chrome.
 - Dependency-blocked rows keep their stored status symbol and add `blocked:N`.
-  Starting work closes the list immediately and submits `/execute-beads <task-id>`.
-  The bundled workflow owns target resolution, readiness checks, claiming,
-  hydration, approval, execution, review, and closure.
+  The bundled Beads workflow owns target resolution, readiness checks, claiming,
+  hydration, approval, execution, review, and closure; isolated and fallback
+  dispatch follow the behavior described above.
 - The `execute-beads.md` and `execute-gitlab-issue.md` prompts are bundled under
   `prompts/` and contributed through Pi's resource discovery API, so picker and
   manual execution use the same workflows.

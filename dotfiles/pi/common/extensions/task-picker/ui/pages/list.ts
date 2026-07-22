@@ -127,7 +127,7 @@ export async function showTaskList(
       Math.max(0, ...displayTasks.map((i) => visibleWidth(buildListRowModel(i).label)));
 
     let selectedRef: string | undefined;
-    const result = await ctx.ui.custom<"cancel" | "select" | "create">(
+    const result = await ctx.ui.custom<"cancel" | "select" | "create" | "work">(
       (tui: any, theme: any, keybindings: any, done: any) => {
         const container = new Container();
         let searching = false;
@@ -556,8 +556,8 @@ export async function showTaskList(
 
               case "work":
                 withSelectedTask((task) => {
-                  done("cancel");
-                  void config.onWork(task).catch(notifyMutationError);
+                  selectedRef = task.ref;
+                  done("work");
                 });
                 return;
 
@@ -638,6 +638,18 @@ export async function showTaskList(
     );
 
     if (result === "cancel") return;
+
+    if (result === "work" && selectedRef) {
+      const task = displayTasks.find((item) => item.ref === selectedRef);
+      if (!task) continue;
+      try {
+        await config.onWork(task);
+        return;
+      } catch (error) {
+        ctx.ui.notify(error instanceof Error ? error.message : String(error), "error");
+        continue;
+      }
+    }
 
     if (result === "create") {
       const createdTask = await config.onCreate();

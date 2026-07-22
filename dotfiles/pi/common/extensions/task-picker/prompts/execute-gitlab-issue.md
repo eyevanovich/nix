@@ -10,13 +10,13 @@ Goal: the parent owns exact issue resolution, scope, approval, integration, vali
 
 Before any mutation, read `~/.pi/agent/task-picker.json` with a file-reading tool, not shell output. Parse it as JSON and accept only `version: 1` with `gitlab.workStatus.mode` equal to `scoped-labels` or `none`. A missing, malformed, or unsupported configuration must stop with an actionable diagnostic before assignment or status mutation. Never guess or fall back to another mode.
 
-For `scoped-labels`, require non-empty string values for `inProgressLabel` and `deferredLabel`; retain their exact values as `<in-progress-label>` and `<deferred-label>`. For `none`, do not read or infer configured work-status label values, list project labels for status discovery, use labels as workflow-status guards, mutate status, or probe enterprise native status.
+For `scoped-labels`, require non-empty string values for `inProgressLabel` and `deferredLabel`; retain their exact values as `<in-progress-label>` and `<deferred-label>`. When the injected `[TASK PICKER ISOLATED RUN]` policy is present, also require a non-empty `readyForReviewLabel` and retain it as `<ready-for-review-label>`. For `none`, do not read or infer configured work-status label values, list project labels for status discovery, use labels as workflow-status guards, mutate status, or probe enterprise native status.
 
 Require exactly one canonical `host/group/project#iid` reference or canonical GitLab issue URL. Parse and retain the exact host, project path, IID, and canonical `https://<host>/<group/project>` project URL. Resolve the project explicitly and run `glab issue view <iid> --repo <project-url> --output json` before any mutation. Validate the returned project, host, and IID against the target. Stop with an actionable diagnostic for a missing, inaccessible, or malformed issue. Every subsequent issue and label command must use that same full project URL; never fall back to an unqualified project path or the current directory's host.
 
 Inspect state, assignees, and current labels without changing anything. Normal issue hydration may include ordinary labels as read-only issue context. In `none` mode, those labels must not drive work-status behavior. Resolve the authenticated user on the target host with `glab api --hostname <host> user --output json` and parse `.username` from JSON without shell interpolation or token output.
 
-Only in `scoped-labels` mode, list all existing project labels with `glab label list --repo <project-url> --output json --per-page 100 --page <page>`, starting at page 1 and requesting successive pages until a page contains fewer than 100 labels. Verify both configured labels by exact name. If `<in-progress-label>` is absent, stop with an actionable error. If `<deferred-label>` is absent but the issue does not currently use it, continue because only the in-progress label is required for the mutation. Never create, rename, substitute, or guess a label.
+Only in `scoped-labels` mode, list all existing project labels with `glab label list --repo <project-url> --output json --per-page 100 --page <page>`, starting at page 1 and requesting successive pages until a page contains fewer than 100 labels. Verify the configured labels by exact name. If `<in-progress-label>` is absent, stop with an actionable error. When the injected isolated-run policy is present, also stop before assignment or status mutation if `<ready-for-review-label>` is absent. If `<deferred-label>` is absent but the issue does not currently use it, continue because it is not needed for the start mutation. Never create, rename, substitute, or guess a label.
 
 ## Clear all pre-mutation guards
 
@@ -55,6 +55,16 @@ Follow the same parent-owned single-writer, integration, and review discipline a
 5. Perform final integrated validation and verify the issue acceptance criteria with concrete command or user-flow evidence.
 
 If execution is blocked or validation/review fails after work begins, leave one concise issue note with the blocker and useful non-secret evidence when appropriate. Avoid repeated progress comments and never include secrets, tokens, environment dumps, or unrelated repository details.
+
+## Isolated delivery override
+
+Apply this section only when the injected `[TASK PICKER ISOLATED RUN]` policy is present. After approval and again immediately before delivery, verify unattended remote access with `git ls-remote --exit-code origin HEAD`. If an SSH agent such as Secretive is locked, unavailable, or denied, record phase `awaiting-decision`, ask the user to unlock or approve it in this worker tab, and retry before continuing.
+
+After approved implementation, integrated validation, and independent review, commit only the task-scoped work on the existing isolated branch. Call `task_run_update` with phase `validating`, then drive `no-mistakes axi run --intent "<the user's objective and approved tradeoffs>"` and every subsequent `axi respond` yourself until a gate, `checks-passed`, or terminal outcome. Never use `--yes`, edit pipeline findings by hand, or transfer gate ownership to the launcher.
+
+At an ask-user gate, call `task_run_update` with phase `awaiting-decision`, present the finding in this worker tab, and resume the same run after the answer. If no-mistakes cannot fetch or resolve trusted main because SSH-agent authentication is locked or denied, record `awaiting-decision`, ask the user to unlock or approve it, repeat the remote-access preflight, and run `no-mistakes rerun`; do not classify that first authentication failure as terminal. At any other terminal failure, record phase `failed` and retain the tab and worktree.
+
+At `checks-passed`, keep the issue open. In `scoped-labels` mode, verify `<ready-for-review-label>` exists by exact name, apply it with `glab issue update <iid> --repo <project-url> --label <ready-for-review-label>`, and rehydrate to verify the issue is open with that label. In `none` mode, do not perform any label or workflow-status lookup or mutation. Then call `task_run_update` with phase `ready-for-review`, summary, and PR URL. Do not execute the normal Finish section below.
 
 ## Finish
 
