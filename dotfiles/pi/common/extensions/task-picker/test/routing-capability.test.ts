@@ -447,26 +447,46 @@ test("ready-provider browser failures are reported without rejecting", async () 
   ]);
 });
 
-test("work-runner fallback dispatches the exact existing prompt", async () => {
-  const sent: string[] = [];
-  const prompt = "/execute-beads nix-123";
+test("work-runner fallback dispatches expanded bundled workflows", async () => {
   const workRunner: WorkRunner = {
     start: async () => ({ kind: "fallback" }),
   };
-
-  const result = await dispatchTaskWork(
-    workRunner,
+  const cases = [
     {
       providerId: "beads",
-      task: { ref: "nix-123", title: "Task", status: "open" },
-      execution: { prompt },
-      cwd: "/repo",
+      ref: "nix-123",
+      prompt: "/execute-beads nix-123",
+      target: /Target override: `nix-123`/,
+      workflow: /Goal: the parent owns scope, approval, integration/,
     },
-    (message) => sent.push(message)
-  );
+    {
+      providerId: "gitlab",
+      ref: "gitlab.example\/group\/project#3",
+      prompt: "/execute-gitlab-issue https://gitlab.example/group/project/-/issues/3",
+      target: /Target: `https:\/\/gitlab\.example\/group\/project\/-\/issues\/3`/,
+      workflow: /Goal: the parent owns exact issue resolution, scope, approval/,
+    },
+  ];
 
-  assert.deepEqual(result, { kind: "fallback" });
-  assert.deepEqual(sent, [prompt]);
+  for (const item of cases) {
+    const sent: string[] = [];
+    const result = await dispatchTaskWork(
+      workRunner,
+      {
+        providerId: item.providerId,
+        task: { ref: item.ref, title: "Task", status: "open" },
+        execution: { prompt: item.prompt },
+        cwd: "/repo",
+      },
+      (message) => sent.push(message)
+    );
+
+    assert.deepEqual(result, { kind: "fallback" });
+    assert.equal(sent.length, 1);
+    assert.doesNotMatch(sent[0]!, /^\//);
+    assert.match(sent[0]!, item.target);
+    assert.match(sent[0]!, item.workflow);
+  }
 });
 
 test("launched work-runner path does not dispatch in the parent session", async () => {

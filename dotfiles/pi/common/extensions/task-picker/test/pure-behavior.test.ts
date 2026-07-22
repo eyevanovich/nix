@@ -25,7 +25,6 @@ import {
 import { PartialTaskCreateError } from "../backend/api.ts";
 import {
   createTaskSaveSession,
-  createTaskWorkHandler,
   hydrateTaskForEdit,
   mergeHydratedTask,
 } from "../extension.ts";
@@ -1257,28 +1256,6 @@ test("rich edit form render includes every read-only context field and exact ID"
     assert.ok(rendered.includes(value), `missing rendered value for ${label}`);
   }
   assert.match(rendered, /ID: demo-rich-exact-id/);
-});
-
-test("work delegates the exact task ID to the bundled execute-beads workflow", async () => {
-  const prompts: string[] = [];
-  const work = createTaskWorkHandler((prompt) => prompts.push(prompt));
-
-  await work({
-    ref: "fallback-ref",
-    id: "demo-open",
-    title: "Selected task",
-    status: "open",
-  });
-  await work({
-    ref: "demo-fallback",
-    title: "Selected task without ID",
-    status: "open",
-  });
-
-  assert.deepEqual(prompts, [
-    "/execute-beads demo-open",
-    "/execute-beads demo-fallback",
-  ]);
 });
 
 test("task serialization preserves exact task context", () => {

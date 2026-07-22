@@ -8,6 +8,7 @@ import { createBeadsProvider } from "./backend/providers/beads.ts";
 import { createGitLabProvider } from "./backend/providers/gitlab.ts";
 import type { Task, TaskStatus } from "./models/task.ts";
 import { serializeTask } from "./lib/task-serialization.ts";
+import { expandBundledExecutionPrompt } from "./lib/execution-prompt.ts";
 import { showTaskList } from "./ui/pages/list.ts";
 import { showTaskForm } from "./ui/pages/show.ts";
 import { PartialTaskCreateError } from "./backend/api.ts";
@@ -135,21 +136,15 @@ export async function hydrateTaskForEdit(
   return mergeHydratedTask(fromList, await backend.show(ref));
 }
 
-export function createTaskWorkHandler(
-  send: (prompt: string) => void
-): (task: Task) => Promise<void> {
-  return async (task) => {
-    send(`/execute-beads ${task.id ?? task.ref}`);
-  };
-}
-
 export async function dispatchTaskWork(
   workRunner: WorkRunner,
   input: Parameters<WorkRunner["start"]>[0],
-  send: (prompt: string) => void
+  send: (prompt: string) => void,
+  expandPrompt: (prompt: string) => Promise<string> = (prompt) =>
+    expandBundledExecutionPrompt(prompt, PROMPTS_DIR)
 ) {
   const result = await workRunner.start(input);
-  if (result.kind === "fallback") send(input.execution.prompt);
+  if (result.kind === "fallback") send(await expandPrompt(input.execution.prompt));
   return result;
 }
 
