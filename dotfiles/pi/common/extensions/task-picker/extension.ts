@@ -13,6 +13,8 @@ import { showTaskForm } from "./ui/pages/show.ts";
 import { PartialTaskCreateError } from "./backend/api.ts";
 import type { TaskAdapter, TaskUpdate, TrackerBackend, TrackerProvider } from "./backend/api.ts";
 import type { FormDraft } from "./controllers/show.ts";
+import { createWorkRunner } from "./work-runner/index.ts";
+import type { WorkRunner } from "./work-runner/types.ts";
 
 const CTRL_X = "\x18";
 const PROMPTS_DIR = fileURLToPath(new URL("./prompts", import.meta.url));
@@ -141,6 +143,16 @@ export function createTaskWorkHandler(
   };
 }
 
+export async function dispatchTaskWork(
+  workRunner: WorkRunner,
+  input: Parameters<WorkRunner["start"]>[0],
+  send: (prompt: string) => void
+) {
+  const result = await workRunner.start(input);
+  if (result.kind === "fallback") send(input.execution.prompt);
+  return result;
+}
+
 function buildTaskUpdate(
   previous: Task,
   next: {
@@ -255,6 +267,7 @@ export function createTaskSaveSession(backend: Pick<TaskAdapter, "create" | "upd
 
 export interface TaskBrowserDependencies {
   providers?: TrackerProvider[];
+  workRunner?: WorkRunner;
 }
 
 export default function registerExtension(
@@ -266,6 +279,7 @@ export default function registerExtension(
     createGitLabProvider(pi, [PROMPTS_DIR]),
   ];
   const trackerChoices = new Map<string, string>();
+  const workRunner = dependencies.workRunner ?? createWorkRunner(pi);
 
   pi.on("resources_discover", () => ({
     promptPaths: [...new Set(providers.flatMap((provider) => provider.promptPaths))],
@@ -425,8 +439,22 @@ export default function registerExtension(
         cycleTaskType: nextTaskType,
         onUpdateTask: persistInlineUpdate,
         onWork: async (task) => {
-          const request = await backend.actions.startWork(task);
-          pi.sendUserMessage(request.prompt);
+          const execution = await backend.actions.startWork(task);
+          const result = await dispatchTaskWork(
+            workRunner,
+            {
+              providerId: backend.id,
+              task,
+              execution,
+              cwd: ctx.cwd,
+            },
+            (prompt) => pi.sendUserMessage(prompt)
+          );
+          if (result.kind === "fallback") return;
+          ctx.ui.notify(
+            `Launched ${task.ref} in Zellij tab ${result.record.zellij?.tabId ?? "unknown"}. Worktree retained at ${result.record.leasePath}.`,
+            "info"
+          );
         },
         onInsert: (task) => ctx.ui.pasteToEditor(`${serializeTask(task)} `),
         onEdit: (ref, task) => editTask(ref, task),

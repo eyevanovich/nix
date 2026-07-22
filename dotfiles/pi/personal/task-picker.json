@@ -4,7 +4,8 @@
     "workStatus": {
       "mode": "scoped-labels",
       "inProgressLabel": "status::in-progress",
-      "deferredLabel": "status::deferred"
+      "deferredLabel": "status::deferred",
+      "readyForReviewLabel": "status::ready-for-review"
     }
   }
 }

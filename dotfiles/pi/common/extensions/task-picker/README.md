@@ -22,7 +22,7 @@ loading tasks. Missing prerequisites are reported without entering the browser.
 
 The GitLab provider lists every open project issue with explicit pagination. It supports creating issues, editing title and description, and closing or reopening. Labels, assignees, milestone, weight, due date, web URL, and issue type are display-only in the picker. GitLab-specific priority and type controls are intentionally absent.
 
-The execution workflow reads `~/.pi/agent/task-picker.json`, linked by Home Manager from the active profile. Version 1 supports `gitlab.workStatus.mode` values `scoped-labels` and `none`. The personal profile verifies and applies its configured scoped labels; the work profile self-assigns without automated status mutation. Missing or invalid configuration stops before mutation rather than guessing a fallback.
+The execution workflow reads `~/.pi/agent/task-picker.json`, linked by Home Manager from the active profile. Version 1 supports `gitlab.workStatus.mode` values `scoped-labels` and `none`. The personal profile verifies and applies its configured scoped labels, including `readyForReviewLabel` after isolated validation; the work profile self-assigns without automated status mutation. Missing or invalid configuration stops before mutation rather than guessing a fallback.
 
 ## Usage
 
@@ -82,6 +82,14 @@ match more than one action. The browser resolves such collisions by its document
 input order (for example, up before down and submit before tab); help shows the key
 only for the first reachable action in the current view. The `w` / `s` navigation
 aliases and browser-specific action keys remain fixed.
+
+## Isolated Treehouse runs
+
+Starting work from the picker uses an isolated interactive run when all of these are available: an active Zellij session, `treehouse get --lease` support, `no-mistakes axi run --intent` support, and working `pi` and `zellij` commands. If any prerequisite is unavailable before allocation, the picker silently preserves the original behavior and submits the bundled execution prompt in the current Pi session.
+
+An eligible run leases a clean linked worktree, creates a `task-picker/<run-id>` branch, and opens a named Zellij tab with an interactive Pi worker and a live status pane. The status pane refreshes the durable run phase, Git state, and no-mistakes status every few seconds. The worker follows the normal tracker workflow through explicit approval and review, verifies unattended remote access after approval and again before delivery, then owns the task commit and every no-mistakes gate call. A locked or denied SSH agent pauses the run for a decision instead of turning the first trusted-main fetch failure into a terminal implementation failure. A GitLab `checks-passed` outcome leaves the issue open and, for scoped-label profiles, applies the configured ready-for-review label. Beads remain open without an invented tracker status.
+
+Run records are written atomically under `${PI_CODING_AGENT_DIR:-~/.pi/agent}/task-picker-runs/`. Tabs and leases are intentionally retained for review, failures, and decision waits. A post-allocation error reports the record path; inspect that record and the Treehouse/Zellij state before manually returning or closing anything. Automatic release and parent-session gate forwarding are not part of this first experiment.
 
 ## Development
 

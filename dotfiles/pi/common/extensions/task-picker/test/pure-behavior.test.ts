@@ -468,7 +468,7 @@ test("task list wires guarded pessimistic mutations through the page", async () 
   await page;
 });
 
-test("task list Enter starts work once, closes immediately, and surfaces rejection", async () => {
+test("task list closes its modal before starting work", async () => {
   const harness = makeCustomUiHarness();
   const work = deferred<void>();
   const workedTasks: Task[] = [];
@@ -488,6 +488,7 @@ test("task list Enter starts work once, closes immediately, and surfaces rejecti
     cycleTaskType: () => "task",
     onUpdateTask: async () => {},
     onWork: async (selected) => {
+      assert.deepEqual(harness.doneValues, ["work"]);
       workedTasks.push(selected);
       await work.promise;
     },
@@ -497,17 +498,38 @@ test("task list Enter starts work once, closes immediately, and surfaces rejecti
   });
 
   harness.component().handleInput("\r");
-  assert.deepEqual(workedTasks, [task]);
-  assert.deepEqual(harness.doneValues, ["cancel"]);
-  await page;
-
-  work.reject(new Error("work failed"));
+  assert.deepEqual(harness.doneValues, ["work"]);
   await flushMicrotasks();
-  assert.ok(
-    harness.notifications.some(
-      ({ message, level }) => level === "error" && message === "work failed"
-    )
-  );
+  assert.deepEqual(workedTasks, [task]);
+
+  work.resolve();
+  await page;
+});
+
+test("task list stays open and surfaces a work launch rejection", async () => {
+  const harness = makeCustomUiHarness();
+  const task: Task = { ref: "demo-work", title: "Work target", status: "open" };
+  const page = showTaskList(harness.ctx, {
+    title: "Tasks",
+    tasks: [task],
+    priorities: [],
+    closeKey: "x",
+    cycleStatus: (status) => status,
+    cycleTaskType: () => "task",
+    onUpdateTask: async () => {},
+    onWork: async () => { throw new Error("work failed"); },
+    onInsert: () => {},
+    onEdit: async () => ({ updatedTask: null, closeList: false }),
+    onCreate: async () => null,
+  });
+
+  harness.component().handleInput("\r");
+  await flushMicrotasks();
+  assert.deepEqual(harness.doneValues, ["work"]);
+  assert.ok(harness.notifications.some(({ message, level }) => level === "error" && message === "work failed"));
+
+  harness.component().handleInput("x");
+  await page;
 });
 
 test("task form propagates Focusable state to the active editor cursor", async () => {

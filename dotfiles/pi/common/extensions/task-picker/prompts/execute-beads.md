@@ -45,6 +45,14 @@ Scale fanout to the task, but always preserve implementation, parent inspection,
 
 Keep the active worktree single-writer. Parallelize writers only in isolated worktrees with independent ownership; parallelize read-only work freely.
 
+## Isolated delivery override
+
+Apply this section only when the injected `[TASK PICKER ISOLATED RUN]` policy is present. After approval and again immediately before delivery, verify unattended remote access with `git ls-remote --exit-code origin HEAD`. If an SSH agent such as Secretive is locked, unavailable, or denied, record phase `awaiting-decision`, ask the user to unlock or approve it in this worker tab, and retry before continuing.
+
+After approved implementation, integrated validation, and independent review, commit only the task-scoped work on the existing isolated branch. Call `task_run_update` with phase `validating`, then drive `no-mistakes axi run --intent "<the user's objective and approved tradeoffs>"` and every subsequent `axi respond` yourself until a gate, `checks-passed`, or terminal outcome. Never use `--yes`, edit pipeline findings by hand, or transfer gate ownership to the launcher.
+
+At an ask-user gate, call `task_run_update` with phase `awaiting-decision`, present the finding in this worker tab, and resume the same run after the answer. If no-mistakes cannot fetch or resolve trusted main because SSH-agent authentication is locked or denied, record `awaiting-decision`, ask the user to unlock or approve it, repeat the remote-access preflight, and run `no-mistakes rerun`; do not classify that first authentication failure as terminal. At any other terminal failure, record phase `failed` and retain the tab and worktree. At `checks-passed`, leave the Bead open because no ready-for-review tracker status has been approved, call `task_run_update` with phase `ready-for-review`, summary, and PR URL, and do not execute the normal Finish section below.
+
 ## Finish
 
 Close each target individually only when its approved outcome, acceptance criteria, integrated diff, focused validation, and required review pass: `bd close <id> --reason="Completed"`. Otherwise leave a concise per-bead note with blocker/failure evidence and remaining work.
