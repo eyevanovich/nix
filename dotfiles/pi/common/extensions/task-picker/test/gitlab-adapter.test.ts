@@ -432,6 +432,20 @@ test("profile task-picker configs select scoped labels only for personal", () =>
   });
 });
 
+test("bundled execution workflows require merge request delivery", () => {
+  for (const name of ["execute-beads.md", "execute-gitlab-issue.md"]) {
+    const prompt = readFileSync(new URL(`../prompts/${name}`, import.meta.url), "utf8");
+
+    assert.match(prompt, /working branch into the repository's exact default branch/);
+    assert.match(prompt, /entire MR title must be lowercase/);
+    assert.match(prompt, /`fix:` for a patch/);
+    assert.match(prompt, /`feat:` for a minor/);
+    assert.match(prompt, /`feat!:` for a major breaking change/);
+    assert.match(prompt, /squash merging enabled/);
+    assert.match(prompt, /source-branch deletion enabled/);
+  }
+});
+
 test("GitLab execution workflow resolves profile status behavior before mutation", () => {
   const prompt = readFileSync(
     new URL("../prompts/execute-gitlab-issue.md", import.meta.url),

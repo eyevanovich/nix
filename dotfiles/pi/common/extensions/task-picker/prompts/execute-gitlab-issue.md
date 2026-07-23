@@ -56,6 +56,16 @@ Follow the same parent-owned single-writer, integration, and review discipline a
 
 If execution is blocked or validation/review fails after work begins, leave one concise issue note with the blocker and useful non-secret evidence when appropriate. Avoid repeated progress comments and never include secrets, tokens, environment dumps, or unrelated repository details.
 
+## Deliver through merge request
+
+Once the ticket's implementation, acceptance criteria, integrated validation, and review are complete, continue through the repository's merge-request process before reporting completion. Deliver the committed task-scoped changes from the working branch into the repository's exact default branch. Resolve the default branch from authoritative remote project metadata; never assume `main` or `master`, target a parent feature branch, or work directly on the default branch. If the hosting provider calls this a pull request, apply the same policy.
+
+Choose the MR title prefix by release impact: `fix:` for a patch, `feat:` for a minor backward-compatible feature, or `feat!:` for a major breaking change. The entire MR title must be lowercase. Ask the user if the release impact is ambiguous rather than guessing.
+
+Push the working branch without force and create or update one MR with the working branch as its source and the exact default branch as its target. Do not create a duplicate when an open MR already exists for that branch. Create the MR with squash merging enabled and source-branch deletion enabled, link the ticket, and include concise validation and review evidence. Verify the source, target, title, squash setting, and deletion setting after creation.
+
+Follow the repository's required MR checks, CI, review, and approval process without bypassing protections. If authorized to merge once every required check and approval passes, merge with squash and delete the source branch; otherwise leave the correctly configured MR open and report its URL and remaining gate. In an isolated run, let no-mistakes own its commit, push, and MR operations, then verify and correct the resulting MR metadata and settings before recording `ready-for-review`; do not duplicate its MR or edit its gate-owned branch.
+
 ## Isolated delivery override
 
 Apply this section only when the injected `[TASK PICKER ISOLATED RUN]` policy is present. After approval and again immediately before delivery, verify unattended remote access with `git ls-remote --exit-code origin HEAD`. If an SSH agent such as Secretive is locked, unavailable, or denied, record phase `awaiting-decision`, ask the user to unlock or approve it in this worker tab, and retry before continuing.
