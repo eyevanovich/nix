@@ -443,6 +443,8 @@ test("bundled execution workflows require merge request delivery", () => {
     assert.match(prompt, /`feat!:` for a major breaking change/);
     assert.match(prompt, /squash merging enabled/);
     assert.match(prompt, /source-branch deletion enabled/);
+    assert.match(prompt, /trusted default branch resolved from authoritative remote metadata/);
+    assert.doesNotMatch(prompt, /trusted main/);
   }
 });
 
