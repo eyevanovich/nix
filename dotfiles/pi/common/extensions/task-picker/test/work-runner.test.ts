@@ -289,6 +289,8 @@ test("worker policy defines ready-for-review without closing trackers", () => {
   );
   assert.match(instructions, /Route every correction through no-mistakes/);
   assert.doesNotMatch(instructions, /you own the task-scoped commit|After committing/);
+  assert.match(instructions, /trusted default branch resolved from authoritative remote metadata/);
+  assert.doesNotMatch(instructions, /trusted main|trusted master/);
   assert.match(instructions, /configured readyForReviewLabel/);
   assert.match(instructions, /For Beads, leave the item open/);
   assert.match(instructions, /Never return the Treehouse lease/);
