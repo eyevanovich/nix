@@ -281,6 +281,14 @@ test("worker policy defines ready-for-review without closing trackers", () => {
   assert.match(instructions, /git ls-remote --exit-code origin HEAD/);
   assert.match(instructions, /SSH agent such as Secretive is locked/);
   assert.match(instructions, /run `no-mistakes rerun`/);
+  assert.match(instructions, /injected only after no-mistakes capability is confirmed/);
+  assert.match(instructions, /validated task-scoped diff without committing it/);
+  assert.match(
+    instructions,
+    /No-mistakes owns the commit, push, MR creation or update, and every MR metadata or settings correction/
+  );
+  assert.match(instructions, /Route every correction through no-mistakes/);
+  assert.doesNotMatch(instructions, /you own the task-scoped commit|After committing/);
   assert.match(instructions, /configured readyForReviewLabel/);
   assert.match(instructions, /For Beads, leave the item open/);
   assert.match(instructions, /Never return the Treehouse lease/);
