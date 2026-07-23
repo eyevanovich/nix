@@ -60,7 +60,7 @@ If execution is blocked or validation/review fails after work begins, leave one 
 
 Once the ticket's implementation, acceptance criteria, integrated validation, and review are complete, continue through the repository's merge-request process before reporting completion. Deliver the committed task-scoped changes from the working branch into the repository's exact default branch. Resolve the default branch from authoritative remote project metadata; never assume `main` or `master`, target a parent feature branch, or work directly on the default branch. If the hosting provider calls this a pull request, apply the same policy.
 
-Choose the MR title prefix by release impact: `fix:` for a patch, `feat:` for a minor backward-compatible feature, or `feat!:` for a major breaking change. The entire MR title must be lowercase. Ask the user if the release impact is ambiguous rather than guessing.
+Choose the MR title type by release impact: `fix:` for a patch, `feat:` for a minor backward-compatible feature, or `feat!:` for a major breaking change. An optional lowercase Conventional Commit scope is allowed, for example `fix(pi):`, `feat(pi):`, or `feat(pi)!:`. The entire MR title must be lowercase, including any scope. Ask the user if the release impact is ambiguous rather than guessing.
 
 Push the working branch without force and create or update one MR with the working branch as its source and the exact default branch as its target. Do not create a duplicate when an open MR already exists for that branch. Create the MR with squash merging enabled and source-branch deletion enabled, link the ticket, and include concise validation and review evidence. Verify the source, target, title, squash setting, and deletion setting after creation.
 

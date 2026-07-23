@@ -33,7 +33,7 @@ The execution workflow reads `~/.pi/agent/task-picker.json`, linked by Home Mana
 - `/execute-beads [bead-id-or-search ...]` — run the bundled Beads execution workflow
 - `/execute-gitlab-issue <host/project#iid-or-url>` — run the bundled GitLab execution workflow
 
-Both execution workflows carry completed work from the working branch through the repository's merge-request process into its exact default branch. They require a lowercase release-impact title (`fix:`, `feat:`, or `feat!:`), squash merging, and source-branch deletion.
+Both execution workflows carry completed work from the working branch through the repository's merge-request process into its exact default branch. They require a lowercase release-impact title (`fix:`, `feat:`, or `feat!:`), allow an optional lowercase Conventional Commit scope such as `feat(pi):`, and require squash merging and source-branch deletion.
 
 When both providers apply, `/tasks` and `ctrl+e` show a compact tracker chooser.
 The selection is remembered by normalized Git repository root for the lifetime of

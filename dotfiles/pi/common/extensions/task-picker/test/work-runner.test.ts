@@ -282,7 +282,7 @@ test("worker policy defines ready-for-review without closing trackers", () => {
   assert.match(instructions, /SSH agent such as Secretive is locked/);
   assert.match(instructions, /run `no-mistakes rerun`/);
   assert.match(instructions, /injected only after no-mistakes capability is confirmed/);
-  assert.match(instructions, /validated task-scoped diff without committing it/);
+  assert.match(instructions, /validate the approved task-scoped diff without committing it/);
   assert.match(
     instructions,
     /No-mistakes owns the commit, push, MR creation or update, and every MR metadata or settings correction/

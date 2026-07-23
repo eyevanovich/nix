@@ -441,6 +441,8 @@ test("bundled execution workflows require merge request delivery", () => {
     assert.match(prompt, /`fix:` for a patch/);
     assert.match(prompt, /`feat:` for a minor/);
     assert.match(prompt, /`feat!:` for a major breaking change/);
+    assert.match(prompt, /optional lowercase Conventional Commit scope is allowed/);
+    assert.match(prompt, /`fix\(pi\):`, `feat\(pi\):`, or `feat\(pi\)!:`/);
     assert.match(prompt, /squash merging enabled/);
     assert.match(prompt, /source-branch deletion enabled/);
     assert.match(prompt, /trusted default branch resolved from authoritative remote metadata/);
