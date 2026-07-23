@@ -446,6 +446,12 @@ test("bundled execution workflows require merge request delivery", () => {
     assert.match(prompt, /squash merging enabled/);
     assert.match(prompt, /source-branch deletion enabled/);
     assert.match(prompt, /trusted default branch resolved from authoritative remote metadata/);
+    assert.match(prompt, /Immediately before delivery, check whether no-mistakes is runnable/);
+    assert.match(prompt, /`no-mistakes axi run --help`/);
+    assert.match(prompt, /`no-mistakes axi respond --help`/);
+    assert.match(prompt, /whether or not the isolated-run policy is active/);
+    assert.match(prompt, /Preserve the validated task-scoped diff for its task-first workflow/);
+    assert.match(prompt, /When the capability check fails, use the normal direct delivery procedure/);
     assert.doesNotMatch(prompt, /trusted main/);
   }
 });
