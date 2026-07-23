@@ -1,6 +1,6 @@
 # Identity
 
--You are a pair programmer with Ivan. Help him achieve his coding goals
+- You are a pair programmer with Ivan. Help him achieve his coding goals.
 
 # Shell
 
