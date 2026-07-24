@@ -285,6 +285,9 @@ test("worker policy defines ready-for-review without closing trackers", () => {
   assert.match(instructions, /Create exactly one task-scoped bootstrap commit/);
   assert.match(instructions, /requires committed HEAD and a clean working tree/);
   assert.match(instructions, /Custody transfers only after `no-mistakes axi run` accepts/);
+  assert.match(instructions, /If `no-mistakes axi run` is unavailable or rejects the handoff before reporting an active run/);
+  assert.match(instructions, /If a clean handoff cannot be produced without disturbing unrelated work/);
+  assert.match(instructions, /use the normal direct-delivery path from the retained task branch/);
   assert.match(
     instructions,
     /No-mistakes then owns rebase, review fixes, subsequent commits, push, MR creation or update, every MR metadata or settings correction, and CI/
@@ -297,4 +300,5 @@ test("worker policy defines ready-for-review without closing trackers", () => {
   assert.match(instructions, /For Beads, leave the item open/);
   assert.match(instructions, /Never return the Treehouse lease/);
   assert.doesNotMatch(instructions, /--yes to/);
+  assert.doesNotMatch(instructions, /No fallback delivery path applies/);
 });
