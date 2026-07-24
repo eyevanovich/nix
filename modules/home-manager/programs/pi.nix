@@ -64,11 +64,15 @@
       "${piDir}/keybindings.json" = link "${dotfiles}/common/keybindings.json";
       "${piDir}/uber-go-style.json" = link "${dotfiles}/common/uber-go-style.json";
       "${piDir}/permission-gate.json" = link "${dotfiles}/common/permission-gate.json";
-      "${piDir}/extensions/beads" = link "${dotfiles}/common/extensions/beads";
+      "${piDir}/extensions/task-picker" = link "${dotfiles}/common/extensions/task-picker";
       "${piDir}/extensions/subagent/config.json" =
         link "${dotfiles}/common/extensions/subagent/config.json";
       "${piDir}/extensions/zellij" = link "${dotfiles}/common/extensions/zellij";
     };
+
+  profileFiles = {
+    "${piDir}/task-picker.json" = link "${dotfiles}/${profile}/task-picker.json";
+  };
 
   personalFiles = lib.optionalAttrs (profile == "personal") {
     "${piDir}/extensions/uber-go-style" =
@@ -88,7 +92,7 @@
       link "${dotfiles}/work/extensions/mysql-connector";
   };
 
-  homeFiles = commonFiles // personalFiles // workFiles // profileAppendSystem;
+  homeFiles = commonFiles // profileFiles // personalFiles // workFiles // profileAppendSystem;
   managedPaths = builtins.attrNames homeFiles;
 
   # Legacy loose extension files from pre-Nix machines. Back these up to avoid
@@ -96,6 +100,10 @@
   legacyPaths = [
     "${piDir}/extensions/zellij.ts"
     "${piDir}/extensions/permission-gate.ts"
+  ];
+
+  retiredPaths = [
+    "${piDir}/extensions/beads"
   ];
 
   piPackages =
@@ -124,9 +132,11 @@
 
   # Extensions needing runtime npm deps: gitignored node_modules, reinstalled
   # on activation. path is relative to ~/.pi/agent.
-  npmExtensions = lib.optionals (profile == "work") [
-    "extensions/mysql-connector"
-  ];
+  npmExtensions =
+    ["extensions/task-picker"]
+    ++ lib.optionals (profile == "work") [
+      "extensions/mysql-connector"
+    ];
 in {
   home.file = homeFiles;
 
@@ -154,6 +164,16 @@ in {
     ${lib.concatMapStringsSep "\n" (rel: ''
       backup_managed_path "$HOME/${rel}"
     '') (managedPaths ++ legacyPaths)}
+
+    ${lib.concatMapStringsSep "\n" (rel: ''
+        retired="$HOME/${rel}"
+        if [ -L "$retired" ]; then
+          rm "$retired"
+        else
+          backup_managed_path "$retired"
+        fi
+      '')
+      retiredPaths}
   '';
 
   home.activation.piPackages = lib.hm.dag.entryAfter ["writeBoundary"] ''
