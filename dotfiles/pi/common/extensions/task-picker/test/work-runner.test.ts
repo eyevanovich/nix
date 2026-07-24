@@ -282,13 +282,15 @@ test("worker policy defines ready-for-review without closing trackers", () => {
   assert.match(instructions, /SSH agent such as Secretive is locked/);
   assert.match(instructions, /run `no-mistakes rerun`/);
   assert.match(instructions, /injected only after no-mistakes capability is confirmed/);
-  assert.match(instructions, /validate the approved task-scoped diff without committing it/);
+  assert.match(instructions, /Create exactly one task-scoped bootstrap commit/);
+  assert.match(instructions, /requires committed HEAD and a clean working tree/);
+  assert.match(instructions, /Custody transfers only after `no-mistakes axi run` accepts/);
   assert.match(
     instructions,
-    /No-mistakes owns the commit, push, MR creation or update, and every MR metadata or settings correction/
+    /No-mistakes then owns rebase, review fixes, subsequent commits, push, MR creation or update, every MR metadata or settings correction, and CI/
   );
   assert.match(instructions, /Route every correction through no-mistakes/);
-  assert.doesNotMatch(instructions, /you own the task-scoped commit|After committing/);
+  assert.doesNotMatch(instructions, /validate the approved task-scoped diff without committing it/);
   assert.match(instructions, /trusted default branch resolved from authoritative remote metadata/);
   assert.doesNotMatch(instructions, /trusted main|trusted master/);
   assert.match(instructions, /configured readyForReviewLabel/);

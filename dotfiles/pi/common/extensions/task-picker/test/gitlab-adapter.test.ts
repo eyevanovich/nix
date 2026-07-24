@@ -446,12 +446,23 @@ test("bundled execution workflows require merge request delivery", () => {
     assert.match(prompt, /squash merging enabled/);
     assert.match(prompt, /source-branch deletion enabled/);
     assert.match(prompt, /trusted default branch resolved from authoritative remote metadata/);
-    assert.match(prompt, /Immediately before delivery, check whether no-mistakes is runnable/);
+    assert.match(prompt, /Before any delivery commit, push, or MR mutation, check whether no-mistakes is runnable/);
     assert.match(prompt, /`no-mistakes axi run --help`/);
     assert.match(prompt, /`no-mistakes axi respond --help`/);
-    assert.match(prompt, /whether or not the isolated-run policy is active/);
-    assert.match(prompt, /Preserve the validated task-scoped diff for its task-first workflow/);
-    assert.match(prompt, /When the capability check fails, use the normal direct delivery procedure/);
+    assert.match(
+      prompt,
+      /injected `\[TASK PICKER ISOLATED RUN\]` policy guarantees tool capability, but it does not remove the bootstrap-commit requirement/
+    );
+    assert.match(prompt, /create exactly one task-scoped bootstrap commit/i);
+    assert.match(prompt, /requires committed HEAD and a clean working tree/);
+    assert.match(prompt, /does not imply support for uncommitted work/);
+    assert.match(prompt, /Custody transfers only after `no-mistakes axi run` accepts/);
+    assert.match(
+      prompt,
+      /No-mistakes then owns rebase, review fixes, subsequent commits, push, MR creation or update, every MR metadata or settings correction, and CI/
+    );
+    assert.doesNotMatch(prompt, /leave the validated task-scoped work for no-mistakes to commit/);
+    assert.match(prompt, /When the capability check fails, or a clean handoff cannot be produced/);
     assert.doesNotMatch(prompt, /trusted main/);
   }
 });
