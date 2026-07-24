@@ -460,6 +460,10 @@ test("bundled execution workflows require merge request delivery", () => {
     assert.match(prompt, /If `no-mistakes axi run` rejects or fails before reporting an active run/);
     assert.match(prompt, /retain parent custody and the bootstrap commit/);
     assert.match(prompt, /use the normal direct delivery procedure/);
+    assert.match(prompt, /For a pre-custody authentication rejection/);
+    assert.match(prompt, /retry the initial `no-mistakes axi run`/);
+    assert.match(prompt, /use direct delivery rather than `no-mistakes rerun`/);
+    assert.match(prompt, /Only after an active run has accepted custody, if no-mistakes later reaches a terminal failure/);
     assert.match(prompt, /Only failures after an active run has accepted custody are no-mistakes terminal outcomes/);
     assert.match(
       prompt,

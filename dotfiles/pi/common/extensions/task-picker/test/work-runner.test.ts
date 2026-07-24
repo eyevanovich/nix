@@ -288,6 +288,10 @@ test("worker policy defines ready-for-review without closing trackers", () => {
   assert.match(instructions, /If `no-mistakes axi run` is unavailable or rejects the handoff before reporting an active run/);
   assert.match(instructions, /If a clean handoff cannot be produced without disturbing unrelated work/);
   assert.match(instructions, /use the normal direct-delivery path from the retained task branch/);
+  assert.match(instructions, /Before custody transfers, an authentication rejection remains parent-owned/);
+  assert.match(instructions, /retry the initial `no-mistakes axi run`/);
+  assert.match(instructions, /use direct delivery as above rather than `no-mistakes rerun`/);
+  assert.match(instructions, /Only after an active run has accepted custody, if no-mistakes later reaches a terminal failure/);
   assert.match(
     instructions,
     /No-mistakes then owns rebase, review fixes, subsequent commits, push, MR creation or update, every MR metadata or settings correction, and CI/
