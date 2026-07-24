@@ -457,6 +457,10 @@ test("bundled execution workflows require merge request delivery", () => {
     assert.match(prompt, /requires committed HEAD and a clean working tree/);
     assert.match(prompt, /does not imply support for uncommitted work/);
     assert.match(prompt, /Custody transfers only after `no-mistakes axi run` accepts/);
+    assert.match(prompt, /If `no-mistakes axi run` rejects or fails before reporting an active run/);
+    assert.match(prompt, /retain parent custody and the bootstrap commit/);
+    assert.match(prompt, /use the normal direct delivery procedure/);
+    assert.match(prompt, /Only failures after an active run has accepted custody are no-mistakes terminal outcomes/);
     assert.match(
       prompt,
       /No-mistakes then owns rebase, review fixes, subsequent commits, push, MR creation or update, every MR metadata or settings correction, and CI/
