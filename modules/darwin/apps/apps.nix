@@ -27,12 +27,13 @@ in {
     fi
   '';
 
+  # pi path must match piPrefix in home-manager/programs/pi.nix.
   system.activationScripts.postActivation.text = lib.mkAfter ''
     if [ -x /opt/homebrew/bin/engram ]; then
       sudo \
         --user=${lib.escapeShellArg username} \
         --set-home \
-        env PATH="${pkgs.pi-coding-agent}/bin:${pkgs.git}/bin:${pkgs.nodejs}/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" \
+        env PATH="/Users/${username}/.local/state/pi-coding-agent/bin:${pkgs.git}/bin:${pkgs.nodejs}/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" \
         /opt/homebrew/bin/engram setup pi || \
         echo "warning: failed to run engram setup pi"
     fi

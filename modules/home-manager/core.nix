@@ -57,7 +57,6 @@
       eza
       ripgrep
       fnm
-      pi-coding-agent
       claude-code
       herdr
       tmux
