@@ -1,0 +1,147 @@
+# pi-task-picker
+
+Tracker-neutral task picker for Pi with [Beads (bd)](https://github.com/steveyegge/beads) and GitLab providers.
+
+Ported from [edmundmiller/pi-beads](https://github.com/edmundmiller/dotfiles/tree/main/packages/pi-packages/pi-beads)
+(itself a fork of [@soleone/pi-tasks](https://github.com/Soleone/pi-tasks)) to the
+`@earendil-works/pi-coding-agent` API.
+
+## Beads provider requirements
+
+- `bd` CLI in PATH (requires bd 1.1)
+- `.beads/` directory in the project (run `bd init` once)
+
+The interactive browser opens only in Pi TUI mode. Each invocation checks the
+active session directory for `.beads/` and verifies that `bd` is available before
+loading tasks. Missing prerequisites are reported without entering the browser.
+
+## GitLab provider requirements
+
+- `glab` CLI in PATH and authenticated for the repository host
+- A Git repository whose current project can be resolved by `glab repo view`
+
+The GitLab provider lists every open project issue with explicit pagination. It supports creating issues, editing title and description, and closing or reopening. Labels, assignees, milestone, weight, due date, web URL, and issue type are display-only in the picker. GitLab-specific priority and type controls are intentionally absent.
+
+The execution workflow reads `~/.pi/agent/task-picker.json`, linked by Home Manager from the active profile. Version 1 supports `gitlab.workStatus.mode` values `scoped-labels` and `none`. The personal profile verifies and applies its configured scoped labels, including `readyForReviewLabel` after isolated validation; the work profile self-assigns without automated status mutation. Missing or invalid configuration stops before mutation rather than guessing a fallback.
+
+## Usage
+
+- `/tasks` — detect the available task tracker and open its task list
+- `/beads-tasks` — explicitly open the Beads task list
+- `/gitlab-issues` — explicitly open the GitLab issue list
+- `ctrl+e` — detect the available tracker and open its task list
+- `/execute-beads [bead-id-or-search ...]` — run the bundled Beads execution workflow
+- `/execute-gitlab-issue <host/project#iid-or-url>` — run the bundled GitLab execution workflow
+
+Both execution workflows carry completed work from the working branch through the repository's merge-request process into its exact default branch. They require a lowercase release-impact title (`fix:`, `feat:`, or `feat!:`), allow an optional lowercase Conventional Commit scope such as `feat(pi):`, and require squash merging and source-branch deletion.
+
+When both providers apply, `/tasks` and `ctrl+e` show a compact tracker chooser.
+The selection is remembered by normalized Git repository root for the lifetime of
+that Pi extension session, including nested directories in the same repository.
+It is not written to disk or carried into a reloaded or replacement session.
+Explicit `/beads-tasks` and `/gitlab-issues` commands bypass the chooser without
+changing the remembered selection.
+
+> **Note:** pi has no conflict-free `ctrl+<letter>` left — every non-control-code
+> letter is bound by either the app or the emacs-style editor. `ctrl+e` overrides
+> the editor's *cursor-to-line-end*; the extension wins the binding, and the
+> **End** key still jumps to line-end, so the loss is negligible. To rebind, edit
+> the `pi.registerShortcut(...)` block in `extension.ts` — `/tasks`, `/beads-tasks`,
+> and `/gitlab-issues` work regardless.
+
+## Keybindings
+
+**List view**
+
+| Key | Action |
+|-----|--------|
+| Configured `tui.select.up` / `tui.select.down` keys, `w` / `s` | Navigate |
+| `space` | Cycle tracker-supported status |
+| `0`–`4` | Set priority when supported (Beads) |
+| `t` | Cycle type when supported (Beads) |
+| `e` / `→` | Edit tracker-supported fields |
+| Configured `tui.select.confirm` keys | Run the selected tracker's bundled execution workflow |
+| Configured `tui.input.tab` keys | Insert task ref and close |
+| `c` | Create task |
+| `f` | Search/filter |
+| `j` / `k` | Scroll description |
+| Configured `tui.select.cancel` keys | Back / clear filter |
+| `ctrl+x` | Close browser |
+
+**Edit view**
+
+| Key | Action |
+|-----|--------|
+| Configured `tui.input.tab` keys | Switch focus / save description |
+| Configured `tui.input.submit` keys | Save |
+| Configured `tui.input.newLine` keys | Insert a description newline |
+| Configured `tui.select.cancel` keys | Back to nav |
+| `ctrl+x` | Close browser |
+
+The browser reads Pi's effective `~/.pi/agent/keybindings.json` mappings for these
+standard TUI actions. Like Pi 0.80's `KeybindingsManager`, a configured key may
+match more than one action. The browser resolves such collisions by its documented
+input order (for example, up before down and submit before tab); help shows the key
+only for the first reachable action in the current view. The `w` / `s` navigation
+aliases and browser-specific action keys remain fixed.
+
+## Isolated Treehouse runs
+
+Starting work from the picker uses an isolated interactive run when all of these are available: an active Zellij session, `treehouse get --lease` support, working `pi` and `zellij` commands, and a runnable repository-scoped no-mistakes gate with `axi run --intent` and `axi respond` support. If any prerequisite is unavailable before allocation, the picker silently preserves the original behavior. After the task-picker modal closes, it submits the selected tracker's bundled execution prompt in the current Pi session so Pi expands and runs `/execute-beads` or `/execute-gitlab-issue` normally.
+
+An eligible run leases a clean linked worktree, creates a `task-picker/<run-id>` branch, and opens a named Zellij tab with an interactive Pi worker and a live status pane. The status pane refreshes the durable run phase, Git state, and no-mistakes status every few seconds. The worker follows the normal tracker workflow through explicit approval and review, prepares and validates the task-scoped diff, then creates one task-scoped bootstrap commit and verifies the worktree is clean. Only after `axi run` accepts that committed HEAD does no-mistakes own rebase, review-fix commits, push, MR creation or update, MR metadata or settings mutations, and CI. The bundled workflows repeat an actionable repository-scoped capability check immediately before delivery, including on the non-isolated fallback path, but do not treat command presence as support for uncommitted work. If the gate is unavailable or a clean committed handoff cannot be produced without disturbing unrelated work, the parent retains custody and uses direct delivery. A locked or denied SSH agent pauses the run for a decision instead of turning the first fetch of the trusted default branch resolved from authoritative remote metadata into a terminal implementation failure. A GitLab `checks-passed` outcome leaves the issue open and, for scoped-label profiles, applies the configured ready-for-review label. Beads remain open without an invented tracker status.
+
+Run records are written atomically under `${PI_CODING_AGENT_DIR:-~/.pi/agent}/task-picker-runs/`. Tabs and leases are intentionally retained for review, failures, and decision waits. A post-allocation error reports the record path; inspect that record and the Treehouse/Zellij state before manually returning or closing anything. Automatic release and parent-session gate forwarding are not part of this first experiment.
+
+## Development
+
+Install the locked development dependencies, then run the combined validation:
+
+```sh
+npm ci
+npm run check
+```
+
+The individual checks are also available:
+
+```sh
+npm run typecheck
+npm test
+```
+
+The adapter tests use fake Pi command executors, so validation does not require
+`bd`, `glab` credentials, a `.beads/` directory, or a live GitLab project.
+
+## Security
+
+All tracker commands use argv arrays with no shell interpolation. The extension never reads or displays GitLab tokens and relies on `glab` for authentication. Issue content, project paths, labels, and usernames are always passed as separate argv values.
+
+## Notes
+
+- The browser loads active work with one `bd list` query for exactly `open`,
+  `in_progress`, and `blocked`, then one `bd blocked --json` query to attach exact
+  active blocker refs. Deferred and closed tasks are intentionally absent.
+- The list view shows at most 10 tasks and remains scrollable. On shorter terminals
+  it reduces the visible task rows to fit; on taller terminals it expands the
+  selected task's description preview instead. Create and edit forms follow the
+  same responsive-height policy: their description editor grows on tall terminals,
+  while optional read-only edit context yields before controls on short terminals.
+  When a focused form becomes compact, its active editor and footer help take
+  priority over inactive fields and header chrome.
+- Dependency-blocked rows keep their stored status symbol and add `blocked:N`.
+  The bundled Beads workflow owns target resolution, readiness checks, claiming,
+  hydration, approval, execution, review, and closure; isolated and fallback
+  dispatch follow the behavior described above.
+- The `execute-beads.md` and `execute-gitlab-issue.md` prompts are bundled under
+  `prompts/` and contributed through Pi's resource discovery API, so picker and
+  manual execution use the same workflows.
+- GitLab work dispatch uses the canonical issue URL so self-managed hosts remain
+  explicit. The workflow resolves the authenticated username without token output,
+  preserves existing assignees, and follows the active profile's work-status mode.
+  Scoped-label mode verifies configured labels and guards deferred work before
+  mutation; none mode leaves status untouched. Completion uses native close.
+- Editable task types include the bd 1.1 built-ins (`task`, `feature`, `bug`,
+  `chore`, `epic`, and `decision`) plus unique values from `types.custom`.
+- `bd` commands are serialized because its dolt backend cannot safely handle
+  concurrent database access.
+- Typechecks against the Pi API version locked in the development dependencies.

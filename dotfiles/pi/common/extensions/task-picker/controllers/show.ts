@@ -1,0 +1,181 @@
+import type { KeybindingsManager } from "@earendil-works/pi-tui";
+import type { TaskStatus } from "../models/task.ts";
+import {
+  formatActionKeyLabels,
+  resolveReachableActionKeyLabels,
+} from "./keybindings.ts";
+
+export type FormFocus = "nav" | "title" | "desc";
+export type FormMode = "edit" | "create";
+
+export interface FormDraft {
+  title: string;
+  description: string;
+  status: TaskStatus;
+  priority: string | undefined;
+  taskType: string | undefined;
+}
+
+type HeaderStatusColor = "dim" | "accent" | "warning";
+
+export interface HeaderStatus {
+  message: string;
+  icon?: string;
+  color: HeaderStatusColor;
+}
+
+export type FormSaveOutcome<T> =
+  | { kind: "ignored" }
+  | { kind: "succeeded"; value: T }
+  | { kind: "failed"; error: unknown };
+
+export class FormSaveCoordinator {
+  private saving = false;
+  private disposed = false;
+
+  get isSaving(): boolean {
+    return this.saving;
+  }
+
+  get canStart(): boolean {
+    return !this.saving && !this.disposed;
+  }
+
+  dispose(): void {
+    this.disposed = true;
+  }
+
+  async run<T>(save: () => Promise<T>): Promise<FormSaveOutcome<T>> {
+    if (!this.canStart) return { kind: "ignored" };
+
+    this.saving = true;
+    try {
+      return { kind: "succeeded", value: await save() };
+    } catch (error) {
+      return { kind: "failed", error };
+    } finally {
+      this.saving = false;
+    }
+  }
+}
+
+const FOCUS_LABELS: Record<Exclude<FormFocus, "nav">, string> = {
+  title: "Title",
+  desc: "Description",
+};
+
+export function normalizeDraft(draft: FormDraft): FormDraft {
+  return {
+    ...draft,
+    title: draft.title.trim(),
+  };
+}
+
+export function isSameDraft(a: FormDraft, b: FormDraft): boolean {
+  const left = normalizeDraft(a);
+  const right = normalizeDraft(b);
+  return (
+    left.title === right.title &&
+    left.description === right.description &&
+    left.status === right.status &&
+    left.priority === right.priority &&
+    left.taskType === right.taskType
+  );
+}
+
+export function getHeaderStatus(
+  saveIndicator: "saving" | "saved" | "error" | undefined,
+  focus: FormFocus
+): HeaderStatus | undefined {
+  if (saveIndicator === "saving") return { message: "Saving…", icon: "⟳", color: "dim" };
+  if (saveIndicator === "saved") return { message: "Saved", icon: "✓", color: "accent" };
+  if (saveIndicator === "error") return { message: "Save failed", color: "warning" };
+  if (focus === "title" || focus === "desc")
+    return { message: `Editing ${FOCUS_LABELS[focus].toLowerCase()}`, color: "accent" };
+  return undefined;
+}
+
+type FormKeybindings = Pick<KeybindingsManager, "getKeys">;
+
+function combinedKeys(...keys: string[]): string {
+  return [...new Set(keys)].join("/");
+}
+
+export function buildPrimaryHelpText(
+  focus: FormFocus,
+  keybindings: FormKeybindings,
+  closeKeyLabel: string
+): string {
+  if (focus === "title") {
+    const [cancel, submit, tab] = resolveReachableActionKeyLabels(
+      keybindings,
+      ["tui.select.cancel", "tui.input.submit", "tui.input.tab"],
+      [closeKeyLabel]
+    );
+    return `${formatActionKeyLabels(submit ?? [])} save • ${formatActionKeyLabels(tab ?? [])} description • ${formatActionKeyLabels(cancel ?? [])} back`;
+  }
+  if (focus === "desc") {
+    const [cancel, newLine, save] = resolveReachableActionKeyLabels(
+      keybindings,
+      [
+        "tui.select.cancel",
+        "tui.input.newLine",
+        ["tui.input.submit", "tui.input.tab"],
+      ],
+      [closeKeyLabel]
+    );
+    return `${formatActionKeyLabels(newLine ?? [])} newline • ${formatActionKeyLabels(save ?? [])} save • ${formatActionKeyLabels(cancel ?? [])} back`;
+  }
+  const [submit, tab, cancel, cursorLeft] = resolveReachableActionKeyLabels(
+    keybindings,
+    [
+      "tui.input.submit",
+      "tui.input.tab",
+      "tui.select.cancel",
+      "tui.editor.cursorLeft",
+    ],
+    [closeKeyLabel]
+  );
+  const back = combinedKeys(...(cancel ?? []), ...(cursorLeft ?? []), "q");
+  return `${formatActionKeyLabels(tab ?? [])} title • ${formatActionKeyLabels(submit ?? [])} save • ${back} back • ${closeKeyLabel} close`;
+}
+
+function buildPriorityHelpText(
+  priorities: string[],
+  priorityHotkeys?: Record<string, string>
+): string {
+  const hotkeyKeys = priorityHotkeys
+    ? Object.keys(priorityHotkeys).sort((a, b) => a.localeCompare(b))
+    : [];
+  if (hotkeyKeys.length > 0) {
+    return `${hotkeyKeys.join("/")} priority`;
+  }
+
+  if (priorities.length === 0) return "priority";
+  if (priorities.length === 1) return "1 priority";
+  return `1-${priorities.length} priority`;
+}
+
+export interface FormCapabilities {
+  allowStatus?: boolean;
+  allowPriority?: boolean;
+  allowTaskType?: boolean;
+}
+
+export function buildSecondaryHelpText(
+  focus: FormFocus,
+  priorities: string[],
+  priorityHotkeys?: Record<string, string>,
+  capabilities: FormCapabilities = {}
+): string {
+  if (focus !== "nav") return "";
+  return [
+    capabilities.allowStatus === false ? null : "space status",
+    capabilities.allowPriority === false
+      ? null
+      : buildPriorityHelpText(priorities, priorityHotkeys),
+    capabilities.allowTaskType === false ? null : "t type",
+  ]
+    .filter(Boolean)
+    .join(" • ");
+}

@@ -18,3 +18,4 @@ dotfiles/pi/common/skills/
 /.pi/hindsight
 result
 /.pi-subagents/artifacts
+/dotfiles/.pi-subagents/

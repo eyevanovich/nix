@@ -20,5 +20,6 @@
     ./opencode.nix
     ./claude-code.nix
     ./pi.nix
+    ./rtk.nix
   ];
 }
