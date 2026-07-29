@@ -432,45 +432,41 @@ test("profile task-picker configs select scoped labels only for personal", () =>
   });
 });
 
-test("bundled execution workflows require merge request delivery", () => {
+test("bundled execution workflows directly complete work without requiring an MR", () => {
   for (const name of ["execute-beads.md", "execute-gitlab-issue.md"]) {
     const prompt = readFileSync(new URL(`../prompts/${name}`, import.meta.url), "utf8");
 
-    assert.match(prompt, /working branch into the repository's exact default branch/);
-    assert.match(prompt, /entire MR title must be lowercase/);
-    assert.match(prompt, /`fix:` for a patch/);
-    assert.match(prompt, /`feat:` for a minor/);
-    assert.match(prompt, /`feat!:` for a major breaking change/);
-    assert.match(prompt, /optional lowercase Conventional Commit scope is allowed/);
-    assert.match(prompt, /`fix\(pi\):`, `feat\(pi\):`, or `feat\(pi\)!:`/);
-    assert.match(prompt, /squash merging enabled/);
-    assert.match(prompt, /source-branch deletion enabled/);
-    assert.match(prompt, /trusted default branch resolved from authoritative remote metadata/);
-    assert.match(prompt, /Before any delivery commit, push, or MR mutation, check whether no-mistakes is runnable/);
+    assert.match(prompt, /resolve the repository's exact default branch from authoritative remote project metadata/);
+    assert.match(prompt, /If the current branch is that default branch, create and switch to a descriptive task branch/);
+    assert.match(prompt, /If it is already any non-default branch, including a long-lived branch, keep using it/);
+    assert.match(prompt, /Never make task changes directly on the default branch/);
+    assert.match(prompt, /create exactly one task-scoped completion commit/i);
+    assert.match(prompt, /Record the resulting branch and commit SHA/);
+    assert.match(prompt, /direct completion: do not push, create or update an MR/);
+    assert.match(prompt, /MR creation and integration are explicit later actions/);
+    assert.match(prompt, /Close the (issue|Bead) after verifying the committed outcome/);
     assert.match(prompt, /`no-mistakes axi run --help`/);
     assert.match(prompt, /`no-mistakes axi respond --help`/);
     assert.match(
       prompt,
-      /injected `\[TASK PICKER ISOLATED RUN\]` policy guarantees tool capability, but it does not remove the bootstrap-commit requirement/
+      /injected `\[TASK PICKER ISOLATED RUN\]` policy guarantees tool capability, but it does not remove the completion-commit requirement/
     );
-    assert.match(prompt, /create exactly one task-scoped bootstrap commit/i);
-    assert.match(prompt, /requires committed HEAD and a clean working tree/);
+    assert.match(prompt, /requires a clean committed HEAD/);
     assert.match(prompt, /does not imply support for uncommitted work/);
     assert.match(prompt, /Custody transfers only after `no-mistakes axi run` accepts/);
     assert.match(prompt, /If `no-mistakes axi run` rejects or fails before reporting an active run/);
-    assert.match(prompt, /retain parent custody and the bootstrap commit/);
-    assert.match(prompt, /use the normal direct delivery procedure/);
-    assert.match(prompt, /For a pre-custody authentication rejection/);
-    assert.match(prompt, /retry the initial `no-mistakes axi run`/);
-    assert.match(prompt, /use direct delivery rather than `no-mistakes rerun`/);
+    assert.match(prompt, /retain parent custody and the completion commit/);
+    assert.match(prompt, /use direct completion rather than `no-mistakes rerun`/);
     assert.match(prompt, /Only after an active run has accepted custody, if no-mistakes later reaches a terminal failure/);
     assert.match(prompt, /Only failures after an active run has accepted custody are no-mistakes terminal outcomes/);
     assert.match(
       prompt,
       /No-mistakes then owns rebase, review fixes, subsequent commits, push, MR creation or update, every MR metadata or settings correction, and CI/
     );
+    assert.match(prompt, /For no-mistakes delivery.*MR must target the exact default branch/s);
+    assert.match(prompt, /entire MR title must be lowercase/);
+    assert.match(prompt, /squash merging and source-branch deletion/);
     assert.doesNotMatch(prompt, /leave the validated task-scoped work for no-mistakes to commit/);
-    assert.match(prompt, /When the capability check fails, or a clean handoff cannot be produced/);
     assert.doesNotMatch(prompt, /trusted main/);
   }
 });

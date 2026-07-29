@@ -273,7 +273,7 @@ test("worker policy confines record paths and binds filename IDs to record IDs",
   }
 });
 
-test("worker policy defines ready-for-review without closing trackers", () => {
+test("worker policy uses direct completion when no-mistakes cannot take custody", () => {
   assert.deepEqual(WORKER_PHASES, [
     "implementing", "validating", "awaiting-decision", "ready-for-review", "failed",
   ]);
@@ -283,19 +283,21 @@ test("worker policy defines ready-for-review without closing trackers", () => {
   assert.match(instructions, /run `no-mistakes rerun`/);
   assert.match(instructions, /injected only after no-mistakes capability is confirmed/);
   assert.match(instructions, /Create exactly one task-scoped bootstrap commit/);
+  assert.match(instructions, /direct completion does not require remote access/);
   assert.match(instructions, /requires committed HEAD and a clean working tree/);
   assert.match(instructions, /Custody transfers only after `no-mistakes axi run` accepts/);
   assert.match(instructions, /If `no-mistakes axi run` is unavailable or rejects the handoff before reporting an active run/);
   assert.match(instructions, /If a clean handoff cannot be produced without disturbing unrelated work/);
-  assert.match(instructions, /use the normal direct-delivery path from the retained task branch/);
+  assert.match(instructions, /use normal direct completion from the retained task branch/);
   assert.match(instructions, /Before custody transfers, an authentication rejection remains parent-owned/);
   assert.match(instructions, /retry the initial `no-mistakes axi run`/);
-  assert.match(instructions, /use direct delivery as above rather than `no-mistakes rerun`/);
+  assert.match(instructions, /use direct completion as above rather than `no-mistakes rerun`/);
   assert.match(instructions, /Only after an active run has accepted custody, if no-mistakes later reaches a terminal failure/);
   assert.match(
     instructions,
     /No-mistakes then owns rebase, review fixes, subsequent commits, push, MR creation or update, every MR metadata or settings correction, and CI/
   );
+  assert.match(instructions, /close the tracker item after the verified completion commit/);
   assert.match(instructions, /Route every correction through no-mistakes/);
   assert.doesNotMatch(instructions, /validate the approved task-scoped diff without committing it/);
   assert.match(instructions, /trusted default branch resolved from authoritative remote metadata/);
@@ -305,4 +307,5 @@ test("worker policy defines ready-for-review without closing trackers", () => {
   assert.match(instructions, /Never return the Treehouse lease/);
   assert.doesNotMatch(instructions, /--yes to/);
   assert.doesNotMatch(instructions, /No fallback delivery path applies/);
+  assert.doesNotMatch(instructions, /MR configuration and verification/);
 });
