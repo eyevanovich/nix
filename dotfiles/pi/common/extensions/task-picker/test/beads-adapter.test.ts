@@ -175,6 +175,28 @@ test("list uses one exact active-work query and intentionally excludes deferred 
   );
 });
 
+test("list naturally sorts task IDs within equal status and priority", async () => {
+  const harness = makeHarness([
+    customTypes(""),
+    json([
+      { id: "platform-cy7.20", title: "Twenty", status: "open", priority: 2 },
+      { id: "platform-cy7.3", title: "Three", status: "open", priority: 2 },
+      { id: "platform-cy7.16", title: "Sixteen", status: "open", priority: 2 },
+      { id: "platform-cy7.2", title: "Two", status: "open", priority: 2 },
+    ]),
+    json([]),
+  ]);
+
+  const tasks = await harness.adapter.list();
+
+  assert.deepEqual(tasks.map(({ ref }) => ref), [
+    "platform-cy7.2",
+    "platform-cy7.3",
+    "platform-cy7.16",
+    "platform-cy7.20",
+  ]);
+});
+
 test("list omits deferred and closed results even if the backend returns them", async () => {
   const harness = makeHarness([
     customTypes(""),

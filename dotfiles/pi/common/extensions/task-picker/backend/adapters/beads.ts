@@ -185,6 +185,8 @@ function taskPrioritySortRank(priority: string | undefined): number {
   return index >= 0 ? index : PRIORITIES.length;
 }
 
+const NATURAL_ID_COLLATOR = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
 function sortActiveTasks(tasks: Task[]): Task[] {
   return [...tasks].sort((left, right) => {
     const statusOrder = taskStatusSortRank(left.status) - taskStatusSortRank(right.status);
@@ -194,7 +196,7 @@ function sortActiveTasks(tasks: Task[]): Task[] {
       taskPrioritySortRank(left.priority) - taskPrioritySortRank(right.priority);
     if (priorityOrder !== 0) return priorityOrder;
 
-    return left.ref.localeCompare(right.ref);
+    return NATURAL_ID_COLLATOR.compare(left.ref, right.ref);
   });
 }
 
