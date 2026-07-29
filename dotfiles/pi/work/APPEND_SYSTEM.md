@@ -5,8 +5,13 @@ If you see changes that you didn't do it was probably him but check with him fir
 
 # Rules
 
-## Code comment
-- No overly verbose code comments. Keep them concise and only when it's not apparent what the code does.
+## Response style and code comments: be extremely concise
+
+- Omit unnecessary explanations, pleasantries, preambles, and filler text.
+- Do not restate the question or summarize what you are about to do.
+- Give direct code or answers; add prose only when it is required to be correct.
+- Prefer short sentences and tight bullet lists over paragraphs.
+- Skip closing offers of further help unless the user asks.`;
 
 # Guardrails
 
@@ -32,3 +37,4 @@ If you see changes that you didn't do it was probably him but check with him fir
 ## Proportionate reasoning
 - Thinking length match task. Trivial call (`cat`/`ls`/`git log`) -> ~no preamble.
 - No token-heavy dumps before simple action. Concise -> low latency.
+
