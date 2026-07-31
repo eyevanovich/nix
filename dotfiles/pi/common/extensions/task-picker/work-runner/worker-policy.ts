@@ -71,13 +71,20 @@ export default function registerWorkerPolicy(pi: ExtensionAPI): void {
 
   pi.on("resources_discover", () => ({ promptPaths: [PROMPTS_DIR] }));
 
-  pi.on("before_agent_start", () => ({
-    message: {
-      customType: "task-picker-isolated-policy",
-      content: isolatedWorkerInstructions(),
-      display: true,
-    },
-  }));
+  pi.on("before_agent_start", (_event, ctx) => {
+    const alreadyInjected = ctx.sessionManager.getBranch().some(
+      (entry) => entry.type === "custom_message" &&
+        entry.customType === "task-picker-isolated-policy"
+    );
+    if (alreadyInjected) return;
+    return {
+      message: {
+        customType: "task-picker-isolated-policy",
+        content: isolatedWorkerInstructions(),
+        display: true,
+      },
+    };
+  });
 
   pi.registerTool({
     name: "task_run_update",

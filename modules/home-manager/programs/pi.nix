@@ -115,10 +115,10 @@
       "npm:pi-powerline-footer"
       "npm:pi-subagents"
       "npm:pi-web-access"
+      "npm:@luxusai/pi-hindsight"
       "git:gitlab.com/gitlab-org/ai/skills"
     ]
     ++ lib.optionals (profile == "personal") [
-      "npm:@luxusai/pi-hindsight"
       "npm:@ryan_nookpi/pi-extension-headroom"
     ];
 
@@ -127,7 +127,6 @@
       "npm:pi-schedule-prompt"
     ]
     ++ lib.optionals (profile == "work") [
-      "npm:@luxusai/pi-hindsight"
       "npm:@ryan_nookpi/pi-extension-headroom"
     ];
 

@@ -9,7 +9,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "node --test test/beads-adapter.test.ts test/gitlab-adapter.test.ts test/pure-behavior.test.ts test/runtime-capability.test.ts test/routing-capability.test.ts test/work-runner.test.ts",
+    "test": "node --test test/beads-adapter.test.ts test/gitlab-adapter.test.ts test/prompt-contract.test.ts test/pure-behavior.test.ts test/runtime-capability.test.ts test/routing-capability.test.ts test/work-runner.test.ts",
     "check": "npm run typecheck && npm test"
   },
   "pi": {

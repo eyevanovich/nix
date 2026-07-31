@@ -456,15 +456,15 @@ test("work-runner fallback dispatches expanded bundled workflows", async () => {
       providerId: "beads",
       ref: "nix-123",
       prompt: "/execute-beads nix-123",
-      target: /Target override: `nix-123`/,
-      workflow: /Goal: the parent owns scope, approval, integration/,
+      target: /<target>\nnix-123\n<\/target>$/,
+      workflow: /You own task resolution, scope, approval, integration/,
     },
     {
       providerId: "gitlab",
       ref: "gitlab.example\/group\/project#3",
       prompt: "/execute-gitlab-issue https://gitlab.example/group/project/-/issues/3",
-      target: /Target: `https:\/\/gitlab\.example\/group\/project\/-\/issues\/3`/,
-      workflow: /Goal: the parent owns exact issue resolution, scope, approval/,
+      target: /<target>\nhttps:\/\/gitlab\.example\/group\/project\/-\/issues\/3\n<\/target>$/,
+      workflow: /You own exact issue resolution, scope, approval/,
     },
   ];
 

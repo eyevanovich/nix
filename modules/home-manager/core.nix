@@ -83,7 +83,6 @@
       btop
       yazi
       tealdeer
-      lazygit
       fd
       devbox
       go-task

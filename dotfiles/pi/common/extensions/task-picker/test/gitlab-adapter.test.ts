@@ -432,41 +432,22 @@ test("profile task-picker configs select scoped labels only for personal", () =>
   });
 });
 
-test("bundled execution workflows directly complete work without requiring an MR", () => {
+test("bundled execution workflows preserve direct completion and handoff custody", () => {
   for (const name of ["execute-beads.md", "execute-gitlab-issue.md"]) {
     const prompt = readFileSync(new URL(`../prompts/${name}`, import.meta.url), "utf8");
 
-    assert.match(prompt, /resolve the repository's exact default branch from authoritative remote project metadata/);
-    assert.match(prompt, /If the current branch is that default branch, create and switch to a descriptive task branch/);
-    assert.match(prompt, /If it is already any non-default branch, including a long-lived branch, keep using it/);
+    assert.match(prompt, /resolve the exact default branch from authoritative remote metadata/i);
     assert.match(prompt, /Never make task changes directly on the default branch/);
-    assert.match(prompt, /create exactly one task-scoped completion commit/i);
-    assert.match(prompt, /Record the resulting branch and commit SHA/);
-    assert.match(prompt, /direct completion: do not push, create or update an MR/);
-    assert.match(prompt, /MR creation and integration are explicit later actions/);
-    assert.match(prompt, /Close the (issue|Bead) after verifying the committed outcome/);
-    assert.match(prompt, /`no-mistakes axi run --help`/);
-    assert.match(prompt, /`no-mistakes axi respond --help`/);
-    assert.match(
-      prompt,
-      /injected `\[TASK PICKER ISOLATED RUN\]` policy guarantees tool capability, but it does not remove the completion-commit requirement/
-    );
-    assert.match(prompt, /requires a clean committed HEAD/);
-    assert.match(prompt, /does not imply support for uncommitted work/);
-    assert.match(prompt, /Custody transfers only after `no-mistakes axi run` accepts/);
-    assert.match(prompt, /If `no-mistakes axi run` rejects or fails before reporting an active run/);
-    assert.match(prompt, /retain parent custody and the completion commit/);
-    assert.match(prompt, /use direct completion rather than `no-mistakes rerun`/);
-    assert.match(prompt, /Only after an active run has accepted custody, if no-mistakes later reaches a terminal failure/);
-    assert.match(prompt, /Only failures after an active run has accepted custody are no-mistakes terminal outcomes/);
-    assert.match(
-      prompt,
-      /No-mistakes then owns rebase, review fixes, subsequent commits, push, MR creation or update, every MR metadata or settings correction, and CI/
-    );
-    assert.match(prompt, /For no-mistakes delivery.*MR must target the exact default branch/s);
-    assert.match(prompt, /entire MR title must be lowercase/);
-    assert.match(prompt, /squash merging and source-branch deletion/);
-    assert.doesNotMatch(prompt, /leave the validated task-scoped work for no-mistakes to commit/);
+    assert.match(prompt, /exactly one task-scoped completion commit/i);
+    assert.match(prompt, /Direct completion applies/);
+    assert.match(prompt, /do not push or create(?:\/update)? an MR/i);
+    assert.match(prompt, /no-mistakes axi run --help/);
+    assert.match(prompt, /requires committed HEAD/);
+    assert.match(prompt, /Custody transfers only when `axi run` reports an active run/);
+    assert.match(prompt, /Before transfer, the parent owns recovery and direct completion; never use `rerun`/);
+    assert.match(prompt, /After transfer, no-mistakes exclusively owns rebase, review fixes, commits, push, MR creation\/update\/settings, and CI/);
+    assert.match(prompt, /lowercase title is `fix:`, `feat:`, or `feat!:`/);
+    assert.match(prompt, /enables squash and source deletion/);
     assert.doesNotMatch(prompt, /trusted main/);
   }
 });
@@ -476,62 +457,29 @@ test("GitLab execution workflow resolves profile status behavior before mutation
     new URL("../prompts/execute-gitlab-issue.md", import.meta.url),
     "utf8"
   );
-  const guardHeading = prompt.indexOf("## Clear all pre-mutation guards");
-  const mutationHeading = prompt.indexOf("## Apply start mutations");
+  const guardHeading = prompt.indexOf("## Guard and start");
   const firstMutation = prompt.indexOf("glab issue update <iid>");
 
-  assert.match(prompt, /read `~\/\.pi\/agent\/task-picker\.json` with a file-reading tool, not shell output/);
-  assert.match(prompt, /accept only `version: 1`/);
+  assert.match(prompt, /read `~\/\.pi\/agent\/task-picker\.json` with a file-reading tool/);
+  assert.match(prompt, /Require JSON `version: 1`/);
   assert.match(prompt, /`scoped-labels` or `none`/);
-  assert.match(prompt, /missing, malformed, or unsupported configuration must stop/);
+  assert.match(prompt, /Never guess a fallback/);
   assert.match(prompt, /glab api --hostname <host> user --output json/);
-  assert.match(
-    prompt,
-    /glab label list --repo <project-url> --output json --per-page 100 --page <page>/
-  );
-  assert.match(prompt, /Verify the configured labels by exact name/);
-  assert.match(prompt, /also require a non-empty `readyForReviewLabel`/);
-  assert.match(prompt, /stop before assignment or status mutation if `<ready-for-review-label>` is absent/);
-  assert.match(prompt, /git ls-remote --exit-code origin HEAD/);
-  assert.match(prompt, /run `no-mistakes rerun`/);
-  assert.match(prompt, /keep the issue open/);
-  assert.match(prompt, /--label <ready-for-review-label>/);
-  assert.match(prompt, /phase `ready-for-review`/);
-  assert.match(
-    prompt,
-    /This issue is deferred \(<deferred-label>\)\. Starting it will replace <deferred-label> with <in-progress-label>\. Continue\?/
-  );
+  assert.match(prompt, /glab label list --repo <project-url> --output json --per-page 100 --page <page>/);
+  assert.match(prompt, /verify needed labels by exact name/i);
+  assert.match(prompt, /also require `readyForReviewLabel`/);
   assert.match(prompt, /glab issue update <iid> --repo <project-url> --assignee \+<username>/);
-  assert.match(
-    prompt,
-    /glab issue update <iid> --repo <project-url> --label <in-progress-label>/
-  );
-  assert.match(
-    prompt,
-    /For `none`, do not read or infer configured work-status label values, list project labels for status discovery, use labels as workflow-status guards, mutate status, or probe enterprise native status/
-  );
-  assert.match(
-    prompt,
-    /Normal issue hydration may include ordinary labels as read-only issue context\. In `none` mode, those labels must not drive work-status behavior/
-  );
-  assert.match(
-    prompt,
-    /In `none` mode, skip project-label listing for status discovery, every label-based workflow guard, and every status mutation/
-  );
-  assert.match(prompt, /Ordinary labels from issue hydration remain read-only context only/);
-  assert.match(prompt, /Only in `scoped-labels` mode, list all existing project labels/);
-  assert.match(prompt, /Only in `scoped-labels` mode, if the issue currently has `<deferred-label>`/);
+  assert.match(prompt, /glab issue update <iid> --repo <project-url> --label <in-progress-label>/);
+  assert.match(prompt, /In `none`, perform no workflow-status mutation/);
+  assert.match(prompt, /Hydrated ordinary labels remain read-only context/);
+  assert.match(prompt, /keep the issue open/i);
   assert.match(prompt, /glab issue close <iid> --repo <project-url>/);
-  assert.match(prompt, /never fall back to an unqualified project path/);
   assert.match(prompt, /Never inspect, print, copy, or manage GitLab tokens/);
   assert.doesNotMatch(prompt, /status::in-progress|status::deferred|status::done/);
   assert.doesNotMatch(prompt, /graphql|workItemUpdate|glab work-items/i);
 
   assert.ok(guardHeading > prompt.indexOf("task-picker.json"));
-  assert.ok(mutationHeading > guardHeading);
-  assert.ok(mutationHeading > prompt.indexOf("If the issue is closed"));
-  assert.ok(mutationHeading > prompt.indexOf("If another user owns it"));
-  assert.ok(firstMutation > mutationHeading);
+  assert.ok(firstMutation > guardHeading);
 });
 
 test("GitLab execution request uses the canonical issue URL on the exact host", async () => {

@@ -2,75 +2,67 @@
 description: Execute ready Beads work with approval-gated subagent orchestration
 argument-hint: "[bead-id-or-search ...]"
 ---
-Use triage and pi-subagents. Lead with decisions and required evidence. Keep all material facts, caveats, and next actions; omit filler and repetition. Target override: `$ARGUMENTS`.
+You own task resolution, scope, approval, integration, validation, review, completion, and the final answer. Use triage and pi-subagents; subagents provide bounded discovery, implementation, or independent review. Lead with decisions and evidence. Preserve material facts; omit narration and repetition.
 
-Goal: the parent owns scope, approval, integration, and the final answer. Subagents provide bounded context, implementation, and independent review.
+## Resolve and claim
 
-## Pick bead
+If the target is empty, run `bd ready --label triage:ready-for-agent`, then `bd ready` if needed; show compact numbered choices. Otherwise resolve exact Bead IDs first, then fuzzy-search title/body; ask only when ambiguous.
 
-If a target is given, resolve each exact Bead ID first; otherwise fuzzy-search title/body. Ask only when a result is ambiguous.
+Run `bd show <id>` before claiming. Check status, dependencies, acceptance criteria, and relevant `CONTEXT-MAP.md`. For an epic, select only its next executable child; do not claim or execute siblings. Group multiple targets only when they form one coherent outcome; otherwise follow dependency order. Claim executable targets atomically with `bd update <id> --claim`. Stop on another owner's claim. Report blocked, closed, or dependency-conflicted work and ask before overriding readiness.
 
-If no target is given, use triage workflow: run `bd ready --label triage:ready-for-agent`; if empty, run `bd ready`. Show compact numbered options and ask the user to choose.
+## Plan and approve
 
-Build an ordered target set. Run `bd show <id>` before claiming; inspect status, dependencies, and acceptance criteria. If the selected target is a parent epic, resolve its child beads and select only the next executable child in dependency order. Do not claim, plan, or execute the remaining children in that epic during this invocation. Atomically claim only executable targets with `bd update <id> --claim`. Stop if another actor owns the claim. Report blocked, closed, or dependency-conflicted targets; ask before overriding readiness. For multiple targets, group only one coherent outcome per execution batch and otherwise follow dependency order. Use `CONTEXT-MAP.md` when present and relevant.
+Call `subagent({ action: "list" })` before delegation and use only executable agents. Discovery is optional, fresh-context, read-only, and limited to evidence that can change the plan. Prefer one bounded `context-builder` or `scout`; add a researcher only for a material current external fact and an oracle only for a genuinely non-obvious decision. Never abandon live runs.
 
-## Build context + approve plan
+Every child contract names its outcome, artifacts, constraints/non-goals, done-when behavior, validation, evidence, ownership, output shape, and stop/escalation rules. Discovery may inspect only named resources and immediate dependencies; report unknowns instead of widening scope.
 
-Before delegation, call `subagent({ action: "list" })`; use only executable, non-disabled agents. Start with the smallest useful delegation and split only when roles or independent workstreams materially improve quality or latency. Prefer `async: true`; use `wait()` / `wait({ all: true })` when no independent parent work remains. Never abandon live runs.
+Present a plan containing outcome/non-goals, likely artifacts, done-when behavior, focused validation, required evidence, risks/open decisions, execution shape, and bounded subagent roles. Split work by independently verifiable outcomes and non-overlapping ownership—not arbitrary layers or file types. Use milestone gates for risky cross-cutting work.
 
-Treat discovery as bounded evidence collection for the plan, not general workspace or domain comprehension. Give each discovery agent exactly one resource group, explicit artifacts/locations/identifiers when known, and concrete questions. If targets are unknown, use one scoped `scout` to identify them before launching `context-builder` against those targets. Never request exhaustive or workspace-wide scans. Stop when the plan questions are answered; report unknowns instead of widening scope.
+Ask necessary clarifying questions; otherwise say none. Then ask exactly: `Execute this plan? yes/no/changes`. Do not implement before approval.
 
-Use fresh-context, read-only `context-builder`/`scout` only when local discovery will change the plan; add `researcher` only for material external/current evidence. Default each discovery launch to `acceptance: false`, `turnBudget: { maxTurns: 6, graceTurns: 2 }`, and `toolBudget: { soft: 8, hard: 12, block: ["read", "grep", "find", "ls"] }`; raise a budget only for a named evidence gap. Require at most 600 words covering relevant resources/artifacts/identifiers, constraints, plan implications, risks, and open questions—no search narration. Fork only when inherited conversation decisions matter. Give every child a bounded contract: outcome, relevant evidence, constraints/non-goals, done-when criteria, allowed ownership, validation, output shape, and stop/escalation rules. Mention external tools only when needed. Use distinct file-only output paths only when the bounded result is still large.
+After approval, resolve the exact default branch from authoritative remote metadata. If currently on it, create and switch to a descriptive task branch. Otherwise retain the current non-default branch. Never make task changes directly on the default branch.
 
-Synthesize an approval plan with: outcome and non-goals; likely artifacts; done-when behavior; focused validation commands or user flows; required evidence; risks/open decisions; execution shape; and bounded subagent roles. Size each writer slice around one coherent, independently verifiable outcome, one ownership boundary, and one focused validation set. A slice is too broad when it has multiple independent outcomes, crosses unrelated areas or ownership boundaries, needs unrelated validation paths, or cannot be explained with one clear done-when condition. Split it into independent outcome slices or serial milestones before launch. Do not split along arbitrary implementation layers, file types, directories, or process steps when that would create overlap, partial outcomes, or repeated integration work. For separable work, define independent slices with artifact/behavior ownership, dependencies, integration order, and validation. For very large, risky, or cross-cutting work, use milestone gates; parallelize only independent slices within a milestone, then integrate, validate, and review before starting the next. Ask `oracle` only for a genuinely non-obvious decision or risk.
+## Implement
 
-Ask all necessary clarifying questions. If none, say so. Then ask: `Execute this plan? yes/no/changes`. Do not implement before approval.
+Use one active-worktree writer for coupled work, a dirty tree, or overlapping files. Parallel writers require a clean Git repository, isolated worktrees, and disjoint ownership. Parallelize read-only work freely.
 
-Before making implementation changes after approval, resolve the repository's exact default branch from authoritative remote project metadata. If the current branch is that default branch, create and switch to a descriptive task branch before editing. If it is already any non-default branch, including a long-lived branch, keep using it. Never make task changes directly on the default branch.
+Workers receive the approved scope, owned artifacts, named references, non-goals, done-when behavior, focused validation, required evidence, and decision stops. They may inspect only owned resources, named references, immediate dependencies, and nearest validation artifacts. They must ask before changing product/API/architecture/scope/dependencies, handling conflicts, or broadening discovery. Workers do not stage, commit, publish, or broaden scope.
 
-## Execute after approval
+The parent inspects every result and integrated diff. For worktree output, inspect patch artifacts, choose integration order, and use one active-worktree integration writer. Failed or paused runs require status/artifact inspection before a bounded retry; preserve successful work when only wrapper/report formatting failed.
 
-Scale fanout to the task, but always preserve implementation, parent inspection, independent review, and validation:
+## Validate and review
 
-1. Choose the write shape:
-   - Small or tightly coupled: one async `worker` in the active worktree.
-   - Independent slices: parallel async `worker`s with `worktree: true` only after confirming a Git repo, clean tree, shared cwd, and non-overlapping ownership.
-   - Very large/cross-cutting: staged milestone batches, with independent worktree slices where safe.
-   - Dirty tree, overlapping files, or unavailable worktrees: preserve existing changes and run one active-worktree writer at a time.
-2. Every writer gets exact scope and owned artifacts, named references, non-goals, done-when behavior, one focused validation set, expected evidence, and decision stop rules. A worker acts from the supplied context; it may inspect only its owned resources, named references, immediate dependencies, and closest validation artifacts before starting. It must ask the parent about missing context instead of reopening broad discovery. Launch with `acceptance: false`: this workflow verifies the integrated result, commands or checks, and independent review at the parent level, rather than failing completed work on a child `acceptance-report` formatting error. Require plain evidence in the result/artifact: changes made, validation performed and results, residual risks, and repository state when relevant. Do not reuse discovery budgets for workers; add a worker `turnBudget` only when the slice is tightly bounded and leave enough grace to validate and report. Workers must not stage, commit, publish, or broaden scope unless approved.
-3. For parallel runs, use readable `phase`/`label`, distinct outputs, and file-only mode when large. Wait for all implementation slices.
-4. Parent inspects outputs and diffs. For worktree runs, inspect emitted patch artifacts and diff stats; select accepted patches and integration order. Give one active-worktree integration `worker` the exact artifact paths, conflict rules, and validation contract. Validate the integrated active-worktree diff; isolated worktree output is not completion.
-5. If a child encounters an unapproved product, API, architecture, scope, dependency, conflict, or validation decision, it must ask the parent via `contact_supervisor` and stop the affected slice. For failed or paused runs, inspect status/artifacts before retrying. Distinguish implementation failure from wrapper/report failure: if the diff and validation succeeded but only acceptance parsing failed, preserve the work and continue parent verification; never rerun implementation just to repair report formatting. Retry only with a corrected bounded task, otherwise ask the user when approved scope would change.
-6. Run fresh-context, read-only async `reviewer`s with `acceptance: false`. Use one broad reviewer for low-risk work; add distinct correctness/tests, simplicity, security/performance/docs/domain angles only when risk warrants them. Reviewers report evidence-backed findings and do not edit.
-7. Parent classifies findings as blockers, fixes-now, optional-defer, or ignore. Do not apply suggestions blindly. If fixes-now exist, use one async active-worktree `worker`; re-review non-trivial fixes.
-8. Parent performs the final integrated diff check and confirms acceptance evidence, validation, and required review before closing anything.
+Run focused validation in the active worktree. Then run at least one fresh-context, read-only independent review; add specialized correctness, tests, simplicity, security, performance, docs, or domain reviews only when risk warrants it. Reviewers report evidence and never edit.
 
-Keep the active worktree single-writer. Parallelize writers only in isolated worktrees with independent ownership; parallelize read-only work freely.
+Classify findings as blocker, fixes-now, optional-defer, or ignore. Fix and re-review non-trivial blockers/fixes-now. Finish with an integrated diff check, final validation, and concrete evidence for every acceptance criterion.
 
-## Complete work or use no-mistakes delivery
+## Deliver
 
-After approved implementation, integrated validation, and independent review, create exactly one task-scoped completion commit on the current working branch. Commit only approved task changes and preserve unrelated pre-existing work. Record the resulting branch and commit SHA.
+Create exactly one task-scoped completion commit after implementation, integrated validation, and independent review pass. Commit only approved task changes; preserve unrelated work. Record branch and SHA.
 
-Before invoking no-mistakes, check whether it is runnable in this repository with `no-mistakes axi run --help`, `no-mistakes axi respond --help`, and `no-mistakes axi`; require successful commands and `--intent` support from the run help. This capability check proves only that the committed-HEAD gate is available; it does not imply support for uncommitted work. No-mistakes requires a clean committed HEAD, so verify `git status --porcelain` is empty before invoking it.
+Check no-mistakes capability with `no-mistakes axi run --help`, `no-mistakes axi respond --help`, and `no-mistakes axi`; require success and `--intent` support. It requires committed HEAD and `git status --porcelain` empty.
 
-When the capability check succeeds and the completion commit leaves a clean handoff, use the No-mistakes delivery section below. Otherwise use direct completion: do not push, create or update an MR, target the default branch, configure squash or source deletion, or require an MR title. Close the Bead after verifying the committed outcome. MR creation and integration are explicit later actions.
+Direct completion applies when capability or a clean handoff is unavailable: retain parent custody, do not push or create an MR, skip the no-mistakes steps below, and continue to Finish with verified work only.
 
-For no-mistakes delivery, it owns rebase, review-fix commits, push, MR creation or update, MR metadata or settings mutations, and CI. Its MR must target the exact default branch, use squash merging and source-branch deletion, link the ticket, and include concise validation and review evidence. Choose its title type by release impact: `fix:` for a patch, `feat:` for a minor backward-compatible feature, or `feat!:` for a major breaking change. An optional lowercase Conventional Commit scope is allowed, for example `fix(pi):`, `feat(pi):`, or `feat(pi)!:`. The entire MR title must be lowercase, including any scope. Ask the user if release impact is ambiguous. Follow required MR checks, CI, review, and approval without bypassing protections. If authorized, merge with squash and delete the source branch; otherwise leave the configured MR open and report its URL and remaining gate. Record `ready-for-review` only after verifying the MR title, target, squash setting, and source-deletion setting.
+No-mistakes delivery applies only after capability and clean-HEAD checks pass:
 
-## No-mistakes delivery
-
-Apply this section only when the no-mistakes capability check succeeded and the task-scoped completion commit left a clean working tree. The injected `[TASK PICKER ISOLATED RUN]` policy guarantees tool capability, but it does not remove the completion-commit requirement. Before no-mistakes delivery, verify unattended remote access with `git ls-remote --exit-code origin HEAD`. If an SSH agent such as Secretive is locked, unavailable, or denied, record phase `awaiting-decision` when the isolated-run policy is active, ask the user to unlock or approve it, and retry before continuing.
-
-When the isolated-run policy is active, call `task_run_update` with phase `validating`. Drive `no-mistakes axi run --intent "<the user's objective and approved tradeoffs>"` and every subsequent `axi respond` yourself until a gate, `checks-passed`, or terminal outcome. Custody transfers only after `no-mistakes axi run` accepts the committed clean HEAD and reports an active run. Until then, the parent owns recovery and must not leave the branch in a deadlock. No-mistakes then owns rebase, review fixes, subsequent commits, push, MR creation or update, every MR metadata or settings correction, and CI. Do not amend or replace the completion commit, perform duplicate out-of-band Git or MR mutations, use `--yes`, edit pipeline findings by hand, or transfer gate ownership to the launcher.
-
-If `no-mistakes axi run` rejects or fails before reporting an active run, retain parent custody and the completion commit, preserve completed validation and review evidence, and use direct completion. For a pre-custody authentication rejection, record `awaiting-decision` when isolated, ask the user to unlock or approve the credential, repeat the ordinary remote-access preflight, and retry the initial `no-mistakes axi run`; if it still does not report an active run, use direct completion rather than `no-mistakes rerun`. When isolated, call `task_run_update` with phase `validating` before direct completion. Only failures after an active run has accepted custody are no-mistakes terminal outcomes.
-
-At an ask-user gate, call `task_run_update` with phase `awaiting-decision` when the isolated-run policy is active, present the finding, and resume the same run after the answer. Only after an active run has accepted custody, if no-mistakes later reaches a terminal failure because it could not fetch or resolve the trusted default branch resolved from authoritative remote metadata and SSH-agent authentication was locked or denied, record `awaiting-decision` when isolated, ask the user to unlock or approve it, repeat the remote-access preflight, and run `no-mistakes rerun`. At any other terminal failure after custody transfers, record phase `failed` and retain the tab and worktree when isolated; otherwise report the failure and preserve the working branch. At `checks-passed`, verify the MR title, target, squash setting, and source-deletion setting. Route any correction through no-mistakes and do not record readiness until verification passes. When the isolated-run policy is active, leave the Bead open because no ready-for-review tracker status has been approved, call `task_run_update` with phase `ready-for-review`, summary, and PR URL, and do not execute the normal Finish section below. Without that policy, continue to the normal Finish section.
+- Before handoff, run `git ls-remote --exit-code origin HEAD`. For locked/denied SSH credentials, set isolated phase `awaiting-decision` when applicable, ask the user, then retry.
+- Set isolated phase `validating` when applicable. Run `no-mistakes axi run --intent "<objective and approved tradeoffs>"`; drive every `axi respond` yourself. Never use `--yes`.
+- Custody transfers only when `axi run` reports an active run. Before transfer, the parent owns recovery and direct completion; never use `rerun`. After transfer, no-mistakes exclusively owns rebase, review fixes, commits, push, MR creation/update/settings, and CI; make no duplicate out-of-band mutations or hand-edits.
+- The MR targets the exact default branch, links the ticket, enables squash and source deletion, and includes validation/review evidence. Its lowercase title is `fix:`, `feat:`, or `feat!:` by release impact, with an optional lowercase scope. Ask if impact is ambiguous.
+- At an ask-user gate, set `awaiting-decision` when isolated, ask, and resume the same run.
+- Pre-custody rejection: preserve the completion commit and validation/review evidence; retry once after credential recovery when applicable, otherwise use direct completion.
+- Post-custody default-branch fetch failure caused by locked/denied SSH: set `awaiting-decision`, restore credentials, repeat preflight, then run `no-mistakes rerun`. Any other terminal post-custody failure sets isolated phase `failed` when applicable and preserves the branch/worktree.
+- Follow required checks, CI, review, and approval without bypassing protections. At `checks-passed`, verify title, target, squash, and source deletion through no-mistakes. In an isolated run, leave the Bead open, set phase `ready-for-review` with summary and PR URL, and skip Finish. Otherwise, if authorized, merge with squash and delete the source branch; if not, leave the configured MR open and report its URL and remaining gate.
 
 ## Finish
 
-Close each target individually only when its approved outcome is committed, acceptance criteria pass, focused validation succeeds, and required review findings are resolved: `bd close <id> --reason="Completed"`. Otherwise leave a concise per-bead note with blocker/failure evidence and remaining work.
+Close each verified target with `bd close <id> --reason="Completed"` only when its approved outcome is committed, acceptance criteria pass, validation succeeds, and required findings are resolved. Otherwise leave a concise note with blocker evidence and remaining work.
 
-After closing a bead selected from a parent epic, report its outcome and ask whether the user wants to continue with the next open executable bead in that epic or start a new session. Do not automatically claim or begin another bead.
+After completing an epic child, report its outcome and ask whether to continue with the next executable child or start a new session; never claim it automatically.
 
-Final answer: bead(s), outcome, changed artifacts, validation/check results, review outcome, branch and completion commit SHA, deferred items, remaining risks, and—when applicable—the explicit continue-or-new-session question.
+Final answer: bead(s), outcome, changed artifacts, validation/check results, review outcome, branch and commit SHA, deferred items, risks, and the epic continuation question when applicable.
+
+<target>
+$ARGUMENTS
+</target>

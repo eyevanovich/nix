@@ -4,11 +4,20 @@
   ...
 }: {
   programs.delta = {
-    enableGitIntegration = true;
     enable = true;
+    enableGitIntegration = true;
     options = {
-      features = "side-by-side";
+      navigate = true;
+      side-by-side = true;
+      dark = true;
     };
+  };
+
+  programs.lazygit = {
+    enable = true;
+    settings.git.pagers = [
+      {pager = "delta --dark --paging=never";}
+    ];
   };
 
   programs.git = {
@@ -42,6 +51,7 @@
         init.defaultBranch = "main";
         push.autoSetupRemote = true;
         pull.rebase = true;
+        merge.conflictstyle = "zdiff3";
         user.name = "Ivan Miles Piesh";
         user.email =
           if profile == "work"
