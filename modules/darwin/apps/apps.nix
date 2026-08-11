@@ -147,6 +147,7 @@ in {
         "secretive"
         "utm"
         "postman"
+        "thaw"
         "redis-insight"
         "hex-fiend"
         "quakenotch"
