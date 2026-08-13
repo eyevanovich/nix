@@ -9,7 +9,7 @@ in {
     enableFishIntegration = true;
     installBatSyntax = false;
     settings = {
-      theme = "catppuccin-mocha";
+      theme = "Catppuccin Mocha";
       font-size = 13;
       font-family = "FiraCode Nerd Font Mono";
       macos-titlebar-style = "tabs";
