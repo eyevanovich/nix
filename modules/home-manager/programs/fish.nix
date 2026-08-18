@@ -32,7 +32,7 @@
         atuin init fish | source
       '';
     shellAliases = {
-      "ls" = "eza -lAF";
+      "ls" = "eza -lA --classify=always";
       mkdir = "mkdir -p";
       ".." = "cd ..";
       "..." = "cd ../..";
