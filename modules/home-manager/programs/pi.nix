@@ -143,6 +143,7 @@
   piPrefix = "${config.home.homeDirectory}/.local/state/pi-coding-agent";
   piBin = "${piPrefix}/bin/pi";
   piPath = "${piPrefix}/bin:${pkgs.git}/bin:${pkgs.nodejs}/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+  headroomPiCommand = "${pkgs.headroom-pi}/bin/headroom-pi";
 in {
   home.file = homeFiles;
 
@@ -219,6 +220,71 @@ in {
       piPackages}
     fi
   '';
+
+  # Point Pi's Headroom extension and MCP bridge at the Nix wrapper while
+  # preserving unrelated local settings and MCP servers (including credentials).
+  home.activation.piConfigureHeadroom = lib.mkIf (profile == "personal") (lib.hm.dag.entryAfter ["writeBoundary" "piPackages"] ''
+    settings="$HOME/.pi/agent/headroom/settings.json"
+    mcpConfig="$HOME/.pi/agent/mcp.json"
+
+    mkdir -p "$(${pkgs.coreutils}/bin/dirname "$settings")"
+    if [ ! -f "$settings" ]; then
+      cat >"$settings" <<'EOF'
+    {
+      "enabled": true,
+      "baseUrl": "http://127.0.0.1:8788",
+      "allowRemote": false,
+      "autoStart": true,
+      "minContextTokens": 10000,
+      "minMessageChars": 1000,
+      "timeoutMs": 60000
+    }
+    EOF
+    fi
+
+    settingsTmp="$(${pkgs.coreutils}/bin/mktemp "$settings.XXXXXX")"
+    if ${pkgs.jq}/bin/jq --arg command "${headroomPiCommand}" \
+      '.command = $command' "$settings" >"$settingsTmp"; then
+      ${pkgs.coreutils}/bin/mv "$settingsTmp" "$settings"
+    else
+      ${pkgs.coreutils}/bin/rm -f "$settingsTmp"
+      echo "warning: Headroom Pi settings are not valid JSON; command was not updated" >&2
+    fi
+
+    mcpTmp="$(${pkgs.coreutils}/bin/mktemp "$mcpConfig.XXXXXX")"
+    mcpFilter='
+      .mcpServers = (.mcpServers // {}) |
+      .mcpServers.headroom = ((.mcpServers.headroom // {}) + {
+        command: $command,
+        args: ["mcp", "serve", "--proxy-url", "http://127.0.0.1:8788"],
+        env: {
+          HEADROOM_TELEMETRY: "off",
+          HEADROOM_CCR_TTL_SECONDS: "7200",
+          HEADROOM_EXCLUDE_TOOLS: "headroom_retrieve",
+          HEADROOM_CODE_AWARE_ENABLED: "1",
+          HEADROOM_SAVINGS_PROFILE: "coding"
+        },
+        lifecycle: "lazy",
+        idleTimeout: 10,
+        excludeTools: ["headroom_compress"],
+        directTools: true
+      })
+    '
+    mcpUpdated=false
+    if [ -f "$mcpConfig" ]; then
+      if ${pkgs.jq}/bin/jq --arg command "${headroomPiCommand}" "$mcpFilter" "$mcpConfig" >"$mcpTmp"; then
+        mcpUpdated=true
+      fi
+    elif ${pkgs.jq}/bin/jq --null-input --arg command "${headroomPiCommand}" "$mcpFilter" >"$mcpTmp"; then
+      mcpUpdated=true
+    fi
+    if [ "$mcpUpdated" = true ]; then
+      ${pkgs.coreutils}/bin/mv "$mcpTmp" "$mcpConfig"
+    else
+      ${pkgs.coreutils}/bin/rm -f "$mcpTmp"
+      echo "warning: Pi MCP settings are not valid JSON; Headroom was not updated" >&2
+    fi
+  '');
 
   # Reinstall gitignored node_modules for symlinked extensions that need them.
   home.activation.piExtensionDeps = lib.hm.dag.entryAfter ["writeBoundary"] (

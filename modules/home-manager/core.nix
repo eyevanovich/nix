@@ -99,6 +99,10 @@
       grc
       scls.defaultPackage.${pkgs.stdenv.hostPlatform.system}
     ]
+    ++ lib.optionals (profile == "personal") [
+      headroom-ai
+      headroom-pi
+    ]
     ++ lib.optionals (profile == "work") [
       azure-cli
       xmlstarlet
