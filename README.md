@@ -84,6 +84,7 @@ All common operations are exposed through the [Taskfile](https://taskfile.dev/):
 | `task build` | First-pass build (downloads everything, bootstraps nix-darwin) |
 | `task rebuild` | Rebuild after config changes (the command you'll use most) |
 | `task update` | Update the flake lock file to pull latest dependencies |
+| `task update-omp` | Pin Oh My Pi to GitHub's latest stable release |
 | `task history` | View nix system generation history |
 | `task garbage` | Remove generations older than 7 days and garbage-collect the store |
 | `task fmt` | Format all nix files with alejandra |

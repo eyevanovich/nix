@@ -20,6 +20,7 @@
     ./opencode.nix
     ./claude-code.nix
     ./pi.nix
+    ./omp.nix
     ./rtk.nix
   ];
 }

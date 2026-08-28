@@ -50,6 +50,11 @@ tasks:
     cmds:
     - nix flake update nixpkgs
 
+  update-omp:
+    desc: "Pin Oh My Pi to GitHub's latest stable release"
+    cmds:
+      - ./scripts/update-omp-release.sh
+
   upgrade:
     desc: "Update nixpkgs and rebuild the current host"
     cmds:

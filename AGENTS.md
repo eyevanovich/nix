@@ -11,6 +11,7 @@ This repository contains macOS declarative configuration using nix-darwin, home-
 | `task darwin-debug` | Verbose trace build + switch, useful for diagnosing failures |
 | `task fmt` | Format all Nix files with alejandra (`nix fmt .`) |
 | `task update` | Update `flake.lock` (`nix flake update`) |
+| `task update-omp` | Pin Oh My Pi to GitHub's latest stable release |
 | `task garbage` | Wipe system profiles older than 7 days and GC unused store entries |
 | `task history` | Show nix system profile generations |
 

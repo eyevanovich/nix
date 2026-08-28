@@ -10,6 +10,7 @@ macOS declarative configuration using nix-darwin, home-manager, and nix-homebrew
 | `task build` | First-pass build using `nix run nix-darwin` (for fresh machines without darwin-rebuild) |
 | `task fmt` | Format all Nix files with alejandra (`nix fmt .`) |
 | `task update` | Update `flake.lock` (`nix flake update`) |
+| `task update-omp` | Pin Oh My Pi to GitHub's latest stable release |
 | `task garbage` | Wipe system profiles older than 7 days and GC unused store entries |
 | `task darwin-debug` | Verbose trace build + switch, useful for diagnosing failures |
 | `task clean` | Remove `./result` symlink |

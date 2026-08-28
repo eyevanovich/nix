@@ -64,6 +64,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # The version is replaced by `task update-omp` with the latest stable
+    # GitHub release tag. Keep this tag explicit so normal updates never pull
+    # unreleased commits from OMP's main branch.
+    omp.url = "github:can1357/oh-my-pi/v18.0.9";
+
     # pinned nixpkgs for localstack (python3.13-plux test broken on unstable)
     nixpkgs-localstack.url = "github:NixOS/nixpkgs/16c7794d0a28b5a37904d55bcca36003b9109aaa";
   };
