@@ -2,7 +2,6 @@
   pkgs,
   lib,
   profile,
-  scls,
   ...
 }: {
   imports = [
@@ -97,7 +96,6 @@
       tree
       fastfetch
       grc
-      scls.defaultPackage.${pkgs.stdenv.hostPlatform.system}
     ]
     ++ lib.optionals (profile == "personal") [
       headroom-ai

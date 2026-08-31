@@ -109,7 +109,6 @@
   piPackages =
     [
       "npm:@dreki-gg/pi-context7"
-      "npm:context-mode"
       "git:github.com/championswimmer/pi-context-usage"
       "npm:pi-mcp-adapter"
       "npm:pi-powerline-footer"
@@ -125,6 +124,7 @@
   removedPiPackages =
     [
       "npm:pi-schedule-prompt"
+      "npm:context-mode"
     ]
     ++ lib.optionals (profile == "work") [
       "npm:@ryan_nookpi/pi-extension-headroom"

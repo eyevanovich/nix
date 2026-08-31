@@ -58,12 +58,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # adds simple completion language flake as an input
-    scls = {
-      url = "github:estin/simple-completion-language-server";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     # pinned nixpkgs for localstack (python3.13-plux test broken on unstable)
     nixpkgs-localstack.url = "github:NixOS/nixpkgs/16c7794d0a28b5a37904d55bcca36003b9109aaa";
   };
@@ -83,7 +77,6 @@
     homebrew-docker-tap,
     homebrew-skyhook-io,
     nix-homebrew,
-    scls,
     ...
   }: let
     # Import host configurations
