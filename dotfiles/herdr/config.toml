@@ -2,14 +2,14 @@ onboarding = false
 
 [theme]
 name = "catppuccin"
-auto_switch = false
 
 [ui]
 agent_panel_sort = "spaces"
 show_agent_labels_on_pane_borders = true
+status_indicators = "symbols"
 
 [ui.toast]
-delivery = "herdr"
+delivery = "terminal"
 
 [ui.sound]
 enabled = true
@@ -29,3 +29,11 @@ split_horizontal= ["prefix+minus", "alt+minus"]
 
 [terminal]
 default_shell = "fish"
+
+[[keys.command]]
+key = "prefix+alt+g"
+type = "popup"
+command = "lazygit"
+description = "run lazygit"
+width = "95%"
+height = "95%"

@@ -160,9 +160,9 @@ in {
         "claude"
         "codex"
         "zed"
+        "ghostty"
       ]
       ++ lib.optionals (profile == "personal") [
-        "ghostty"
         "steam"
         "splice"
         "private-internet-access"
@@ -175,7 +175,6 @@ in {
         "gcloud-cli"
         "packages"
         "imazing-profile-editor"
-        "cursor"
         "openlens"
         "skyhook-io/tap/radar-desktop"
       ];
