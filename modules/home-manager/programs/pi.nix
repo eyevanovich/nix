@@ -68,6 +68,7 @@
       "${piDir}/extensions/subagent/config.json" =
         link "${dotfiles}/common/extensions/subagent/config.json";
       "${piDir}/extensions/zellij" = link "${dotfiles}/common/extensions/zellij";
+      "${piDir}/extensions/herdr" = link "${dotfiles}/common/extensions/herdr";
     };
 
   profileFiles = {
@@ -133,7 +134,10 @@
   # Extensions needing runtime npm deps: gitignored node_modules, reinstalled
   # on activation. path is relative to ~/.pi/agent.
   npmExtensions =
-    ["extensions/task-picker"]
+    [
+      "extensions/herdr"
+      "extensions/task-picker"
+    ]
     ++ lib.optionals (profile == "work") [
       "extensions/mysql-connector"
     ];
