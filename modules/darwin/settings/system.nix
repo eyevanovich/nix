@@ -37,6 +37,7 @@
             "Applications/Zen.app"
             "Applications/1password.app"
             "Applications/WezTerm.app"
+            "Applications/Ghostty.app"
             "Applications/Orbstack.app"
             "Applications/Obsidian.app"
             "Applications/Tidal.app"
