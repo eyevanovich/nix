@@ -156,6 +156,110 @@ function statusSummary(agent: JsonRecord): HerdrStatus | "unknown" {
   return asStatus(agent.agent_status) ?? "unknown";
 }
 
+const MAX_INVENTORY_ROWS_PER_SECTION = 20;
+const MAX_INVENTORY_DESCRIPTION_BYTES = 48;
+
+function truncateInventoryDescription(value: string): string {
+  if (Buffer.byteLength(value) <= MAX_INVENTORY_DESCRIPTION_BYTES) return value;
+
+  const ellipsis = "…";
+  const limit = MAX_INVENTORY_DESCRIPTION_BYTES - Buffer.byteLength(ellipsis);
+  let output = "";
+  for (const character of value) {
+    if (Buffer.byteLength(output) + Buffer.byteLength(character) > limit) break;
+    output += character;
+  }
+  return `${output}${ellipsis}`;
+}
+
+function inventoryIdentifier(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function inventoryDescription(value: unknown): string | undefined {
+  if (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean") return undefined;
+  const normalized = String(value).replace(/\s+/g, " ").trim();
+  return normalized === "" ? undefined : truncateInventoryDescription(normalized);
+}
+
+function inventoryField(label: string, value: unknown): string | undefined {
+  const rendered = inventoryDescription(value);
+  return rendered ? `${label} ${rendered}` : undefined;
+}
+
+function sortInventoryRecords(records: JsonRecord[], idField: string): JsonRecord[] {
+  return records.slice().sort((left, right) => {
+    const leftId = inventoryIdentifier(left[idField]) ?? "";
+    const rightId = inventoryIdentifier(right[idField]) ?? "";
+    return leftId < rightId ? -1 : leftId > rightId ? 1 : 0;
+  });
+}
+
+function inventorySection(
+  label: string,
+  records: JsonRecord[],
+  renderRecord: (record: JsonRecord) => string,
+): string[] {
+  const visibleRecords = records.slice(0, MAX_INVENTORY_ROWS_PER_SECTION);
+  const omitted = records.length - visibleRecords.length;
+  return [
+    `${label} (${records.length}):`,
+    ...visibleRecords.map((record) => `- ${renderRecord(record)}`),
+    ...(omitted > 0 ? [`- … ${omitted} additional ${label.toLowerCase()} omitted`] : []),
+  ];
+}
+
+function renderInventory(
+  allWorkspaces: boolean,
+  workspaces: JsonRecord[],
+  tabs: JsonRecord[],
+  panes: JsonRecord[],
+  agents: JsonRecord[],
+): string {
+  const workspaceLines = inventorySection("Workspaces", sortInventoryRecords(workspaces, "workspace_id"), (workspace) => [
+    inventoryIdentifier(workspace.workspace_id) ?? "unknown workspace",
+    inventoryField("label", workspace.label),
+    inventoryField("focused", workspace.focused),
+    inventoryIdentifier(workspace.active_tab_id) && `active tab ${inventoryIdentifier(workspace.active_tab_id)}`,
+    inventoryField("status", workspace.agent_status),
+  ].filter(Boolean).join("; "));
+  const tabLines = inventorySection("Tabs", sortInventoryRecords(tabs, "tab_id"), (tab) => [
+    inventoryIdentifier(tab.tab_id) ?? "unknown tab",
+    inventoryIdentifier(tab.workspace_id) && `workspace ${inventoryIdentifier(tab.workspace_id)}`,
+    inventoryField("label", tab.label),
+    inventoryField("focused", tab.focused),
+    inventoryField("status", tab.agent_status),
+  ].filter(Boolean).join("; "));
+  const paneLines = inventorySection("Panes", sortInventoryRecords(panes, "pane_id"), (pane) => [
+    inventoryIdentifier(pane.pane_id) ?? "unknown pane",
+    inventoryIdentifier(pane.workspace_id) && `workspace ${inventoryIdentifier(pane.workspace_id)}`,
+    inventoryIdentifier(pane.tab_id) && `tab ${inventoryIdentifier(pane.tab_id)}`,
+    inventoryField("terminal", pane.terminal_id),
+    inventoryField("title", pane.terminal_title),
+    inventoryField("focused", pane.focused),
+    inventoryField("status", pane.agent_status),
+  ].filter(Boolean).join("; "));
+  const agentLines = inventorySection("Recognized agents", sortInventoryRecords(agents, "name"), (agent) => [
+    inventoryIdentifier(agent.name) ?? "unnamed agent",
+    inventoryIdentifier(agent.pane_id) && `pane ${inventoryIdentifier(agent.pane_id)}`,
+    inventoryIdentifier(agent.workspace_id) && `workspace ${inventoryIdentifier(agent.workspace_id)}`,
+    inventoryIdentifier(agent.tab_id) && `tab ${inventoryIdentifier(agent.tab_id)}`,
+    inventoryField("status", agent.agent_status),
+  ].filter(Boolean).join("; "));
+
+  return [
+    `Herdr inventory (${allWorkspaces ? "all workspaces" : "caller workspace"}). Use the exact pane IDs below for pane tools; use an agent name or its pane ID for agent tools.`,
+    "",
+    ...workspaceLines,
+    "",
+    ...tabLines,
+    "",
+    ...paneLines,
+    "",
+    ...agentLines,
+  ].join("\n");
+}
+
 class HerdrClient {
   private capabilities: Promise<void> | undefined;
 
@@ -207,6 +311,11 @@ class HerdrClient {
     if (result.code === 2) throw new HerdrError("HERDR_CLI_USAGE", renderErrorMessage(result));
     if (result.code !== 0) throw new HerdrError("HERDR_SERVER_ERROR", renderErrorMessage(result));
     return result.stdout;
+  }
+
+  async runAcknowledged(args: string[], signal?: AbortSignal, timeout?: number): Promise<void> {
+    const stdout = await this.runRaw(args, signal, timeout);
+    if (stdout.trim() !== "") jsonEnvelope(stdout, `herdr ${args.join(" ")}`);
   }
 
   async ensureCapabilities(signal?: AbortSignal): Promise<void> {
@@ -272,6 +381,11 @@ class HerdrClient {
   async command(args: string[], signal?: AbortSignal, timeout?: number): Promise<JsonRecord> {
     await this.ensureCapabilities(signal);
     return this.run(args, signal, timeout);
+  }
+
+  async commandAcknowledged(args: string[], signal?: AbortSignal, timeout?: number): Promise<void> {
+    await this.ensureCapabilities(signal);
+    await this.runAcknowledged(args, signal, timeout);
   }
 }
 
@@ -411,7 +525,7 @@ export default function registerHerdrExtension(pi: ExtensionAPI): void {
         : agentResult.agents.filter((agent) => workspaceIds.has(agent.workspace_id));
 
       return textResult(
-        `Herdr: ${scopedWorkspaces.length} workspace(s), ${tabs.length} tab(s), ${panes.length} pane(s), ${agents.length} recognized agent(s).`,
+        renderInventory(allWorkspaces, scopedWorkspaces, tabs, panes, agents),
         { allWorkspaces, workspaces: scopedWorkspaces, tabs, panes, agents },
       );
     },
@@ -437,7 +551,7 @@ export default function registerHerdrExtension(pi: ExtensionAPI): void {
 
       try {
         if (params.start_suspended) {
-          await herdr.command(["pane", "send-text", created.paneId, params.command], signal, 10_000);
+          await herdr.commandAcknowledged(["pane", "send-text", created.paneId, params.command], signal, 10_000);
         } else if (params.close_on_exit) {
           const runner = await createCommandRunner(params.command, ctx.cwd, params.cwd, caller.binary, true);
           try {
@@ -509,6 +623,22 @@ export default function registerHerdrExtension(pi: ExtensionAPI): void {
       } finally {
         if (!preserveRunner) await runner.cleanup();
       }
+    },
+  });
+
+  pi.registerTool({
+    name: "herdr_pane_run",
+    label: "Herdr Run In Pane",
+    description: "Run a command atomically in an existing Herdr pane. It sends the command text and Enter together; use an exact pane ID from herdr_list.",
+    promptSnippet: "Run a command in a known Herdr pane",
+    executionMode: "sequential",
+    parameters: Type.Object({
+      pane_id: Type.String({ description: "Authoritative Herdr pane ID." }),
+      command: Type.String({ description: "Command text submitted atomically with Enter." }),
+    }),
+    async execute(_id, params, signal) {
+      await herdr.commandAcknowledged(["pane", "run", params.pane_id, params.command], signal, 10_000);
+      return textResult(`Started command in pane ${params.pane_id}.`, { paneId: params.pane_id, command: params.command });
     },
   });
 
@@ -603,8 +733,8 @@ export default function registerHerdrExtension(pi: ExtensionAPI): void {
       if (params.text === undefined && (!params.keys || params.keys.length === 0)) {
         throw new HerdrError("HERDR_CONTEXT_ERROR", "Provide text, keys, or both.");
       }
-      if (params.text !== undefined) await herdr.command(["pane", "send-text", params.pane_id, params.text], signal, 10_000);
-      if (params.keys && params.keys.length > 0) await herdr.command(["pane", "send-keys", params.pane_id, ...params.keys], signal, 10_000);
+      if (params.text !== undefined) await herdr.commandAcknowledged(["pane", "send-text", params.pane_id, params.text], signal, 10_000);
+      if (params.keys && params.keys.length > 0) await herdr.commandAcknowledged(["pane", "send-keys", params.pane_id, ...params.keys], signal, 10_000);
       return textResult(`Sent input to pane ${params.pane_id}.`, { paneId: params.pane_id, text: params.text, keys: params.keys });
     },
   });
@@ -786,7 +916,7 @@ export default function registerHerdrExtension(pi: ExtensionAPI): void {
       keys: Type.Array(Type.String({ description: "Logical key such as enter, esc, or ctrl+c." }), { minItems: 1 }),
     }),
     async execute(_id, params, signal) {
-      await herdr.command(["agent", "send-keys", params.target, ...params.keys], signal, 10_000);
+      await herdr.commandAcknowledged(["agent", "send-keys", params.target, ...params.keys], signal, 10_000);
       return textResult(`Sent keys to agent ${params.target}.`, { target: params.target, keys: params.keys });
     },
   });

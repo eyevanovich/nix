@@ -168,6 +168,8 @@ test("herdr_list combines the caller workspace topology and detected agents", as
   await loadExtension(pi);
   const result = await tool(pi, "herdr_list").execute("test", {});
 
+  expect(result.content[0].text).toContain("Panes (1):\n- w1:p1; workspace w1; tab w1:t1; terminal term_1; title Pi; focused true; status working");
+  expect(result.content[0].text).toContain("Recognized agents (1):\n- reviewer; pane w1:p1; workspace w1; tab w1:t1; status working");
   expect(result.details).toEqual({
     allWorkspaces: false,
     workspaces: [{ workspace_id: "w1", label: "project", number: 1, focused: true, pane_count: 1, tab_count: 1, active_tab_id: "w1:t1", agent_status: "working" }],
@@ -176,6 +178,33 @@ test("herdr_list combines the caller workspace topology and detected agents", as
     agents: [{ name: "reviewer", pane_id: "w1:p1", terminal_id: "term_1", workspace_id: "w1", tab_id: "w1:t1", focused: true, agent_status: "working", revision: 1 }],
   });
   expect(pi.calls.map((call) => call.args.join(" "))).toContain("pane list --workspace w1");
+});
+
+test("herdr_list keeps long identifiers exact and bounds each inventory section", async () => {
+  enableHerdr();
+  const paneIds = Array.from({ length: 21 }, (_, index) => `w1:p${String(index).padStart(2, "0")}`);
+  const longPaneId = `${paneIds[0]}-${"x".repeat(64)}`;
+  paneIds[0] = longPaneId;
+  const pi = createPi((_command, args) => {
+    const command = args.join(" ");
+    if (command === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
+    if (command === "workspace list") return success("workspace_list", { workspaces: [{ workspace_id: "w1" }] });
+    if (command === "tab list --workspace w1") return success("tab_list", { tabs: [{ tab_id: "w1:t1", workspace_id: "w1" }] });
+    if (command === "pane list --workspace w1") return success("pane_list", {
+      panes: paneIds.reverse().map((pane_id) => ({ pane_id, workspace_id: "w1", tab_id: "w1:t1" })),
+    });
+    if (command === "agent list") return success("agent_list", { agents: [] });
+    throw new Error(`Unexpected Herdr argv: ${command}`);
+  });
+
+  await loadExtension(pi);
+  const result = await tool(pi, "herdr_list").execute("test", {});
+  const output = result.content[0].text;
+
+  expect(output).toContain(longPaneId);
+  expect(output).toContain("- … 1 additional panes omitted");
+  expect(output.indexOf("w1:p01")).toBeLessThan(output.indexOf("w1:p02"));
+  expect(output).not.toContain("w1:p20; workspace");
 });
 
 test("herdr_run creates an unfocused current-workspace tab then atomically starts its command", async () => {
@@ -230,6 +259,69 @@ test("herdr_close refuses the canonical caller pane after it has moved", async (
 
   await expect(tool(pi, "herdr_close").execute("test", { pane_id: "w2:p7" })).rejects.toThrow("Refusing to close the Pi caller pane");
   expect(pi.calls.map((call) => call.args.join(" "))).not.toContain("pane close w2:p7");
+});
+
+test("herdr_pane_run accepts Herdr's successful empty acknowledgement", async () => {
+  enableHerdr();
+  const pi = createPi((_command, args) => {
+    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
+    if (args.join(" ") === "pane run w1:p2 printf done") return { code: 0, stdout: "", stderr: "" };
+    throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
+  });
+
+  await loadExtension(pi);
+  const result = await tool(pi, "herdr_pane_run").execute("test", { pane_id: "w1:p2", command: "printf done" });
+
+  expect(result.details).toEqual({ paneId: "w1:p2", command: "printf done" });
+  expect(pi.calls.map((call) => call.args.join(" "))).toContain("--version");
+  expect(pi.calls.map((call) => call.args.join(" "))).toContain("pane run w1:p2 printf done");
+});
+
+test("herdr_pane_run rejects malformed non-empty success output", async () => {
+  enableHerdr();
+  const pi = createPi((_command, args) => {
+    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
+    if (args.join(" ") === "pane run w1:p2 printf done") return { code: 0, stdout: "unexpected output", stderr: "" };
+    throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
+  });
+
+  await loadExtension(pi);
+
+  await expect(tool(pi, "herdr_pane_run").execute("test", { pane_id: "w1:p2", command: "printf done" })).rejects.toThrow("HERDR_PROTOCOL_ERROR");
+});
+
+test("herdr_send_keys accepts Herdr's successful empty acknowledgements", async () => {
+  enableHerdr();
+  const pi = createPi((_command, args) => {
+    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
+    if (args.join(" ") === "pane send-text w1:p2 echo ready") return { code: 0, stdout: "", stderr: "" };
+    if (args.join(" ") === "pane send-keys w1:p2 enter") return { code: 0, stdout: "", stderr: "" };
+    throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
+  });
+
+  await loadExtension(pi);
+  const result = await tool(pi, "herdr_send_keys").execute("test", { pane_id: "w1:p2", text: "echo ready", keys: ["enter"] });
+
+  expect(result.details).toEqual({ paneId: "w1:p2", text: "echo ready", keys: ["enter"] });
+  expect(pi.calls.map((call) => call.args.join(" "))).toContain("--version");
+  expect(pi.calls.map((call) => call.args.join(" "))).toContain("pane send-text w1:p2 echo ready");
+  expect(pi.calls.map((call) => call.args.join(" "))).toContain("pane send-keys w1:p2 enter");
+});
+
+test("herdr_agent_send_keys accepts Herdr's successful empty acknowledgement", async () => {
+  enableHerdr();
+  const pi = createPi((_command, args) => {
+    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
+    if (args.join(" ") === "agent send-keys reviewer esc") return { code: 0, stdout: "", stderr: "" };
+    throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
+  });
+
+  await loadExtension(pi);
+  const result = await tool(pi, "herdr_agent_send_keys").execute("test", { target: "reviewer", keys: ["esc"] });
+
+  expect(result.details).toEqual({ target: "reviewer", keys: ["esc"] });
+  expect(pi.calls.map((call) => call.args.join(" "))).toContain("--version");
+  expect(pi.calls.map((call) => call.args.join(" "))).toContain("agent send-keys reviewer esc");
 });
 
 test("herdr_pane_output returns Pi-truncated recent output and Herdr identifiers", async () => {
