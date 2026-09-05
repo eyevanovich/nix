@@ -457,14 +457,14 @@ test("work-runner fallback dispatches expanded bundled workflows", async () => {
       ref: "nix-123",
       prompt: "/execute-beads nix-123",
       target: /<target>\nnix-123\n<\/target>$/,
-      workflow: /You own task resolution, scope, approval, integration/,
+      workflow: /bd update <id> --claim/,
     },
     {
       providerId: "gitlab",
       ref: "gitlab.example\/group\/project#3",
       prompt: "/execute-gitlab-issue https://gitlab.example/group/project/-/issues/3",
       target: /<target>\nhttps:\/\/gitlab\.example\/group\/project\/-\/issues\/3\n<\/target>$/,
-      workflow: /You own exact issue resolution, scope, approval/,
+      workflow: /glab issue view <iid> --repo <project-url> --output json/,
     },
   ];
 

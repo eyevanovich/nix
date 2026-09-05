@@ -36,6 +36,7 @@ test("Beads prompt preserves approval, execution, review, and completion contrac
     "do not push or create an MR",
     "if authorized, merge with squash and delete the source branch",
     "bd close <id> --reason=\"Completed\"",
+    "Close each committed target satisfying the completion gate",
   ]) assert.match(text, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
 });
 
@@ -48,6 +49,7 @@ test("GitLab prompt preserves canonical resolution, mutation guards, modes, and 
     "version: 1",
     "scoped-labels",
     "none",
+    "Require exactly one canonical",
     "canonical `https://<host>/<group/project>` project URL",
     "--assignee +<username>",
     "Any existing assignees other than the resolved user",
@@ -60,6 +62,24 @@ test("GitLab prompt preserves canonical resolution, mutation guards, modes, and 
     "if authorized, merge with squash and delete the source branch",
     "glab issue close <iid> --repo <project-url>",
   ]) assert.ok(text.includes(required), `missing GitLab contract: ${required}`);
+});
+
+test("execution prompts retain explicit delegation and completion gates", async () => {
+  for (const name of ["execute-beads", "execute-gitlab-issue"] as const) {
+    const text = await prompt(name, "target");
+    for (const required of [
+      'subagent({ action: "list", capabilities: true })',
+      "runner.available === true",
+      "Implementation requires approval",
+      "if either capability or a clean handoff is unavailable",
+      "Completion gate:",
+      "every acceptance criterion evidenced",
+      "final validation passed",
+      "required review findings resolved",
+      "Only then create exactly one task-scoped completion commit",
+    ]) assert.ok(text.includes(required), `${name} missing gate: ${required}`);
+    assert.match(text.slice(text.indexOf("## Finish")), /completion gate/);
+  }
 });
 
 test("isolated policy contains only the retained-worktree delivery override contracts", () => {
@@ -84,11 +104,11 @@ test("prompt context stays within explicit size budgets", async () => {
   );
   const worker = isolatedWorkerInstructions();
 
-  assert.ok(beadsSource.length < 8_000, `Beads prompt is ${beadsSource.length} characters`);
-  assert.ok(gitlabSource.length < 9_000, `GitLab prompt is ${gitlabSource.length} characters`);
+  assert.ok(beadsSource.length < 6_600, `Beads prompt is ${beadsSource.length} characters`);
+  assert.ok(gitlabSource.length < 8_200, `GitLab prompt is ${gitlabSource.length} characters`);
   assert.ok(worker.length < 2_000, `isolated policy is ${worker.length} characters`);
   assert.ok(
-    Math.max(beadsSource.length, gitlabSource.length) + worker.length < 10_500,
-    "combined isolated-run instructions exceed 10,500 characters"
+    Math.max(beadsSource.length, gitlabSource.length) + worker.length < 10_000,
+    "combined isolated-run instructions exceed 10,000 characters"
   );
 });
