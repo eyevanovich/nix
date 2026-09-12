@@ -1,5 +1,9 @@
 # Research: Task-Picker Prompt & Context Optimization
 
+> Historical snapshot: this research describes the pre-removal Treehouse/Zellij
+> runner and no-mistakes delivery flow. Those components were removed from
+> task-picker; use the extension source and README for current behavior.
+
 ## Summary
 Optimizing prompt templates and runtime-composed instructions in `pi-task-picker` requires relocating dynamic execution arguments to prompt tails, deduplicating shared workflow protocols across task templates, and simplifying task serialization to a key-value format. Moving dynamic `$ARGUMENTS` away from prompt headers converts un-cacheable prompt files into static prefixes, unlocking up to 90% cost reductions and 80% Time-To-First-Token (TTFT) latency improvements on Anthropic and OpenAI APIs. Eliminating redundant prose and duplicated sections reduces raw prompt token volume by ~30%, while structured XML tagging preserves precise subagent orchestration behavior.
 
@@ -71,9 +75,9 @@ Optimizing prompt templates and runtime-composed instructions in `pi-task-picker
   2. Pass dynamic run IDs and paths strictly through environment variables or isolated tail context.
 - **Expected Benefit**: Prevents runtime policy messages from breaking agent conversation cache keys.
 
-## Implemented Decision
+## Historical implementation snapshot
 
-The optimization branch deliberately applies a narrower design than every recommendation above:
+At the time of this research, the optimization branch deliberately applied a narrower design than every recommendation above:
 
 - Keep each tracker prompt self-contained; cross-file duplication is a maintenance cost, not a per-run token cost.
 - Use only a `<target>` data boundary rather than pervasive XML tags.

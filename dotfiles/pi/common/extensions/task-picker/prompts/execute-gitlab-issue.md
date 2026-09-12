@@ -8,12 +8,12 @@ Use triage and pi-subagents. You own resolution, approval, integration, validati
 
 Before mutation, read `~/.pi/agent/task-picker.json` with a file-reading tool. Require JSON `version: 1` and `gitlab.workStatus.mode` of `scoped-labels` or `none`; otherwise stop with an actionable diagnostic. Never guess a fallback.
 
-- `scoped-labels`: require non-empty `inProgressLabel` and `deferredLabel`; with `[TASK PICKER ISOLATED RUN]`, also require `readyForReviewLabel`. Retain exact values; verify needed labels by exact name. Use these scoped labels for workflow status.
+- `scoped-labels`: require non-empty `inProgressLabel` and `deferredLabel`. Retain exact values; verify needed labels by exact name. Use these scoped labels for workflow status.
 - `none`: no workflow-label value lookup/inference, status-label discovery/guards/mutations, or native-status probing. Hydrated ordinary labels remain read-only context.
 
 Require exactly one canonical `host/group/project#iid` or issue URL. Retain exact host, project path, IID, and canonical `https://<host>/<group/project>` project URL. Before mutation, run `glab issue view <iid> --repo <project-url> --output json`; validate returned host/project/IID and inspect state, assignees, and labels. Every issue/label command uses this full URL. Resolve the target-host user with `glab api --hostname <host> user --output json`; parse `.username` without shell interpolation or token output.
 
-In `scoped-labels`, paginate `glab label list --repo <project-url> --output json --per-page 100 --page <page>` from page 1 until fewer than 100 results. Stop if in-progress is absent, or ready-for-review is absent in an isolated run. Missing deferred is allowed only if the issue does not use it. Never create, rename, substitute, or guess labels.
+In `scoped-labels`, paginate `glab label list --repo <project-url> --output json --per-page 100 --page <page>` from page 1 until fewer than 100 results. Stop if in-progress is absent. Missing deferred is allowed only if the issue does not use it. Never create, rename, substitute, or guess labels.
 
 ## Guard and start
 
@@ -47,19 +47,7 @@ Completion gate: approved outcome implemented, every acceptance criterion eviden
 
 ## Deliver
 
-Check `no-mistakes axi run --help`, `no-mistakes axi respond --help`, and `no-mistakes axi`; require success and `--intent` support. Handoff requires committed HEAD and empty `git status --porcelain`.
-
-**Direct completion applies** if either capability or a clean handoff is unavailable: retain custody, do not push or create/update an MR; skip handoff and go to Finish.
-
-Otherwise:
-
-1. Run `git ls-remote --exit-code origin HEAD`. For locked/denied SSH credentials, set isolated phase `awaiting-decision` when applicable, ask the user, and retry.
-2. Set isolated phase `validating` when applicable. Run `no-mistakes axi run --intent "<objective and approved tradeoffs>"`; drive every `axi respond` yourself, without `--yes`.
-3. Custody transfers only when `axi run` reports an active run. Before transfer, the parent owns recovery and direct completion; never use `rerun`. After transfer, no-mistakes exclusively owns rebase, review fixes, commits, push, MR creation/update/settings, and CI. Route mutations through it.
-4. MR contract: targets the exact default branch, links the ticket, enables squash and source deletion, includes validation/review evidence. Its lowercase title is `fix:`, `feat:`, or `feat!:` by release impact, with optional lowercase scope; ask if ambiguous.
-5. Ask-user gate: set isolated phase `awaiting-decision` when applicable, ask, and resume the same run.
-6. Pre-custody rejection: preserve commit/evidence; retry once after credential recovery if applicable, otherwise direct completion. Post-custody default-branch fetch failure from locked/denied SSH: set isolated phase `awaiting-decision` when applicable, restore credentials, repeat preflight, then `no-mistakes rerun`. Other terminal post-custody failures: set isolated phase `failed` when applicable and preserve branch/worktree.
-7. Follow required checks, CI, review, approval, and protections. At `checks-passed`, verify title, target, squash, and source deletion through no-mistakes. Isolated run: keep the issue open; in `scoped-labels`, verify/apply `<ready-for-review-label>` and rehydrate; `none` performs no workflow-label lookup/mutation. Set phase `ready-for-review` with summary and PR URL; skip Finish. Otherwise, if authorized, merge with squash and delete the source branch; if not, leave the configured MR open and report URL/remaining gate.
+Retain custody. Do not push or create/update an MR; MR creation and integration are explicit later actions. Once the completion gate passes and the task-scoped completion commit exists, continue directly to Finish.
 
 ## Finish
 

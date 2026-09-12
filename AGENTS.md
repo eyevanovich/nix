@@ -170,6 +170,14 @@ non-interactive path is young — not worth running unattended on every rebuild.
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
 
+### Task-picker local-custody exception
+
+`/execute-beads` and `/execute-gitlab-issue` finish tracker work after the
+validated task-scoped commit and verified tracker closure. Publishing is an
+explicit, later delivery task. This exception overrides the push step only
+while executing one of those tracker workflows; normal configuration work
+follows the mandatory workflow above.
+
 ## Local Beads Issue Tracker
 
 Use `bd` for task tracking and `bd prime` for command guidance. Beads data is

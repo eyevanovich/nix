@@ -34,19 +34,7 @@ Completion gate: approved outcome implemented, every acceptance criterion eviden
 
 ## Deliver
 
-Check `no-mistakes axi run --help`, `no-mistakes axi respond --help`, and `no-mistakes axi`; require success and `--intent` support. Handoff requires committed HEAD and empty `git status --porcelain`.
-
-**Direct completion applies** if either capability or a clean handoff is unavailable: retain custody, do not push or create an MR; skip handoff and go to Finish.
-
-Otherwise:
-
-1. Run `git ls-remote --exit-code origin HEAD`. For locked/denied SSH credentials, set isolated phase `awaiting-decision` when applicable, ask the user, and retry.
-2. Set isolated phase `validating` when applicable. Run `no-mistakes axi run --intent "<objective and approved tradeoffs>"`; drive every `axi respond` yourself, without `--yes`.
-3. Custody transfers only when `axi run` reports an active run. Before transfer, the parent owns recovery and direct completion; never use `rerun`. After transfer, no-mistakes exclusively owns rebase, review fixes, commits, push, MR creation/update/settings, and CI. Route mutations through it.
-4. MR contract: targets the exact default branch, links the ticket, enables squash and source deletion, includes validation/review evidence. Its lowercase title is `fix:`, `feat:`, or `feat!:` by release impact, with optional lowercase scope; ask if ambiguous.
-5. Ask-user gate: set isolated phase `awaiting-decision` when applicable, ask, and resume the same run.
-6. Pre-custody rejection: preserve commit/evidence; retry once after credential recovery if applicable, otherwise direct completion. Post-custody default-branch fetch failure from locked/denied SSH: set isolated phase `awaiting-decision` when applicable, restore credentials, repeat preflight, then `no-mistakes rerun`. Other terminal post-custody failures: set isolated phase `failed` when applicable and preserve branch/worktree.
-7. Follow required checks, CI, review, approval, and protections. At `checks-passed`, verify title, target, squash, and source deletion through no-mistakes. Isolated run: leave the Bead open, set phase `ready-for-review` with summary and PR URL, and skip Finish. Otherwise, if authorized, merge with squash and delete the source branch; if not, leave the configured MR open and report URL/remaining gate.
+Retain custody. Do not push or create an MR; MR creation and integration are explicit later actions. Once the completion gate passes and the task-scoped completion commit exists, continue directly to Finish.
 
 ## Finish
 

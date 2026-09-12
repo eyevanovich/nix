@@ -422,7 +422,6 @@ test("profile task-picker configs select scoped labels only for personal", () =>
         mode: "scoped-labels",
         inProgressLabel: "status::in-progress",
         deferredLabel: "status::deferred",
-        readyForReviewLabel: "status::ready-for-review",
       },
     },
   });
@@ -432,22 +431,17 @@ test("profile task-picker configs select scoped labels only for personal", () =>
   });
 });
 
-test("bundled execution workflows preserve direct completion and handoff custody", () => {
+test("bundled execution workflows preserve local completion custody", () => {
   for (const name of ["execute-beads.md", "execute-gitlab-issue.md"]) {
     const prompt = readFileSync(new URL(`../prompts/${name}`, import.meta.url), "utf8");
 
     assert.match(prompt, /resolve the exact default branch from authoritative remote metadata/i);
     assert.match(prompt, /Never make task changes directly on the default branch/);
     assert.match(prompt, /exactly one task-scoped completion commit/i);
-    assert.match(prompt, /Direct completion applies/);
+    assert.match(prompt, /Retain custody/);
     assert.match(prompt, /do not push or create(?:\/update)? an MR/i);
-    assert.match(prompt, /no-mistakes axi run --help/);
-    assert.match(prompt, /requires committed HEAD/);
-    assert.match(prompt, /Custody transfers only when `axi run` reports an active run/);
-    assert.match(prompt, /Before transfer, the parent owns recovery and direct completion; never use `rerun`/);
-    assert.match(prompt, /After transfer, no-mistakes exclusively owns rebase, review fixes, commits, push, MR creation\/update\/settings, and CI/);
-    assert.match(prompt, /lowercase title is `fix:`, `feat:`, or `feat!:`/);
-    assert.match(prompt, /enables squash and source deletion/);
+    assert.match(prompt, /continue directly to Finish/);
+    assert.doesNotMatch(prompt, /no-mistakes/i);
     assert.doesNotMatch(prompt, /trusted main/);
   }
 });
@@ -467,12 +461,12 @@ test("GitLab execution workflow resolves profile status behavior before mutation
   assert.match(prompt, /glab api --hostname <host> user --output json/);
   assert.match(prompt, /glab label list --repo <project-url> --output json --per-page 100 --page <page>/);
   assert.match(prompt, /verify needed labels by exact name/i);
-  assert.match(prompt, /also require `readyForReviewLabel`/);
+  assert.doesNotMatch(prompt, /readyForReviewLabel/);
   assert.match(prompt, /glab issue update <iid> --repo <project-url> --assignee \+<username>/);
   assert.match(prompt, /glab issue update <iid> --repo <project-url> --label <in-progress-label>/);
   assert.match(prompt, /In `none`, perform no workflow-status mutation/);
   assert.match(prompt, /Hydrated ordinary labels remain read-only context/);
-  assert.match(prompt, /keep the issue open/i);
+  assert.match(prompt, /continue directly to Finish/);
   assert.match(prompt, /glab issue close <iid> --repo <project-url>/);
   assert.match(prompt, /Never inspect, print, copy, or manage GitLab tokens/);
   assert.doesNotMatch(prompt, /status::in-progress|status::deferred|status::done/);

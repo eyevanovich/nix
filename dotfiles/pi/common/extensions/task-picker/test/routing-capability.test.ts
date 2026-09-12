@@ -19,7 +19,6 @@ import {
 } from "../controllers/list.ts";
 import { KeybindingsManager, TUI_KEYBINDINGS } from "@earendil-works/pi-tui";
 import registerExtension, { dispatchTaskWork } from "../extension.ts";
-import type { WorkRunner } from "../work-runner/types.ts";
 
 function provider(id: string, detection: TrackerDetection): TrackerProvider {
   return {
@@ -447,21 +446,14 @@ test("ready-provider browser failures are reported without rejecting", async () 
   ]);
 });
 
-test("work-runner fallback dispatches expanded bundled workflows", async () => {
-  const workRunner: WorkRunner = {
-    start: async () => ({ kind: "fallback" }),
-  };
+test("task work dispatches expanded bundled workflows in the current session", async () => {
   const cases = [
     {
-      providerId: "beads",
-      ref: "nix-123",
       prompt: "/execute-beads nix-123",
       target: /<target>\nnix-123\n<\/target>$/,
       workflow: /bd update <id> --claim/,
     },
     {
-      providerId: "gitlab",
-      ref: "gitlab.example\/group\/project#3",
       prompt: "/execute-gitlab-issue https://gitlab.example/group/project/-/issues/3",
       target: /<target>\nhttps:\/\/gitlab\.example\/group\/project\/-\/issues\/3\n<\/target>$/,
       workflow: /glab issue view <iid> --repo <project-url> --output json/,
@@ -470,18 +462,8 @@ test("work-runner fallback dispatches expanded bundled workflows", async () => {
 
   for (const item of cases) {
     const sent: string[] = [];
-    const result = await dispatchTaskWork(
-      workRunner,
-      {
-        providerId: item.providerId,
-        task: { ref: item.ref, title: "Task", status: "open" },
-        execution: { prompt: item.prompt },
-        cwd: "/repo",
-      },
-      (message) => sent.push(message)
-    );
+    await dispatchTaskWork(item.prompt, (message) => sent.push(message), true);
 
-    assert.deepEqual(result, { kind: "fallback" });
     assert.equal(sent.length, 1);
     assert.doesNotMatch(sent[0]!, /^\//);
     assert.match(sent[0]!, item.target);
@@ -489,42 +471,18 @@ test("work-runner fallback dispatches expanded bundled workflows", async () => {
   }
 });
 
-test("launched work-runner path does not dispatch in the parent session", async () => {
-  const sent: string[] = [];
-  const workRunner: WorkRunner = {
-    start: async (input) => ({
-      kind: "launched",
-      recordPath: "/state/run.json",
-      record: {
-        version: 1,
-        id: "run",
-        providerId: input.providerId,
-        taskRef: input.task.ref,
-        primaryRoot: "/repo",
-        prompt: input.execution.prompt,
-        branch: "task-picker/run",
-        phase: "launched",
-        createdAt: "2026-07-20T00:00:00Z",
-        updatedAt: "2026-07-20T00:00:00Z",
-        leaseAttempted: true,
-        leasePath: "/pool/run",
-      },
-    }),
-  };
+test("busy task work dispatch queues the expanded workflow as a follow-up", async () => {
+  const sent: Array<{ message: string; options?: { deliverAs?: string } }> = [];
 
-  const result = await dispatchTaskWork(
-    workRunner,
-    {
-      providerId: "gitlab",
-      task: { ref: "project#1", title: "Task", status: "open" },
-      execution: { prompt: "/execute-gitlab-issue https://example/project/-/issues/1" },
-      cwd: "/repo",
-    },
-    (message) => sent.push(message)
+  await dispatchTaskWork(
+    "/execute-beads nix-123",
+    (message, options) => sent.push({ message, options }),
+    false
   );
 
-  assert.equal(result.kind, "launched");
-  assert.deepEqual(sent, []);
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0]!.options?.deliverAs, "followUp");
+  assert.match(sent[0]!.message, /<target>\nnix-123\n<\/target>$/);
 });
 
 test("Beads backend emits the exact compatibility execution request", async () => {

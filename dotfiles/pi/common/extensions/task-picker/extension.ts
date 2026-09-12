@@ -14,8 +14,6 @@ import { showTaskForm } from "./ui/pages/show.ts";
 import { PartialTaskCreateError } from "./backend/api.ts";
 import type { TaskAdapter, TaskUpdate, TrackerBackend, TrackerProvider } from "./backend/api.ts";
 import type { FormDraft } from "./controllers/show.ts";
-import { createWorkRunner } from "./work-runner/index.ts";
-import type { WorkRunner } from "./work-runner/types.ts";
 
 const CTRL_X = "\x18";
 const PROMPTS_DIR = fileURLToPath(new URL("./prompts", import.meta.url));
@@ -136,16 +134,16 @@ export async function hydrateTaskForEdit(
   return mergeHydratedTask(fromList, await backend.show(ref));
 }
 
+type TaskWorkSendOptions = Parameters<ExtensionAPI["sendUserMessage"]>[1];
+
 export async function dispatchTaskWork(
-  workRunner: WorkRunner,
-  input: Parameters<WorkRunner["start"]>[0],
-  send: (prompt: string) => void,
+  prompt: string,
+  send: (prompt: string, options?: TaskWorkSendOptions) => void,
+  isIdle: boolean,
   expandPrompt: (prompt: string) => Promise<string> = (prompt) =>
     expandBundledExecutionPrompt(prompt, PROMPTS_DIR)
-) {
-  const result = await workRunner.start(input);
-  if (result.kind === "fallback") send(await expandPrompt(input.execution.prompt));
-  return result;
+): Promise<void> {
+  send(await expandPrompt(prompt), isIdle ? undefined : { deliverAs: "followUp" });
 }
 
 function buildTaskUpdate(
@@ -262,7 +260,6 @@ export function createTaskSaveSession(backend: Pick<TaskAdapter, "create" | "upd
 
 export interface TaskBrowserDependencies {
   providers?: TrackerProvider[];
-  workRunner?: WorkRunner;
 }
 
 export default function registerExtension(
@@ -274,7 +271,6 @@ export default function registerExtension(
     createGitLabProvider(pi, [PROMPTS_DIR]),
   ];
   const trackerChoices = new Map<string, string>();
-  const workRunner = dependencies.workRunner ?? createWorkRunner(pi);
 
   pi.on("resources_discover", () => ({
     promptPaths: [...new Set(providers.flatMap((provider) => provider.promptPaths))],
@@ -435,20 +431,10 @@ export default function registerExtension(
         onUpdateTask: persistInlineUpdate,
         onWork: async (task) => {
           const execution = await backend.actions.startWork(task);
-          const result = await dispatchTaskWork(
-            workRunner,
-            {
-              providerId: backend.id,
-              task,
-              execution,
-              cwd: ctx.cwd,
-            },
-            (prompt) => pi.sendUserMessage(prompt)
-          );
-          if (result.kind === "fallback") return;
-          ctx.ui.notify(
-            `Launched ${task.ref} in Zellij tab ${result.record.zellij?.tabId ?? "unknown"}. Worktree retained at ${result.record.leasePath}.`,
-            "info"
+          await dispatchTaskWork(
+            execution.prompt,
+            (prompt, options) => pi.sendUserMessage(prompt, options),
+            ctx.isIdle()
           );
         },
         onInsert: (task) => ctx.ui.pasteToEditor(`${serializeTask(task)} `),

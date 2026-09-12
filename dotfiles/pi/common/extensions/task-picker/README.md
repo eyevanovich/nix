@@ -22,7 +22,7 @@ loading tasks. Missing prerequisites are reported without entering the browser.
 
 The GitLab provider lists every open project issue with explicit pagination. It supports creating issues, editing title and description, and closing or reopening. Labels, assignees, milestone, weight, due date, web URL, and issue type are display-only in the picker. GitLab-specific priority and type controls are intentionally absent.
 
-The execution workflow reads `~/.pi/agent/task-picker.json`, linked by Home Manager from the active profile. Version 1 supports `gitlab.workStatus.mode` values `scoped-labels` and `none`. The personal profile verifies and applies its configured scoped labels, including `readyForReviewLabel` after isolated validation; the work profile self-assigns without automated status mutation. Missing or invalid configuration stops before mutation rather than guessing a fallback.
+The execution workflow reads `~/.pi/agent/task-picker.json`, linked by Home Manager from the active profile. Version 1 supports `gitlab.workStatus.mode` values `scoped-labels` and `none`. The personal profile verifies and applies its configured scoped labels; the work profile self-assigns without automated status mutation. Missing or invalid configuration stops before mutation rather than guessing a fallback.
 
 ## Usage
 
@@ -33,7 +33,7 @@ The execution workflow reads `~/.pi/agent/task-picker.json`, linked by Home Mana
 - `/execute-beads [bead-id-or-search ...]` — run the bundled Beads execution workflow
 - `/execute-gitlab-issue <host/project#iid-or-url>` — run the bundled GitLab execution workflow
 
-Both execution workflows resolve the exact default branch before editing. They create a task branch only when work begins on that default branch; work already on a non-default, including long-lived, branch remains there. After validation and review, they create a task-scoped completion commit and close the tracker item. Direct completion does not push or create an MR; MR creation and integration are explicit later actions. When `no-mistakes` is available with a clean committed handoff, it owns MR delivery, including the lowercase release-impact title (`fix:`, `feat:`, or `feat!:`), squash merging, and source-branch deletion.
+Both execution workflows resolve the exact default branch before editing. They create a task branch only when work begins on that default branch; work already on a non-default, including long-lived, branch remains there. After validation and review, they create a task-scoped completion commit and close the tracker item. Delivery remains local: workflows do not push or create an MR; MR creation and integration are explicit later actions.
 
 When both providers apply, `/tasks` and `ctrl+e` show a compact tracker chooser.
 The selection is remembered by normalized Git repository root for the lifetime of
@@ -85,13 +85,9 @@ input order (for example, up before down and submit before tab); help shows the 
 only for the first reachable action in the current view. The `w` / `s` navigation
 aliases and browser-specific action keys remain fixed.
 
-## Isolated Treehouse runs
+## Task execution
 
-Starting work from the picker uses an isolated interactive run when all of these are available: an active Zellij session, `treehouse get --lease` support, working `pi` and `zellij` commands, and a runnable repository-scoped no-mistakes gate with `axi run --intent` and `axi respond` support. If any prerequisite is unavailable before allocation, the picker silently preserves the original behavior. After the task-picker modal closes, it submits the selected tracker's bundled execution prompt in the current Pi session so Pi expands and runs `/execute-beads` or `/execute-gitlab-issue` normally.
-
-An eligible run leases a clean linked worktree, creates a `task-picker/<run-id>` branch, and opens a named Zellij tab with an interactive Pi worker and a live status pane. The status pane refreshes the durable run phase, Git state, and no-mistakes status every few seconds. The worker follows the normal tracker workflow through explicit approval and review, prepares and validates the task-scoped diff, then creates one task-scoped bootstrap commit and verifies the worktree is clean. Only after `axi run` accepts that committed HEAD does no-mistakes own rebase, review-fix commits, push, MR creation or update, MR metadata or settings mutations, and CI. The bundled workflows repeat an actionable repository-scoped capability check immediately before delivery, including on the non-isolated fallback path, but do not treat command presence as support for uncommitted work. If the gate is unavailable or a clean committed handoff cannot be produced without disturbing unrelated work, the parent retains custody, directly completes the task, and closes the tracker item after verification. A locked or denied SSH agent pauses the run for a decision instead of turning the first fetch of the trusted default branch resolved from authoritative remote metadata into a terminal implementation failure. A GitLab `checks-passed` outcome leaves the issue open and, for scoped-label profiles, applies the configured ready-for-review label. Beads remain open without an invented tracker status.
-
-Run records are written atomically under `${PI_CODING_AGENT_DIR:-~/.pi/agent}/task-picker-runs/`. Tabs and leases are intentionally retained for review, failures, and decision waits. A post-allocation error reports the record path; inspect that record and the Treehouse/Zellij state before manually returning or closing anything. Automatic release and parent-session gate forwarding are not part of this first experiment.
+Starting work from the picker submits the selected tracker's bundled execution prompt in the current Pi session, which expands and runs `/execute-beads` or `/execute-gitlab-issue` normally. The workflow can use managed subagent worktrees for isolated implementation when appropriate; task-picker itself does not allocate worktrees or launch background terminals.
 
 ## Development
 
@@ -130,8 +126,8 @@ All tracker commands use argv arrays with no shell interpolation. The extension 
   priority over inactive fields and header chrome.
 - Dependency-blocked rows keep their stored status symbol and add `blocked:N`.
   The bundled Beads workflow owns target resolution, readiness checks, claiming,
-  hydration, approval, execution, review, and closure; isolated and fallback
-  dispatch follow the behavior described above.
+  hydration, approval, execution, review, and closure; picker dispatch follows
+  the behavior described above.
 - The `execute-beads.md` and `execute-gitlab-issue.md` prompts are bundled under
   `prompts/` and contributed through Pi's resource discovery API, so picker and
   manual execution use the same workflows.
