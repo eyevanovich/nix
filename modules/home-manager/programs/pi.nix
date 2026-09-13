@@ -113,7 +113,7 @@
       "git:github.com/championswimmer/pi-context-usage"
       "npm:pi-mcp-adapter"
       "npm:pi-powerline-footer"
-      "npm:pi-subagents@0.6.6"
+      "npm:pi-subagents"
       "npm:pi-web-access"
       "npm:@luxusai/pi-hindsight"
       "git:gitlab.com/gitlab-org/ai/skills"
