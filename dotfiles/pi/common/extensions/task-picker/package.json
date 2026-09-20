@@ -9,7 +9,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "node --test test/beads-adapter.test.ts test/gitlab-adapter.test.ts test/prompt-contract.test.ts test/pure-behavior.test.ts test/runtime-capability.test.ts test/routing-capability.test.ts",
+    "test": "node --test test/beads-adapter.test.ts test/gitlab-adapter.test.ts test/prompt-contract.test.ts test/prompt-display.test.ts test/pure-behavior.test.ts test/runtime-capability.test.ts test/routing-capability.test.ts",
     "check": "npm run typecheck && npm test"
   },
   "pi": {
@@ -26,8 +26,8 @@
     "@earendil-works/pi-tui": "*"
   },
   "devDependencies": {
-    "@earendil-works/pi-coding-agent": "0.80.6",
-    "@earendil-works/pi-tui": "0.80.6",
+    "@earendil-works/pi-coding-agent": "0.85.1",
+    "@earendil-works/pi-tui": "0.85.1",
     "@types/node": "^22.20.1",
     "typescript": "^5.9.3"
   }

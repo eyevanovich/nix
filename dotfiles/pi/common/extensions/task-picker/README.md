@@ -32,6 +32,7 @@ The execution workflow reads `~/.pi/agent/task-picker.json`, linked by Home Mana
 - `ctrl+e` — detect the available tracker and open its task list
 - `/execute-beads [bead-id-or-search ...]` — run the bundled Beads execution workflow
 - `/execute-gitlab-issue <host/project#iid-or-url>` — run the bundled GitLab execution workflow
+- `/task-prompt` — inspect a full workflow prompt from the current session branch (TUI)
 
 Both execution workflows resolve the exact default branch before editing. They create a task branch only when work begins on that default branch; work already on a non-default, including long-lived, branch remains there. After validation and review, they create a task-scoped completion commit and close the tracker item. Delivery remains local: workflows do not push or create an MR; MR creation and integration are explicit later actions.
 
@@ -88,6 +89,12 @@ aliases and browser-specific action keys remain fixed.
 ## Task execution
 
 Starting work from the picker submits the selected tracker's bundled execution prompt in the current Pi session, which expands and runs `/execute-beads` or `/execute-gitlab-issue` normally. The workflow can use managed subagent worktrees for isolated implementation when appropriate; task-picker itself does not allocate worktrees or launch background terminals.
+
+### Compact prompt display
+
+On Pi versions supporting Markdown transformers (tested with 0.85.1), picker launches and manual `/execute-*` commands display a compact command/target summary. This is display-only: the agent receives the full workflow, and the session stores it unchanged. It does not reduce model tokens.
+
+Use `/task-prompt` to inspect or copy the exact stored prompt. With multiple workflows, choose one from the newest-first list. The editor is an inspection buffer: submitting or cancelling it discards edits and sends nothing to the agent. It only reads the current session branch; queued follow-ups become inspectable after delivery. Older, unmarked prompts and Pi versions without the display hook retain their full display. Reload Pi after updating to enable the new renderer and templates.
 
 ### Bounded orchestration
 

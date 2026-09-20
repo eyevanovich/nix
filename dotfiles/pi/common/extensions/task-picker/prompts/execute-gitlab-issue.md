@@ -2,6 +2,7 @@
 description: Execute a GitLab issue with safe assignment, approval, review, and validation
 argument-hint: "<host/project-path#iid-or-issue-url>"
 ---
+<!-- task-picker:execute-gitlab-issue:v1 -->
 Use pi-subagents for delegation. You own resolution, approval, integration, validation, review, and completion. Report decisions and evidence without narration or repetition. Never inspect, print, copy, or manage GitLab tokens.
 
 ## Resolve configuration and issue
