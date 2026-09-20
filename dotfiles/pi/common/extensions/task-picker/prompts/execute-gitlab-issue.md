@@ -2,7 +2,7 @@
 description: Execute a GitLab issue with safe assignment, approval, review, and validation
 argument-hint: "<host/project-path#iid-or-issue-url>"
 ---
-Use triage and pi-subagents. You own resolution, approval, integration, validation, review, and completion; delegate bounded discovery, implementation, or independent review. Report decisions and evidence without narration or repetition. Never inspect, print, copy, or manage GitLab tokens.
+Use pi-subagents for delegation. You own resolution, approval, integration, validation, review, and completion. Report decisions and evidence without narration or repetition. Never inspect, print, copy, or manage GitLab tokens.
 
 ## Resolve configuration and issue
 
@@ -27,21 +27,29 @@ No/cancellation: no mutation or comment. After approval, reopen first if approve
 
 ## Plan and approve
 
-Before delegation, call `subagent({ action: "list", capabilities: true })`; use executable, non-disabled agents (external runners also require `runner.available === true`). Discovery is optional, fresh-context, read-only, bounded to the issue, named artifacts, immediate dependencies, and plan-changing evidence. Prefer one `context-builder` or `scout`; use a researcher only for material current external facts. Never abandon live runs.
+Use triage only when readiness or requirements remain unresolved; otherwise use the existing brief and settled decisions. Always retain the tracker guards above and verify whether the requested behavior already exists. Consult relevant domain docs/ADRs and prior rejection notes when applicable; ask before overriding a prior rejection.
 
-Present outcome/non-goals, likely artifacts, done-when behavior, focused validation/user flows, required evidence, risks/open decisions, execution shape, and bounded roles. Preserve issue scope; ask before product/API/architecture/scope/dependency changes. Ask necessary clarifications (otherwise state none), then exactly: `Execute this plan? yes/no/changes`. Implementation requires approval.
+Choose the smallest execution shape: for a small, low-risk task with known files and checks, the parent implements, then one independent reviewer reviews the resulting diff. Delegate substantial work to a bounded writer. Discovery is optional, fresh-context, read-only: use one scout only for plan-changing unknowns, a researcher only for material current external facts.
+
+Before delegation, call `subagent({ action: "list", capabilities: true })`; use executable, non-disabled agents (external runners also require `runner.available === true`). Never abandon live runs.
+
+Preserve issue scope; ask before product/API/architecture/scope/dependency changes. Use plain language; explain necessary jargon. If blocked, start **Questions before I can start**: ask at most three questions per round, one decision per question; note remaining known blockers. Say what you need and why; offer evidence-backed choices/recommendations when available, plus “help me decide”. Give a simple reply format, e.g. `1: A; 2: ...`. Uncertainty calls for bounded, authorized read-only discovery, not guessing or requesting secrets. Do not ask for execution approval while blockers remain.
+
+Clarification answers are not execution approval. With no blockers, go directly to **Ready for approval**: briefly state the outcome, files/artifacts likely to change, non-goals, success checks/user flows/evidence, execution roles, risks, and non-blocking assumptions. Put short evidence references last; offer detailed logs on request. Then ask exactly: `Execute this plan? yes/no/changes`. Implementation requires approval. Pause if new blockers appear; seek renewed approval for changed scope.
 
 After approval, resolve the exact default branch from authoritative remote metadata. Switch to a descriptive task branch if on default; otherwise retain the current branch. Never make task changes directly on the default branch.
 
 ## Implement
 
-Use one active-worktree writer for coupled work, a dirty tree, or overlapping files. Parallel writers require a clean repository, isolated worktrees, and disjoint ownership. Give workers approved scope, owned artifacts, named references, non-goals, done-when behavior, validation/evidence, and decision stops. Workers stay within that contract; staging, commits, and publishing belong to the parent/delivery workflow.
+Native workers explicitly use `context: "fresh"`. Use `context: "fork"` only when essential decisions depend on parent history; state that dependency before launch. External runners keep their own contracts; omit unsupported native context options.
+
+Use one active-worktree writer for coupled work, a dirty tree, or overlapping files. Parallel writers require a clean repository, isolated worktrees, and disjoint ownership. Each child receives a compact, self-contained packet: task and acceptance criteria, repo/cwd/ref, owned artifacts, settled decisions, named references, constraints/non-goals, validation commands/evidence, output shape, and stop/ask conditions. Include needed issue content, not just a link. Limit discovery to these resources, immediate dependencies, and nearest validation artifacts; ask before widening. Workers stay within that contract; staging, commits, and publishing belong to the parent/delivery workflow.
 
 Inspect every result and integrated diff. If blocked after starting, leave at most one concise issue note with useful non-secret evidence.
 
 ## Validate and review
 
-Run focused validation in the active worktree and at least one fresh-context, read-only independent review. Classify findings: blocker, fixes-now, optional-defer, ignore. Fix blockers/fixes-now; re-review non-trivial fixes.
+Run focused validation in the active worktree and at least one fresh-context, read-only independent review after implementation; add specialist reviews only for material risks. Supply reviewers the approved criteria, exact diff or readable diff artifact, and validation evidence. Classify findings: blocker, fixes-now, optional-defer, ignore. Fix blockers/fixes-now. Re-review non-trivial fixes: accepted fixes, unresolved findings, and regressions in the affected area; widen only when new evidence warrants it.
 
 Completion gate: approved outcome implemented, every acceptance criterion evidenced by commands/user flows, integrated diff checked, final validation passed, and required review findings resolved. Only then create exactly one task-scoped completion commit, preserving unrelated work. Record branch and SHA.
 

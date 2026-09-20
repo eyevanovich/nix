@@ -89,6 +89,17 @@ aliases and browser-specific action keys remain fixed.
 
 Starting work from the picker submits the selected tracker's bundled execution prompt in the current Pi session, which expands and runs `/execute-beads` or `/execute-gitlab-issue` normally. The workflow can use managed subagent worktrees for isolated implementation when appropriate; task-picker itself does not allocate worktrees or launch background terminals.
 
+### Bounded orchestration
+
+- Ready tasks reuse their existing brief; triage is reserved for unresolved readiness or requirements. Tracker guards, approval, and checking for already-implemented behavior still apply.
+- Blocking clarifications get a separate **Questions before I can start** turn: up to three plain-language questions, one decision each, explaining why an answer is needed, grounded choices where available, and a simple reply format. “Help me decide” leads to authorized read-only discovery, not guessed answers or secret requests. Remaining blockers stay visible.
+- Only once blockers are resolved does **Ready for approval** summarize the outcome, likely changes, non-goals, success checks, roles, risks, and non-blocking assumptions. Clarification answers are not approval; the agent still asks `Execute this plan? yes/no/changes`. New blockers pause implementation, and changed scope needs renewed approval. Supporting evidence stays brief, with detailed logs available on request.
+- Small, low-risk tasks with known files and checks use parent implementation followed by one fresh, independent review. Discovery agents are optional and answer only plan-changing unknowns.
+- Native workers explicitly start with fresh context and a self-contained task packet: acceptance criteria, repo/cwd/ref, owned files, settled decisions, references, constraints, validation, and stop conditions. Forking requires a stated dependency on essential parent history. This policy is local to these workflows, not a global subagent setting; external runners retain their own contracts.
+- Reviewers receive the actual diff and validation evidence. Follow-ups cover accepted fixes, unresolved findings, and regressions in the affected area, expanding only when evidence warrants it.
+
+Model and reasoning choices remain in machine-local `~/.pi/agent/settings.json`, under `subagents.agentOverrides`; they are not embedded in these prompts. Compare representative completed tasks with `/subagent-cost` and run artifacts: parent plus child input/cache/output usage, latency, validation results, and rework. The prompt tests check workflow wording and size, not model compliance or measured token savings.
+
 ## Development
 
 Install the locked development dependencies, then run the combined validation:
