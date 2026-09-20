@@ -431,16 +431,16 @@ test("profile task-picker configs select scoped labels only for personal", () =>
   });
 });
 
-test("bundled execution workflows preserve local completion custody", () => {
+test("bundled execution workflows preserve branch safety and verified remote delivery", () => {
   for (const name of ["execute-beads.md", "execute-gitlab-issue.md"]) {
     const prompt = readFileSync(new URL(`../prompts/${name}`, import.meta.url), "utf8");
 
     assert.match(prompt, /resolve the exact default branch from authoritative remote metadata/i);
     assert.match(prompt, /Never make task changes directly on the default branch/);
     assert.match(prompt, /exactly one task-scoped completion commit/i);
-    assert.match(prompt, /Retain custody/);
-    assert.match(prompt, /do not push or create(?:\/update)? an MR/i);
-    assert.match(prompt, /continue directly to Finish/);
+    assert.match(prompt, /Push the recorded SHA to that URL\/branch with an explicit refspec/);
+    assert.match(prompt, /Query that URL\/branch to verify it contains the SHA before Finish/);
+    assert.match(prompt, /MR creation\/updates and merging require separate approval/);
     assert.doesNotMatch(prompt, /no-mistakes/i);
     assert.doesNotMatch(prompt, /trusted main/);
   }
@@ -466,7 +466,7 @@ test("GitLab execution workflow resolves profile status behavior before mutation
   assert.match(prompt, /glab issue update <iid> --repo <project-url> --label <in-progress-label>/);
   assert.match(prompt, /In `none`, perform no workflow-status mutation/);
   assert.match(prompt, /Hydrated ordinary labels remain read-only context/);
-  assert.match(prompt, /continue directly to Finish/);
+  assert.match(prompt, /Close only after the completion gate, task-scoped commit, and verified push/);
   assert.match(prompt, /glab issue close <iid> --repo <project-url>/);
   assert.match(prompt, /Never inspect, print, copy, or manage GitLab tokens/);
   assert.doesNotMatch(prompt, /status::in-progress|status::deferred|status::done/);

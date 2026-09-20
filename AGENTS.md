@@ -170,13 +170,16 @@ non-interactive path is young — not worth running unattended on every rebuild.
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
 
-### Task-picker local-custody exception
+### Task-picker delivery gates
 
-`/execute-beads` and `/execute-gitlab-issue` finish tracker work after the
-validated task-scoped commit and verified tracker closure. Publishing is an
-explicit, later delivery task. This exception overrides the push step only
-while executing one of those tracker workflows; normal configuration work
-follows the mandatory workflow above.
+`/execute-beads` and `/execute-gitlab-issue` push the validated task
+branch and verify the completion SHA on the intended remote before tracker
+closure. MR operations and merging require separate approval.
+
+For these workflows, push/verification blockers leave the local commit
+intact and tracker open. Ask before resolving divergence or changing a
+missing/ambiguous destination; never force-push. These gates override the
+closure order and automatic rebase/retry steps above.
 
 ## Local Beads Issue Tracker
 

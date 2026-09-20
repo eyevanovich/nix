@@ -34,7 +34,7 @@ The execution workflow reads `~/.pi/agent/task-picker.json`, linked by Home Mana
 - `/execute-gitlab-issue <host/project#iid-or-url>` — run the bundled GitLab execution workflow
 - `/task-prompt` — inspect a full workflow prompt from the current session branch (TUI)
 
-Both execution workflows resolve the exact default branch before editing. They create a task branch only when work begins on that default branch; work already on a non-default, including long-lived, branch remains there. After validation and review, they create a task-scoped completion commit and close the tracker item. Delivery remains local: workflows do not push or create an MR; MR creation and integration are explicit later actions.
+Both execution workflows resolve the exact default branch before editing. They create a task branch only when work begins on that default branch; work already on a non-default, including long-lived, branch remains there. After validation and review, they create a task-scoped completion commit, push only the intended non-default branch, and verify the completion SHA on the remote before closing the tracker item. Missing or ambiguous destinations, unrelated outbound commits, rejected pushes, or failed verification leave the local commit intact and tracker open for resolution; force-pushing is prohibited. MR creation/updates and merging still require separate approval.
 
 When both providers apply, `/tasks` and `ctrl+e` show a compact tracker chooser.
 The selection is remembered by normalized Git repository root for the lifetime of

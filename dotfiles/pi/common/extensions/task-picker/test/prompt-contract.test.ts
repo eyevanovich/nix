@@ -31,11 +31,8 @@ test("Beads prompt preserves approval, execution, review, and completion contrac
     "fresh-context, read-only",
     "independent review",
     "exactly one task-scoped completion commit",
-    "Retain custody",
-    "do not push or create an MR",
-    "continue directly to Finish",
     "bd close <id> --reason=\"Completed\"",
-    "Close each committed target satisfying the completion gate",
+    "Close each target only after the completion gate, task-scoped commit, and verified push",
   ]) assert.match(text, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
 });
 
@@ -58,9 +55,7 @@ test("GitLab prompt preserves canonical resolution, mutation guards, modes, and 
     "Never make task changes directly on the default branch",
     "independent review",
     "exactly one task-scoped completion commit",
-    "Retain custody",
-    "Do not push or create/update an MR",
-    "continue directly to Finish",
+    "Close only after the completion gate, task-scoped commit, and verified push",
     "glab issue close <iid> --repo <project-url>",
   ]) assert.ok(text.includes(required), `missing GitLab contract: ${required}`);
 });
@@ -72,8 +67,6 @@ test("execution prompts retain explicit delegation and completion gates", async 
       'subagent({ action: "list", capabilities: true })',
       "runner.available === true",
       "Implementation requires approval",
-      "Retain custody",
-      "continue directly to Finish",
       "Completion gate:",
       "every acceptance criterion evidenced",
       "final validation passed",
@@ -81,6 +74,44 @@ test("execution prompts retain explicit delegation and completion gates", async 
       "Only then create exactly one task-scoped completion commit",
     ]) assert.ok(text.includes(required), `${name} missing gate: ${required}`);
     assert.match(text.slice(text.indexOf("## Finish")), /completion gate/);
+  }
+});
+
+test("execution prompts require safe remote preservation before tracker closure", async () => {
+  for (const name of ["execute-beads", "execute-gitlab-issue"] as const) {
+    const text = await prompt(name, "target");
+    const delivery = text.slice(text.indexOf("## Deliver"), text.indexOf("## Finish"));
+    for (const required of [
+      "After committing",
+      "verify one push URL/branch and its repository's default branch",
+      "ask if unknown/ambiguous or outbound commits include unrelated work",
+      "Never target the default branch",
+      "Push the recorded SHA to that URL/branch with an explicit refspec",
+      "set matching upstream if absent",
+      "Query that URL/branch to verify it contains the SHA before Finish",
+      "On rejection or failed verification, retain the commit and leave tracker work open",
+      "report the blocker",
+      "ask before rebasing or changing destinations",
+      "Never force-push",
+      "MR creation/updates and merging require separate approval",
+    ]) assert.ok(delivery.includes(required), `${name} missing push gate: ${required}`);
+    assert.ok(delivery.indexOf("Push the recorded SHA") < delivery.indexOf("Query that URL/branch"));
+    assert.ok(text.indexOf("Only then create exactly one task-scoped completion commit") < text.indexOf("## Deliver"));
+    const finish = text.slice(text.indexOf("## Finish"));
+    assert.match(finish, /only after the completion gate, task-scoped commit, and verified push/);
+    assert.match(finish, /verified remote branch/);
+    assert.doesNotMatch(text, /Retain custody|do not push or create|continue directly to Finish/i);
+  }
+});
+
+test("repository guidance and README agree on push-before-closure delivery", async () => {
+  const instructions = await readFile(new URL("../../../../../../AGENTS.md", import.meta.url), "utf8");
+  const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
+  assert.match(instructions, /verify the completion SHA on the intended remote before tracker\s+closure/);
+  assert.match(instructions, /override the\s+closure order and automatic rebase\/retry steps above/);
+  assert.match(readme, /verify the completion SHA on the remote before closing the tracker item/);
+  for (const text of [instructions, readme]) {
+    assert.doesNotMatch(text, /local-custody exception|Delivery remains local|workflows do not push/);
   }
 });
 

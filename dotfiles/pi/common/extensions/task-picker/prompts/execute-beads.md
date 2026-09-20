@@ -29,7 +29,7 @@ After approval, resolve the exact default branch from authoritative remote metad
 
 Native workers explicitly use `context: "fresh"`. Use `context: "fork"` only when essential decisions depend on parent history; state that dependency before launch. External runners keep their own contracts; omit unsupported native context options.
 
-Use one active-worktree writer for coupled work, a dirty tree, or overlapping files. Parallel writers require a clean repository, isolated worktrees, and disjoint ownership; read-only work may run in parallel. Workers follow the approved contract; staging, commits, and publishing belong to the parent/delivery workflow.
+Use one active-worktree writer for coupled work, a dirty tree, or overlapping files. Parallel writers require a clean repository, isolated worktrees, and disjoint ownership; read-only work may run in parallel. Workers follow the approved contract; staging, commits, and publishing belong to the parent.
 
 Inspect every result and integrated diff. For worktree output, inspect patches, order integration, and use one active-worktree integration writer. Never abandon live runs. Inspect failed/paused run status and artifacts before a bounded retry; preserve successful work if only wrapper/report formatting failed.
 
@@ -41,15 +41,15 @@ Completion gate: approved outcome implemented, every acceptance criterion eviden
 
 ## Deliver
 
-Retain custody. Do not push or create an MR; MR creation and integration are explicit later actions. Once the completion gate passes and the task-scoped completion commit exists, continue directly to Finish.
+After committing, verify one push URL/branch and its repository's default branch; ask if unknown/ambiguous or outbound commits include unrelated work. Never target the default branch. Push the recorded SHA to that URL/branch with an explicit refspec; set matching upstream if absent. Query that URL/branch to verify it contains the SHA before Finish. On rejection or failed verification, retain the commit and leave tracker work open; report the blocker and ask before rebasing or changing destinations. Never force-push. MR creation/updates and merging require separate approval.
 
 ## Finish
 
-Close each committed target satisfying the completion gate with `bd close <id> --reason="Completed"`; otherwise leave a concise note with blocker evidence and remaining work.
+Close each target only after the completion gate, task-scoped commit, and verified push: `bd close <id> --reason="Completed"`; otherwise leave a concise note with blocker evidence and remaining work.
 
 After an epic child, report its outcome and ask whether to continue with the next executable child or start a new session; claim no sibling automatically.
 
-Final answer: Bead(s), outcome/artifacts, validation/checks, review, branch/SHA, deferred items, risks, and epic continuation question if applicable.
+Final answer: Bead(s), outcome/artifacts, validation/checks, review, branch/SHA and verified remote branch, deferred items, risks, and epic continuation question if applicable.
 
 <target>
 $ARGUMENTS
