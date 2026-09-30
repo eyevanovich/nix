@@ -111,7 +111,6 @@
     [
       "npm:@dreki-gg/pi-context7"
       "git:github.com/championswimmer/pi-context-usage"
-      "npm:pi-mcp-adapter"
       "npm:pi-powerline-footer"
       "npm:pi-subagents"
       "npm:pi-web-access"
@@ -124,6 +123,7 @@
 
   removedPiPackages =
     [
+      "npm:pi-mcp-adapter"
       "npm:pi-schedule-prompt"
       "npm:context-mode"
       # Retire existing pins so activation installs the unversioned package.
