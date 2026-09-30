@@ -107,11 +107,11 @@
     "homebrew-docker-tap": {
       "flake": false,
       "locked": {
-        "lastModified": 1784566565,
-        "narHash": "sha256-qQnWb0WIeoaooqEiGXxK7z2+1wqN5+vsMSn1oiI79mE=",
+        "lastModified": 1790668054,
+        "narHash": "sha256-xJyRhafTnFCp/FozpkbatQP+XbnmsE4WJuDNf7Yp2D0=",
         "owner": "docker",
         "repo": "homebrew-tap",
-        "rev": "33f2e83769d434a1f4bcc185dbd04fe5ea70ae8d",
+        "rev": "b6934adf6cc54f1db1a17c28afe2e0981462f806",
         "type": "github"
       },
       "original": {
