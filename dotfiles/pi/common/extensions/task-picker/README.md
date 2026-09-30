@@ -32,8 +32,9 @@ The execution workflow reads `~/.pi/agent/task-picker.json`, linked by Home Mana
 - `ctrl+e` — detect the available tracker and open its task list
 - `/execute-beads [bead-id-or-search ...]` — run the bundled Beads execution workflow
 - `/execute-gitlab-issue <host/project#iid-or-url>` — run the bundled GitLab execution workflow
+- `/task-prompt` — inspect a full workflow prompt from the current session branch (TUI)
 
-Both execution workflows resolve the exact default branch before editing. They create a task branch only when work begins on that default branch; work already on a non-default, including long-lived, branch remains there. After validation and review, they create a task-scoped completion commit and close the tracker item. Delivery remains local: workflows do not push or create an MR; MR creation and integration are explicit later actions.
+Both execution workflows resolve the exact default branch before editing. They create a task branch only when work begins on that default branch; work already on a non-default, including long-lived, branch remains there. After validation and review, they create a task-scoped completion commit, push only the intended non-default branch, and verify the completion SHA on the remote before closing the tracker item. Missing or ambiguous destinations, unrelated outbound commits, rejected pushes, or failed verification leave the local commit intact and tracker open for resolution; force-pushing is prohibited. MR creation/updates and merging still require separate approval.
 
 When both providers apply, `/tasks` and `ctrl+e` show a compact tracker chooser.
 The selection is remembered by normalized Git repository root for the lifetime of
@@ -89,6 +90,23 @@ aliases and browser-specific action keys remain fixed.
 
 Starting work from the picker submits the selected tracker's bundled execution prompt in the current Pi session, which expands and runs `/execute-beads` or `/execute-gitlab-issue` normally. The workflow can use managed subagent worktrees for isolated implementation when appropriate; task-picker itself does not allocate worktrees or launch background terminals.
 
+### Compact prompt display
+
+On Pi versions supporting Markdown transformers (tested with 0.85.1), picker launches and manual `/execute-*` commands display a compact command/target summary. This is display-only: the agent receives the full workflow, and the session stores it unchanged. It does not reduce model tokens.
+
+Use `/task-prompt` to inspect or copy the exact stored prompt. With multiple workflows, choose one from the newest-first list. The editor is an inspection buffer: submitting or cancelling it discards edits and sends nothing to the agent. It only reads the current session branch; queued follow-ups become inspectable after delivery. Older, unmarked prompts and Pi versions without the display hook retain their full display. Reload Pi after updating to enable the new renderer and templates.
+
+### Bounded orchestration
+
+- Ready tasks reuse their existing brief; triage is reserved for unresolved readiness or requirements. Tracker guards, approval, and checking for already-implemented behavior still apply.
+- Blocking clarifications get a separate **Questions before I can start** turn: up to three plain-language questions, one decision each, explaining why an answer is needed, grounded choices where available, and a simple reply format. “Help me decide” leads to authorized read-only discovery, not guessed answers or secret requests. Remaining blockers stay visible.
+- Only once blockers are resolved does **Ready for approval** summarize the outcome, likely changes, non-goals, success checks, roles, risks, and non-blocking assumptions. Clarification answers are not approval; the agent still asks `Execute this plan? yes/no/changes`. New blockers pause implementation, and changed scope needs renewed approval. Supporting evidence stays brief, with detailed logs available on request.
+- Small, low-risk tasks with known files and checks use parent implementation followed by one fresh, independent review. Discovery agents are optional and answer only plan-changing unknowns.
+- Native workers explicitly start with fresh context and a self-contained task packet: acceptance criteria, repo/cwd/ref, owned files, settled decisions, references, constraints, validation, and stop conditions. Forking requires a stated dependency on essential parent history. This policy is local to these workflows, not a global subagent setting; external runners retain their own contracts.
+- Reviewers receive the actual diff and validation evidence. Follow-ups cover accepted fixes, unresolved findings, and regressions in the affected area, expanding only when evidence warrants it.
+
+Model and reasoning choices remain in machine-local `~/.pi/agent/settings.json`, under `subagents.agentOverrides`; they are not embedded in these prompts. Compare representative completed tasks with `/subagent-cost` and run artifacts: parent plus child input/cache/output usage, latency, validation results, and rework. The prompt tests check workflow wording and size, not model compliance or measured token savings.
+
 ## Development
 
 Install the locked development dependencies, then run the combined validation:
@@ -140,4 +158,10 @@ All tracker commands use argv arrays with no shell interpolation. The extension 
   `chore`, `epic`, and `decision`) plus unique values from `types.custom`.
 - `bd` commands are serialized because its dolt backend cannot safely handle
   concurrent database access.
+- Beads responses validate consumed fields before normalization, including issue
+  IDs, labels, dependencies, and active blockers. Errors identify the command and
+  field path without dumping the payload. Optional null metadata is treated as
+  absent; extra fields are ignored. If create reports success but its response is
+  invalid, a validated identity is retained for partial-create recovery when
+  possible; otherwise inspect the created task before retrying.
 - Typechecks against the Pi API version locked in the development dependencies.

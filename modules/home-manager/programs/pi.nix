@@ -113,7 +113,7 @@
       "git:github.com/championswimmer/pi-context-usage"
       "npm:pi-mcp-adapter"
       "npm:pi-powerline-footer"
-      "npm:pi-subagents@0.68.0"
+      "npm:pi-subagents"
       "npm:pi-web-access"
       "npm:@luxusai/pi-hindsight"
       "git:gitlab.com/gitlab-org/ai/skills"
@@ -126,6 +126,9 @@
     [
       "npm:pi-schedule-prompt"
       "npm:context-mode"
+      # Retire existing pins so activation installs the unversioned package.
+      "npm:pi-subagents@0.66.0"
+      "npm:pi-subagents@0.68.0"
     ]
     ++ lib.optionals (profile == "work") [
       "npm:@ryan_nookpi/pi-extension-headroom"

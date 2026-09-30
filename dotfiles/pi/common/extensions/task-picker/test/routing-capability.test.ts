@@ -525,12 +525,13 @@ test("extension registers explicit tracker commands and discovers both bundled w
     registerCommand(name: string) {
       commands.push(name);
     },
+    registerMarkdownTransformer() {},
     registerShortcut() {},
   } as unknown as ExtensionAPI;
 
   registerExtension(pi);
 
-  assert.deepEqual(commands, ["tasks", "beads-tasks", "gitlab-issues"]);
+  assert.deepEqual(commands, ["task-prompt", "tasks", "beads-tasks", "gitlab-issues"]);
   const promptPaths = discover?.().promptPaths ?? [];
   assert.equal(promptPaths.length, 1);
   assert.match(promptPaths[0] ?? "", /task-picker\/prompts$/);

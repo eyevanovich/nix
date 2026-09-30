@@ -9,6 +9,7 @@ import { createGitLabProvider } from "./backend/providers/gitlab.ts";
 import type { Task, TaskStatus } from "./models/task.ts";
 import { serializeTask } from "./lib/task-serialization.ts";
 import { expandBundledExecutionPrompt } from "./lib/execution-prompt.ts";
+import { registerExecutionPromptDisplay } from "./lib/prompt-display.ts";
 import { showTaskList } from "./ui/pages/list.ts";
 import { showTaskForm } from "./ui/pages/show.ts";
 import { PartialTaskCreateError } from "./backend/api.ts";
@@ -271,6 +272,7 @@ export default function registerExtension(
     createGitLabProvider(pi, [PROMPTS_DIR]),
   ];
   const trackerChoices = new Map<string, string>();
+  registerExecutionPromptDisplay(pi);
 
   pi.on("resources_discover", () => ({
     promptPaths: [...new Set(providers.flatMap((provider) => provider.promptPaths))],

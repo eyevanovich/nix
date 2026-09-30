@@ -31,11 +31,8 @@ test("Beads prompt preserves approval, execution, review, and completion contrac
     "fresh-context, read-only",
     "independent review",
     "exactly one task-scoped completion commit",
-    "Retain custody",
-    "do not push or create an MR",
-    "continue directly to Finish",
     "bd close <id> --reason=\"Completed\"",
-    "Close each committed target satisfying the completion gate",
+    "Close each target only after the completion gate, task-scoped commit, and verified push",
   ]) assert.match(text, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
 });
 
@@ -58,9 +55,7 @@ test("GitLab prompt preserves canonical resolution, mutation guards, modes, and 
     "Never make task changes directly on the default branch",
     "independent review",
     "exactly one task-scoped completion commit",
-    "Retain custody",
-    "Do not push or create/update an MR",
-    "continue directly to Finish",
+    "Close only after the completion gate, task-scoped commit, and verified push",
     "glab issue close <iid> --repo <project-url>",
   ]) assert.ok(text.includes(required), `missing GitLab contract: ${required}`);
 });
@@ -72,8 +67,6 @@ test("execution prompts retain explicit delegation and completion gates", async 
       'subagent({ action: "list", capabilities: true })',
       "runner.available === true",
       "Implementation requires approval",
-      "Retain custody",
-      "continue directly to Finish",
       "Completion gate:",
       "every acceptance criterion evidenced",
       "final validation passed",
@@ -81,6 +74,116 @@ test("execution prompts retain explicit delegation and completion gates", async 
       "Only then create exactly one task-scoped completion commit",
     ]) assert.ok(text.includes(required), `${name} missing gate: ${required}`);
     assert.match(text.slice(text.indexOf("## Finish")), /completion gate/);
+  }
+});
+
+test("execution prompts require safe remote preservation before tracker closure", async () => {
+  for (const name of ["execute-beads", "execute-gitlab-issue"] as const) {
+    const text = await prompt(name, "target");
+    const delivery = text.slice(text.indexOf("## Deliver"), text.indexOf("## Finish"));
+    for (const required of [
+      "After committing",
+      "verify one push URL/branch and its repository's default branch",
+      "ask if unknown/ambiguous or outbound commits include unrelated work",
+      "Never target the default branch",
+      "Push the recorded SHA to that URL/branch with an explicit refspec",
+      "set matching upstream if absent",
+      "Query that URL/branch to verify it contains the SHA before Finish",
+      "On rejection or failed verification, retain the commit and leave tracker work open",
+      "report the blocker",
+      "ask before rebasing or changing destinations",
+      "Never force-push",
+      "MR creation/updates and merging require separate approval",
+    ]) assert.ok(delivery.includes(required), `${name} missing push gate: ${required}`);
+    assert.ok(delivery.indexOf("Push the recorded SHA") < delivery.indexOf("Query that URL/branch"));
+    assert.ok(text.indexOf("Only then create exactly one task-scoped completion commit") < text.indexOf("## Deliver"));
+    const finish = text.slice(text.indexOf("## Finish"));
+    assert.match(finish, /only after the completion gate, task-scoped commit, and verified push/);
+    assert.match(finish, /verified remote branch/);
+    assert.doesNotMatch(text, /Retain custody|do not push or create|continue directly to Finish/i);
+  }
+});
+
+test("repository guidance and README agree on push-before-closure delivery", async () => {
+  const instructions = await readFile(new URL("../../../../../../AGENTS.md", import.meta.url), "utf8");
+  const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
+  assert.match(instructions, /verify the completion SHA on the intended remote before tracker\s+closure/);
+  assert.match(instructions, /override the\s+closure order and automatic rebase\/retry steps above/);
+  assert.match(readme, /verify the completion SHA on the remote before closing the tracker item/);
+  for (const text of [instructions, readme]) {
+    assert.doesNotMatch(text, /local-custody exception|Delivery remains local|workflows do not push/);
+  }
+});
+
+test("execution prompts choose bounded work without skipping independent review", async () => {
+  for (const name of ["execute-beads", "execute-gitlab-issue"] as const) {
+    const text = await prompt(name, "target");
+    assert.doesNotMatch(text, /Use triage and pi-subagents|context-builder/);
+    for (const required of [
+      "Use triage only when readiness or requirements remain unresolved",
+      "verify whether the requested behavior already exists",
+      "small, low-risk task with known files and checks",
+      "the parent implements, then one independent reviewer reviews the resulting diff",
+      "one scout only for plan-changing unknowns",
+    ]) assert.ok(text.includes(required), `${name} missing bounded execution rule: ${required}`);
+  }
+});
+
+test("native workers get fresh, self-contained handoffs with a justified fork escape hatch", async () => {
+  for (const name of ["execute-beads", "execute-gitlab-issue"] as const) {
+    const text = await prompt(name, "target");
+    for (const required of [
+      'Native workers explicitly use `context: "fresh"`',
+      'Use `context: "fork"` only when essential decisions depend on parent history',
+      "state that dependency before launch",
+      "External runners keep their own contracts",
+      "self-contained packet",
+      "task and acceptance criteria",
+      "repo/cwd/ref",
+      "owned artifacts",
+      "settled decisions",
+      "validation commands/evidence",
+      "stop/ask conditions",
+    ]) assert.ok(text.includes(required), `${name} missing handoff rule: ${required}`);
+  }
+});
+
+test("review follow-ups stay focused while preserving unresolved findings and regression checks", async () => {
+  for (const name of ["execute-beads", "execute-gitlab-issue"] as const) {
+    const text = await prompt(name, "target");
+    for (const required of [
+      "Re-review non-trivial fixes",
+      "accepted fixes, unresolved findings, and regressions in the affected area",
+      "widen only when new evidence warrants it",
+      "Supply reviewers the approved criteria, exact diff or readable diff artifact, and validation evidence",
+    ]) assert.ok(text.includes(required), `${name} missing review rule: ${required}`);
+  }
+});
+
+test("clarifications are actionable and block approval until resolved", async () => {
+  for (const name of ["execute-beads", "execute-gitlab-issue"] as const) {
+    const text = await prompt(name, "target");
+    for (const required of [
+      "Questions before I can start",
+      "at most three questions per round",
+      "one decision per question",
+      "remaining known blockers",
+      "what you need and why",
+      "evidence-backed choices",
+      "help me decide",
+      "simple reply format",
+      "authorized read-only discovery",
+      "Do not ask for execution approval while blockers remain",
+      "Clarification answers are not execution approval",
+      "With no blockers, go directly to",
+      "Ready for approval",
+      "non-blocking assumptions",
+      "Pause if new blockers appear",
+      "renewed approval for changed scope",
+    ]) assert.ok(text.includes(required), `${name} missing clarification rule: ${required}`);
+    assert.ok(text.indexOf("Questions before I can start") < text.indexOf("Ready for approval"));
+    assert.ok(text.indexOf("Ready for approval") < text.indexOf("Execute this plan? yes/no/changes"));
+    assert.doesNotMatch(text, /Ask necessary clarifications \(otherwise state none\), then exactly/);
   }
 });
 

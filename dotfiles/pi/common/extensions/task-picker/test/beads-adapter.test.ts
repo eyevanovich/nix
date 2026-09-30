@@ -175,6 +175,20 @@ test("list uses one exact active-work query and intentionally excludes deferred 
   );
 });
 
+test("list rejects a missing issue ID before loading blockers", async () => {
+  const harness = makeHarness([
+    customTypes(""),
+    json([{ title: "Missing ID", status: "open" }]),
+    json([]),
+  ]);
+
+  await assert.rejects(
+    harness.adapter.list(),
+    /Failed to parse bd output \(list active\): expected nonblank string at \$\[0\]\.id/
+  );
+  assert.equal(harness.calls.length, 2);
+});
+
 test("list naturally sorts task IDs within equal status and priority", async () => {
   const harness = makeHarness([
     customTypes(""),
@@ -249,7 +263,7 @@ test("empty custom type metadata preserves all bd 1.1 built-ins", async () => {
   ]);
 });
 
-test("unknown backend statuses fail with the unsupported value", async () => {
+test("unknown backend statuses fail with command and field context", async () => {
   const harness = makeHarness([
     customTypes(""),
     json([{ id: "demo-unknown", title: "Unknown", status: "archived" }]),
@@ -258,7 +272,7 @@ test("unknown backend statuses fail with the unsupported value", async () => {
 
   await assert.rejects(
     harness.adapter.list(),
-    /Unsupported status from beads backend: archived/
+    /Failed to parse bd output \(list active\): Unsupported status from beads backend at \$\[0\]\.status/
   );
 });
 
@@ -588,6 +602,213 @@ test("malformed JSON and unexpected bd 1.1 JSON shapes include command context",
     malformedUpdate.adapter.update("demo-1", { title: "Updated" }),
     /Failed to parse bd output \(update demo-1\): expected JSON array/
   );
+});
+
+test("issue records are validated across list, show, create, update, and claim responses", async () => {
+  const valid = { id: "demo-1", title: "Task", status: "open" };
+  const invalid: Array<{ record: unknown; field: string }> = [
+    { record: null, field: "" },
+    { record: [], field: "" },
+    { record: 42, field: "" },
+    { record: { title: "Missing ID", status: "open" }, field: ".id" },
+    { record: { ...valid, id: "  " }, field: ".id" },
+    { record: { ...valid, id: 42 }, field: ".id" },
+    { record: { ...valid, title: null }, field: ".title" },
+    { record: { ...valid, status: null }, field: ".status" },
+    { record: { ...valid, status: "archived" }, field: ".status" },
+    { record: { ...valid, description: {} }, field: ".description" },
+    { record: { ...valid, priority: "2" }, field: ".priority" },
+    { record: { ...valid, issue_type: [] }, field: ".issue_type" },
+    { record: { ...valid, labels: "urgent" }, field: ".labels" },
+    { record: { ...valid, labels: ["ok", null] }, field: ".labels[1]" },
+    { record: { ...valid, dependencies: {} }, field: ".dependencies" },
+    { record: { ...valid, dependencies: [null] }, field: ".dependencies[0]" },
+    { record: { ...valid, dependencies: [{ title: "Missing ref" }] }, field: ".dependencies[0].id" },
+    { record: { ...valid, dependencies: [{ depends_on_id: " " }] }, field: ".dependencies[0].depends_on_id" },
+    { record: { ...valid, dependencies: [{ id: "dep", depends_on_id: null }] }, field: ".dependencies[0].depends_on_id" },
+    { record: { ...valid, dependencies: [{ id: "dep", title: 1 }] }, field: ".dependencies[0].title" },
+    { record: { ...valid, dependencies: [{ id: "dep", status: [] }] }, field: ".dependencies[0].status" },
+    { record: { ...valid, dependencies: [{ id: "dep", dependency_type: false }] }, field: ".dependencies[0].dependency_type" },
+    { record: { ...valid, dependencies: [{ depends_on_id: "dep", type: {} }] }, field: ".dependencies[0].type" },
+  ];
+  for (const field of ["assignee", "owner", "due", "due_at", "acceptance_criteria", "design", "notes", "created_at", "updated_at"]) {
+    invalid.push({ record: { ...valid, [field]: false }, field: `.${field}` });
+  }
+  for (const field of ["dependency_count", "dependent_count", "comment_count"]) {
+    invalid.push({ record: { ...valid, [field]: "1" }, field: `.${field}` });
+  }
+
+  for (const { record, field } of invalid) {
+    for (const operation of ["list", "show", "create", "update", "claim"] as const) {
+      const arrayResponse = json([valid, record]);
+      const harness = makeHarness(operation === "list"
+        ? [customTypes(""), arrayResponse, json([])]
+        : [operation === "create" ? json(record) : arrayResponse]);
+      const context = operation === "list" ? "list active" : operation === "create" ? "create" : `${operation} demo-1`;
+      const path = `${operation === "create" ? "$" : "$[1]"}${field}`;
+      const call = () => operation === "list" ? harness.adapter.list()
+        : operation === "create" ? harness.adapter.create({ title: "Task" })
+          : operation === "update" ? harness.adapter.update("demo-1", { title: "Updated" })
+            : harness.adapter[operation]("demo-1");
+      await assert.rejects(call, (error: unknown) => {
+        assert.ok(error instanceof Error);
+        assert.ok(error.message.includes(`Failed to parse bd output (${context}):`), error.message);
+        assert.ok(error.message.includes(`at ${path}`), error.message);
+        return true;
+      });
+      assert.equal(harness.calls.length, operation === "list" ? 2 : 1, "invalid responses must not trigger further commands");
+    }
+  }
+});
+
+test("blocked responses validate required collections and each nested blocker", async () => {
+  const invalid: Array<{ record: unknown; field: string }> = [
+    { record: null, field: "" },
+    { record: { blocked_by: [] }, field: ".id" },
+    { record: { id: "demo-1" }, field: ".blocked_by" },
+    { record: { id: "demo-1", blocked_by: null }, field: ".blocked_by" },
+    { record: { id: "demo-1", blocked_by: "dep" }, field: ".blocked_by" },
+    { record: { id: "demo-1", blocked_by: ["dep", " "] }, field: ".blocked_by[1]" },
+    { record: { id: "demo-1", blocked_by: [null] }, field: ".blocked_by[0]" },
+    { record: { id: "demo-1", blocked_by: [42] }, field: ".blocked_by[0]" },
+    { record: { id: "demo-1", blocked_by: [{}] }, field: ".blocked_by[0].id" },
+    { record: { id: "demo-1", blocked_by: [{ id: "dep", title: 42 }] }, field: ".blocked_by[0].title" },
+    { record: { id: "demo-1", blocked_by: [{ id: "dep", status: {} }] }, field: ".blocked_by[0].status" },
+    { record: { id: "demo-1", blocked_by: [{ id: "dep", dependency_type: [] }] }, field: ".blocked_by[0].dependency_type" },
+  ];
+  for (const { record, field } of invalid) {
+    const harness = makeHarness([customTypes(""), json([]), json([{ id: "valid", blocked_by: [] }, record])]);
+    await assert.rejects(harness.adapter.list(), (error: unknown) => {
+      assert.ok(error instanceof Error);
+      assert.ok(error.message.includes("Failed to parse bd output (blocked active):"), error.message);
+      assert.ok(error.message.includes(`at $[1]${field}`), error.message);
+      return true;
+    });
+  }
+});
+
+test("optional null metadata and extra fields preserve sparse and rich valid records", async () => {
+  const minimal = { id: "demo-1", title: "Task", status: "open" };
+  const nullable: Record<string, unknown> = { ...minimal, future: { nested: true } };
+  for (const field of [
+    "description", "priority", "issue_type", "assignee", "owner", "labels", "dependencies",
+    "due_at", "due", "acceptance_criteria", "design", "notes", "created_at", "updated_at",
+    "dependency_count", "dependent_count", "comment_count",
+  ]) nullable[field] = null;
+  const sparse = await makeHarness([json([minimal])]).adapter.show("demo-1");
+  assert.deepEqual(await makeHarness([json([nullable])]).adapter.show("demo-1"), sparse);
+
+  const harness = makeHarness([
+    json({ value: "research", extra: true }),
+    json([{
+      ...minimal,
+      future: [1, 2],
+      dependencies: [
+        { depends_on_id: "list-dep", type: "blocks", future: true },
+        { id: "show-dep", title: null, status: "closed", dependency_type: "related", future: true },
+      ],
+    }]),
+    json([{
+      id: "demo-1",
+      blocked_by_count: "unused metadata is not validated",
+      blocked_by: ["string-dep", { id: "object-dep", title: "Prerequisite", depends_on_id: "must-not-retarget" }],
+    }]),
+  ]);
+  const [task] = await harness.adapter.list();
+  assert.deepEqual(task?.dependencies, [
+    { ref: "list-dep", dependencyType: "blocks" },
+    { ref: "show-dep", title: undefined, status: "closed", dependencyType: "related" },
+  ]);
+  assert.deepEqual(task?.blockedBy, [
+    { ref: "string-dep" },
+    { ref: "object-dep", title: "Prerequisite", status: undefined, dependencyType: undefined },
+  ]);
+  assert.ok(harness.adapter.taskTypes.includes("research"));
+});
+
+test("config validates only its consumed value and stops before listing", async () => {
+  for (const value of [undefined, null, 42, [], {}]) {
+    const harness = makeHarness([json({ value })]);
+    await assert.rejects(harness.adapter.list(), /Failed to parse bd output \(config types.custom\): expected string at \$\.value/);
+    assert.equal(harness.calls.length, 1);
+  }
+});
+
+test("invalid JSON and numeric overflow diagnostics do not echo response content", async () => {
+  const secretLikeText = "payload-must-not-be-echoed";
+  const syntax = makeHarness([{ stdout: `{"notes":"${secretLikeText}"` }]);
+  await assert.rejects(syntax.adapter.show("demo-1"), (error: unknown) => {
+    assert.ok(error instanceof Error);
+    assert.equal(error.message, "Failed to parse bd output (show demo-1): invalid JSON");
+    assert.ok(!error.message.includes(secretLikeText));
+    return true;
+  });
+  const overflow = makeHarness([{ stdout: '[{"id":"demo-1","title":"Task","status":"open","priority":1e999}]' }]);
+  await assert.rejects(overflow.adapter.show("demo-1"), /expected finite number at \$\[0\]\.priority/);
+  const unknownStatus = makeHarness([json([{ id: "demo-1", title: "Task", status: secretLikeText }])]);
+  await assert.rejects(unknownStatus.adapter.show("demo-1"), (error: unknown) => {
+    assert.ok(error instanceof Error);
+    assert.match(error.message, /Unsupported status from beads backend at \$\[0\]\.status/);
+    assert.ok(!error.message.includes(secretLikeText));
+    return true;
+  });
+});
+
+test("invalid create metadata preserves validated identity without issuing more commands", async () => {
+  const harness = makeHarness([json({ id: "created", title: "Saved title", status: "open", labels: "invalid" })]);
+  await assert.rejects(harness.adapter.create({ title: "Requested", status: "blocked" }), (error: unknown) => {
+    assert.ok(error instanceof PartialTaskCreateError);
+    assert.equal(error.stage, "response");
+    assert.equal(error.createdTask.ref, "created");
+    assert.equal(error.createdTask.title, "Saved title");
+    assert.equal(error.createdTask.status, "open");
+    assert.equal(error.requestedStatus, "blocked");
+    assert.match(error.message, /was created, but its response was invalid/);
+    assert.match((error.cause as Error).message, /expected JSON array at \$\.labels/);
+    return true;
+  });
+  assert.equal(harness.calls.length, 1);
+});
+
+test("unusable create identity warns about reported success without retrying", async () => {
+  const harness = makeHarness([json({ title: "Task", status: "open" })]);
+  await assert.rejects(harness.adapter.create({ title: "Task" }), (error: unknown) => {
+    assert.ok(error instanceof Error);
+    assert.ok(!(error instanceof PartialTaskCreateError));
+    assert.match(error.message, /bd create reported success/);
+    assert.match(error.message, /inspect the created task before retrying/);
+    assert.match((error.cause as Error).message, /expected nonblank string at \$\.id/);
+    return true;
+  });
+  assert.equal(harness.calls.length, 1);
+});
+
+test("response validation failures do not poison subsequent queued commands", async () => {
+  const harness = makeHarness([
+    json([{ id: "demo-1", status: "open" }]),
+    json([{ id: "demo-2", title: "Valid", status: "open" }]),
+  ]);
+  const badUpdate = harness.adapter.update("demo-1", { title: "Changed" });
+  const goodShow = harness.adapter.show("demo-2");
+  await assert.rejects(badUpdate, /expected string at \$\[0\]\.title/);
+  assert.equal((await goodShow).ref, "demo-2");
+  assert.deepEqual(harness.calls.map(({ args }) => args[0]), ["update", "show"]);
+});
+
+test("invalid status-update responses retain existing partial-create recovery", async () => {
+  const harness = makeHarness([
+    json({ id: "created", title: "Task", status: "open" }),
+    json([null]),
+    json([{ id: "created", title: "Task", status: "blocked" }]),
+  ]);
+  await assert.rejects(harness.adapter.create({ title: "Task", status: "blocked" }), (error: unknown) => {
+    assert.ok(error instanceof PartialTaskCreateError);
+    assert.equal(error.stage, "status");
+    assert.equal(error.createdTask.status, "blocked");
+    assert.match(error.message, /Failed to parse bd output \(update created\)/);
+    return true;
+  });
+  assert.deepEqual(harness.calls.map(({ args }) => args[0]), ["create", "update", "show"]);
 });
 
 test("show reports an empty result as not found", async () => {
