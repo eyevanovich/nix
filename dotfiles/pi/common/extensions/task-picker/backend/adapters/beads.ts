@@ -44,12 +44,6 @@ function makeListArgs(): string[] {
   ];
 }
 
-interface BeadsConfigValue {
-  key: string;
-  schema_version: number;
-  value: string;
-}
-
 interface BeadsListDependency {
   depends_on_id: string;
   type?: string;
@@ -87,7 +81,6 @@ interface BeadsIssue {
 
 interface BeadsBlockedIssue {
   id: string;
-  blocked_by_count: number;
   blocked_by: Array<string | BeadsShowDependency>;
 }
 
@@ -230,27 +223,138 @@ function fromTaskUpdateToBeadsArgs(update: TaskUpdate): string[] {
   return args;
 }
 
-function parseJsonArray<T>(stdout: string, context: string): T[] {
+type Decoder<T> = (value: unknown, path: string) => T;
+
+function readObject(value: unknown, path: string): Record<string, unknown> {
+  if (value === null || Array.isArray(value) || typeof value !== "object") {
+    throw new Error(`expected JSON object at ${path}`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function readString(value: unknown, path: string): string {
+  if (typeof value !== "string") throw new Error(`expected string at ${path}`);
+  return value;
+}
+
+function readRef(value: unknown, path: string): string {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`expected nonblank string at ${path}`);
+  }
+  return value;
+}
+
+function readNumber(value: unknown, path: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`expected finite number at ${path}`);
+  }
+  return value;
+}
+
+function readArray<T>(value: unknown, path: string, decode: Decoder<T>): T[] {
+  if (!Array.isArray(value)) throw new Error(`expected JSON array at ${path}`);
+  return value.map((entry, index) => decode(entry, `${path}[${index}]`));
+}
+
+function readOptional<T>(value: unknown, path: string, decode: Decoder<T>): T | undefined {
+  return value === undefined || value === null ? undefined : decode(value, path);
+}
+
+function readShowDependency(value: unknown, path: string): BeadsShowDependency {
+  const record = readObject(value, path);
+  return {
+    id: readRef(record.id, `${path}.id`),
+    title: readOptional(record.title, `${path}.title`, readString),
+    status: readOptional(record.status, `${path}.status`, readString),
+    dependency_type: readOptional(record.dependency_type, `${path}.dependency_type`, readString),
+  };
+}
+
+function readDependency(value: unknown, path: string): BeadsListDependency | BeadsShowDependency {
+  const record = readObject(value, path);
+  if (Object.hasOwn(record, "depends_on_id")) {
+    return {
+      depends_on_id: readRef(record.depends_on_id, `${path}.depends_on_id`),
+      type: readOptional(record.type, `${path}.type`, readString),
+    };
+  }
+  return readShowDependency(record, path);
+}
+
+function readIssueIdentity(value: unknown, path: string): BeadsIssue {
+  const record = readObject(value, path);
+  const issue = {
+    id: readRef(record.id, `${path}.id`),
+    title: readString(record.title, `${path}.title`),
+    status: readString(record.status, `${path}.status`),
+  };
+  if (!Object.values(STATUS_MAP).some((status) => status === issue.status)) {
+    throw new Error(`Unsupported status from beads backend at ${path}.status`);
+  }
+  return issue;
+}
+
+function readIssue(value: unknown, path: string): BeadsIssue {
+  const record = readObject(value, path);
+  const issue = readIssueIdentity(record, path);
+  for (const field of [
+    "description", "issue_type", "assignee", "owner", "due_at", "due",
+    "acceptance_criteria", "design", "notes", "created_at", "updated_at",
+  ] as const) {
+    issue[field] = readOptional(record[field], `${path}.${field}`, readString);
+  }
+  for (const field of ["priority", "dependency_count", "dependent_count", "comment_count"] as const) {
+    issue[field] = readOptional(record[field], `${path}.${field}`, readNumber);
+  }
+  issue.labels = readOptional(record.labels, `${path}.labels`, (value, path) =>
+    readArray(value, path, readString)
+  );
+  issue.dependencies = readOptional(record.dependencies, `${path}.dependencies`, (value, path) =>
+    readArray(value, path, readDependency)
+  );
+  return issue;
+}
+
+function readBlockedIssue(value: unknown, path: string): BeadsBlockedIssue {
+  const record = readObject(value, path);
+  return {
+    id: readRef(record.id, `${path}.id`),
+    blocked_by: readArray(record.blocked_by, `${path}.blocked_by`, (value, path) =>
+      typeof value === "string" ? readRef(value, path) : readShowDependency(value, path)
+    ),
+  };
+}
+
+function parseJson<T>(stdout: string, context: string, decode: Decoder<T>): T {
   try {
-    const parsed = JSON.parse(stdout);
-    if (!Array.isArray(parsed)) throw new Error("expected JSON array");
-    return parsed as T[];
+    let value: unknown;
+    try {
+      value = JSON.parse(stdout);
+    } catch {
+      throw new Error("invalid JSON");
+    }
+    return decode(value, "$");
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     throw new Error(`Failed to parse bd output (${context}): ${msg}`);
   }
 }
 
-function parseJsonObject<T>(stdout: string, context: string): T {
+function parseJsonArray<T>(stdout: string, context: string, decode: Decoder<T>): T[] {
+  return parseJson(stdout, context, (value, path) => readArray(value, path, decode));
+}
+
+function parseCreatedTask(stdout: string, requestedStatus: TaskStatus): Task {
+  let identity: Task | undefined;
   try {
-    const parsed = JSON.parse(stdout);
-    if (parsed === null || Array.isArray(parsed) || typeof parsed !== "object") {
-      throw new Error("expected JSON object");
-    }
-    return parsed as T;
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    throw new Error(`Failed to parse bd output (${context}): ${msg}`);
+    return toTask(parseJson(stdout, "create", (value, path) => {
+      identity = toTask(readIssueIdentity(value, path));
+      return readIssue(value, path);
+    }));
+  } catch (error) {
+    if (identity) throw new PartialTaskCreateError(identity, requestedStatus, error, "response");
+    const details = error instanceof Error ? error.message : String(error);
+    throw new Error(`bd create reported success, but its response was invalid; inspect the created task before retrying: ${details}`, { cause: error });
   }
 }
 
@@ -330,7 +434,7 @@ function initialize(pi: ExtensionAPI, cwd?: string): TaskAdapter {
 
   async function claim(ref: string): Promise<void> {
     const out = await execBd(["update", ref, "--claim", "--json"]);
-    parseJsonArray<BeadsIssue>(out, `claim ${ref}`);
+    parseJsonArray(out, `claim ${ref}`, readIssue);
   }
 
   async function update(ref: string, update: TaskUpdate): Promise<void> {
@@ -338,13 +442,15 @@ function initialize(pi: ExtensionAPI, cwd?: string): TaskAdapter {
     if (args.length === 0) return;
 
     const out = await execBd(["update", ref, ...args, "--json"]);
-    parseJsonArray<BeadsIssue>(out, `update ${ref}`);
+    parseJsonArray(out, `update ${ref}`, readIssue);
   }
 
   async function hydrateTaskTypes(): Promise<void> {
     const out = await execBd(["config", "get", "types.custom", "--json"]);
-    const config = parseJsonObject<BeadsConfigValue>(out, "config types.custom");
-    const customTypes = config.value
+    const value = parseJson(out, "config types.custom", (value, path) =>
+      readString(readObject(value, path).value, `${path}.value`)
+    );
+    const customTypes = value
       .split(",")
       .map((value) => value.trim())
       .filter((value) => value.length > 0);
@@ -354,7 +460,7 @@ function initialize(pi: ExtensionAPI, cwd?: string): TaskAdapter {
 
   async function show(ref: string): Promise<Task> {
     const out = await execBd(["show", ref, "--json"]);
-    const beadsIssues = parseJsonArray<BeadsIssue>(out, `show ${ref}`);
+    const beadsIssues = parseJsonArray(out, `show ${ref}`, readIssue);
     const task = beadsIssues[0];
     if (!task) throw new Error(`Task not found: ${ref}`);
     return toTask(task);
@@ -370,9 +476,9 @@ function initialize(pi: ExtensionAPI, cwd?: string): TaskAdapter {
     async list(): Promise<Task[]> {
       await hydrateTaskTypes();
       const out = await execBd(makeListArgs());
-      const issues = parseJsonArray<BeadsIssue>(out, "list active");
+      const issues = parseJsonArray(out, "list active", readIssue);
       const blockedOut = await execBd(["blocked", "--json"]);
-      const blockedIssues = parseJsonArray<BeadsBlockedIssue>(blockedOut, "blocked active");
+      const blockedIssues = parseJsonArray(blockedOut, "blocked active", readBlockedIssue);
       const blockersById = new Map(
         blockedIssues.map((issue) => [issue.id, issue.blocked_by.map(toBlockedDependency)])
       );
@@ -417,7 +523,7 @@ function initialize(pi: ExtensionAPI, cwd?: string): TaskAdapter {
       }
 
       const out = await execBd(createArgs);
-      const createdSnapshot = toTask(parseJsonObject<BeadsIssue>(out, "create"));
+      const createdSnapshot = parseCreatedTask(out, status);
       const created = { ...createdSnapshot };
 
       created.title = title;

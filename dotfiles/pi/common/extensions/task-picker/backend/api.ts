@@ -23,18 +23,20 @@ export interface CreateTaskInput extends TaskUpdate {
 export class PartialTaskCreateError extends Error {
   readonly createdTask: Task;
   readonly requestedStatus?: TaskStatus;
-  readonly stage: "status" | "refresh";
+  readonly stage: "status" | "refresh" | "response";
 
   constructor(
     createdTask: Task,
     requestedStatus: TaskStatus | undefined,
     cause: unknown,
-    stage: "status" | "refresh" = "status"
+    stage: "status" | "refresh" | "response" = "status"
   ) {
     const details = cause instanceof Error ? cause.message : String(cause);
-    const message = stage === "refresh"
-      ? `Task ${createdTask.ref} was created, but refreshing it failed: ${details}`
-      : `Task ${createdTask.ref} was created with status ${createdTask.status}, but setting status to ${requestedStatus} failed: ${details}`;
+    const message = stage === "response"
+      ? `Task ${createdTask.ref} was created, but its response was invalid: ${details}`
+      : stage === "refresh"
+        ? `Task ${createdTask.ref} was created, but refreshing it failed: ${details}`
+        : `Task ${createdTask.ref} was created with status ${createdTask.status}, but setting status to ${requestedStatus} failed: ${details}`;
     super(message, { cause });
     this.name = "PartialTaskCreateError";
     this.createdTask = createdTask;

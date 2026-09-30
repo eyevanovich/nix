@@ -158,4 +158,10 @@ All tracker commands use argv arrays with no shell interpolation. The extension 
   `chore`, `epic`, and `decision`) plus unique values from `types.custom`.
 - `bd` commands are serialized because its dolt backend cannot safely handle
   concurrent database access.
+- Beads responses validate consumed fields before normalization, including issue
+  IDs, labels, dependencies, and active blockers. Errors identify the command and
+  field path without dumping the payload. Optional null metadata is treated as
+  absent; extra fields are ignored. If create reports success but its response is
+  invalid, a validated identity is retained for partial-create recovery when
+  possible; otherwise inspect the created task before retrying.
 - Typechecks against the Pi API version locked in the development dependencies.
