@@ -39,10 +39,6 @@
       url = "github:messense/homebrew-macos-cross-toolchains";
       flake = false;
     };
-    homebrew-gentleman-programming = {
-      url = "github:gentleman-programming/homebrew-tap";
-      flake = false;
-    };
     homebrew-docker-tap = {
       url = "github:docker/homebrew-tap";
       flake = false;
@@ -73,7 +69,6 @@
     homebrew-cask,
     homebrew-bundle,
     homebrew-macos-cross-toolchains,
-    homebrew-gentleman-programming,
     homebrew-docker-tap,
     homebrew-skyhook-io,
     nix-homebrew,
@@ -117,7 +112,6 @@
                   "homebrew/homebrew-cask" = homebrew-cask;
                   "homebrew/homebrew-bundle" = homebrew-bundle;
                   "docker/homebrew-tap" = homebrew-docker-tap;
-                  "gentleman-programming/homebrew-tap" = homebrew-gentleman-programming;
                 }
                 // (
                   if profile == "work"

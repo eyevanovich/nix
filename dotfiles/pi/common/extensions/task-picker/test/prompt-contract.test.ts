@@ -64,6 +64,8 @@ test("execution prompts retain explicit delegation and completion gates", async 
   for (const name of ["execute-beads", "execute-gitlab-issue"] as const) {
     const text = await prompt(name, "target");
     for (const required of [
+      "Before any tracker mutation, require pi-subagents tools",
+      "offer ordinary direct task execution instead",
       'subagent({ action: "list", capabilities: true })',
       "runner.available === true",
       "Implementation requires approval",
@@ -73,6 +75,7 @@ test("execution prompts retain explicit delegation and completion gates", async 
       "required review findings resolved",
       "Only then create exactly one task-scoped completion commit",
     ]) assert.ok(text.includes(required), `${name} missing gate: ${required}`);
+    assert.ok(text.indexOf("Before any tracker mutation") < text.indexOf("## Resolve"));
     assert.match(text.slice(text.indexOf("## Finish")), /completion gate/);
   }
 });

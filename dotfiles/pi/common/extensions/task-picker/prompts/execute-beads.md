@@ -3,8 +3,7 @@ description: Execute ready Beads work with approval-gated subagent orchestration
 argument-hint: "[bead-id-or-search ...]"
 ---
 <!-- task-picker:execute-beads:v1 -->
-Use pi-subagents for delegation. You own resolution, approval, integration, validation, review, and completion. Report decisions and evidence without narration or repetition.
-
+Before any tracker mutation, require pi-subagents tools; if unavailable, stop and offer ordinary direct task execution instead. Restore packages only with approval.
 ## Resolve and claim
 
 Empty target: run `bd ready --label triage:ready-for-agent`, then `bd ready` if needed; offer numbered choices. Otherwise resolve exact Bead IDs before fuzzy-searching title/body; ask on ambiguity.

@@ -3,8 +3,7 @@ description: Execute a GitLab issue with safe assignment, approval, review, and 
 argument-hint: "<host/project-path#iid-or-issue-url>"
 ---
 <!-- task-picker:execute-gitlab-issue:v1 -->
-Use pi-subagents for delegation. You own resolution, approval, integration, validation, review, and completion. Report decisions and evidence without narration or repetition. Never inspect, print, copy, or manage GitLab tokens.
-
+Before any tracker mutation, require pi-subagents tools; if unavailable, stop and offer ordinary direct task execution instead. Restore packages only with approval. Never inspect, print, copy, or manage GitLab tokens.
 ## Resolve configuration and issue
 
 Before mutation, read `~/.pi/agent/task-picker.json` with a file-reading tool. Require JSON `version: 1` and `gitlab.workStatus.mode` of `scoped-labels` or `none`; otherwise stop with an actionable diagnostic. Never guess a fallback.

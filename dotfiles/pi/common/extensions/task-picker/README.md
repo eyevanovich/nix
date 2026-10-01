@@ -87,6 +87,10 @@ aliases and browser-specific action keys remain fixed.
 
 ## Task execution
 
+The bundled execution workflows require pi-subagents, which is currently retired
+from the managed package list. Without it, they stop before tracker mutation and
+offer ordinary direct task execution. Task browsing and editing remain available.
+
 Starting work from the picker submits the selected tracker's bundled execution prompt in the current Pi session, which expands and runs `/execute-beads` or `/execute-gitlab-issue` normally. The workflow can use managed subagent worktrees for isolated implementation when appropriate; task-picker itself does not allocate worktrees or launch background terminals.
 
 ### Compact prompt display

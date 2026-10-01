@@ -112,10 +112,8 @@
       "npm:@dreki-gg/pi-context7"
       "git:github.com/championswimmer/pi-context-usage"
       "npm:pi-powerline-footer"
-      "npm:pi-subagents"
       "npm:pi-web-access"
       "npm:@luxusai/pi-hindsight"
-      "git:gitlab.com/gitlab-org/ai/skills"
     ]
     ++ lib.optionals (profile == "personal") [
       "npm:@ryan_nookpi/pi-extension-headroom"
@@ -126,7 +124,9 @@
       "npm:pi-mcp-adapter"
       "npm:pi-schedule-prompt"
       "npm:context-mode"
-      # Retire existing pins so activation installs the unversioned package.
+      "npm:pi-subagents"
+      "npm:gentle-engram"
+      "git:gitlab.com/gitlab-org/ai/skills"
       "npm:pi-subagents@0.66.0"
       "npm:pi-subagents@0.68.0"
     ]
@@ -145,8 +145,7 @@
       "extensions/mysql-connector"
     ];
 
-  # pi is installed from npm (tracks @latest), not nixpkgs. apps.nix hardcodes
-  # this same path for `engram setup pi` — keep the two in sync.
+  # pi is installed from npm (tracks @latest), not nixpkgs.
   piPrefix = "${config.home.homeDirectory}/.local/state/pi-coding-agent";
   piBin = "${piPrefix}/bin/pi";
   piPath = "${piPrefix}/bin:${pkgs.git}/bin:${pkgs.nodejs}/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";

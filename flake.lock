@@ -120,22 +120,6 @@
         "type": "github"
       }
     },
-    "homebrew-gentleman-programming": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1790378348,
-        "narHash": "sha256-PNt9LQcX0DNswUPFc7ojEaO+yOYHuUhn+JzrUEvqSM0=",
-        "owner": "gentleman-programming",
-        "repo": "homebrew-tap",
-        "rev": "7fe236699047a3ed6dbc939ed32dbe693f069c23",
-        "type": "github"
-      },
-      "original": {
-        "owner": "gentleman-programming",
-        "repo": "homebrew-tap",
-        "type": "github"
-      }
-    },
     "homebrew-macos-cross-toolchains": {
       "flake": false,
       "locked": {
@@ -229,7 +213,6 @@
         "homebrew-cask": "homebrew-cask",
         "homebrew-core": "homebrew-core",
         "homebrew-docker-tap": "homebrew-docker-tap",
-        "homebrew-gentleman-programming": "homebrew-gentleman-programming",
         "homebrew-macos-cross-toolchains": "homebrew-macos-cross-toolchains",
         "homebrew-skyhook-io": "homebrew-skyhook-io",
         "nix-homebrew": "nix-homebrew",
