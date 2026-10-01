@@ -506,7 +506,6 @@ export default function registerHerdrExtension(pi: ExtensionAPI): void {
           );
         }
 
-        await runner?.cleanup();
         const rollback = await closeCompletedWork(herdr, created.tabId);
         const message = error instanceof Error ? error.message : String(error);
         throw new HerdrError("HERDR_SERVER_ERROR", `${message}${rollback ? ` Rollback failed: ${rollback}` : " The unused tab was closed."}`);
@@ -851,7 +850,13 @@ export default function registerHerdrExtension(pi: ExtensionAPI): void {
     async execute(_id, params, signal) {
       const args = ["agent", "read", params.target];
       appendReadOptions(args, params.source ?? "recent-unwrapped", params.lines, params.format ?? "text");
-      const output = await readAgentOutput(herdr, params.target, args, params.source ?? "recent-unwrapped", params.format ?? "text", signal);
+      await herdr.ensureCapabilities(signal);
+      const output = renderReadOutput(await herdr.runRaw(args, signal, 10_000), "agent read", {
+        target: params.target,
+        source: params.source ?? "recent-unwrapped",
+        format: params.format ?? "text",
+        herdrTruncated: false,
+      });
       return textResult(`Agent ${params.target} transcript:\n${output.text}`, { target: params.target, ...output.details });
     },
   });
@@ -983,18 +988,6 @@ async function readPaneOutput(
   appendReadOptions(args, source, lines, format);
   await herdr.ensureCapabilities(signal);
   return renderReadOutput(await herdr.runRaw(args, signal, 10_000), "pane read", { paneId, source, format, herdrTruncated: false });
-}
-
-async function readAgentOutput(
-  herdr: HerdrClient,
-  target: string,
-  args: string[],
-  source: ReadSource,
-  format: "text" | "ansi",
-  signal?: AbortSignal,
-): Promise<{ text: string; details: JsonRecord }> {
-  await herdr.ensureCapabilities(signal);
-  return renderReadOutput(await herdr.runRaw(args, signal, 10_000), "agent read", { target, source, format, herdrTruncated: false });
 }
 
 async function createWorkTab(
