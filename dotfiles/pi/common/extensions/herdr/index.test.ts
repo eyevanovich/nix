@@ -1,6 +1,7 @@
 import { afterEach, expect, mock, test } from "bun:test";
 import { existsSync } from "node:fs";
-import { dirname } from "node:path";
+import { basename, dirname, join } from "node:path";
+import { readFile, rm, writeFile } from "node:fs/promises";
 
 mock.module("@earendil-works/pi-coding-agent", () => ({
   DEFAULT_MAX_BYTES: 50_000,
@@ -81,8 +82,8 @@ function success(type: string, values: Record<string, unknown> = {}): ExecResult
   return response({ type, ...values });
 }
 
-function capabilitySchema(): ExecResult {
-  const methods = ["workspace.list", "tab.create", "tab.close", "tab.list", "pane.list", "pane.current", "pane.read", "pane.wait_for_output", "pane.close", "pane.send_text", "pane.send_keys", "pane.rename", "agent.list", "agent.start", "agent.prompt", "agent.wait", "agent.read", "agent.focus", "agent.send_keys"];
+function capabilitySchema(extraMethods: string[] = []): ExecResult {
+  const methods = [...extraMethods, "workspace.list", "tab.create", "tab.close", "tab.list", "pane.list", "pane.current", "pane.read", "pane.wait_for_output", "pane.close", "pane.send_text", "pane.send_keys", "pane.rename", "agent.list", "agent.start", "agent.prompt", "agent.wait", "agent.read", "agent.focus", "agent.send_keys"];
   return { code: 0, stdout: JSON.stringify({ schemas: { request: { oneOf: methods.map((method) => ({ properties: { method: { const: method } } })) } } }), stderr: "" };
 }
 
@@ -122,6 +123,197 @@ function tabCreated(): ExecResult {
     root_pane: { pane_id: "w1:p9", terminal_id: "term_9", workspace_id: "w1", tab_id: "w1:t9", focused: false, agent_status: "idle", revision: 1 },
   });
 }
+
+const runnerDirectories = new Set<string>();
+const runnerProcesses: ReturnType<typeof Bun.spawn>[] = [];
+
+afterEach(async () => {
+  await Promise.all(runnerProcesses.splice(0).map((process) => process.exited));
+  await Promise.all([...runnerDirectories].map((directory) => rm(directory, { recursive: true, force: true })));
+  runnerDirectories.clear();
+});
+
+function runnerPi(onRun?: (runnerPath: string) => Promise<ExecResult>, readFailure = false, closeResult = success("ok")): FakePi {
+  return createPi(async (_command, args) => {
+    if (args[0] === "tab" && args[1] === "create") return tabCreated();
+    if (args[0] === "pane" && args[1] === "run") {
+      const runnerPath = args[3].slice(1, -1);
+      runnerDirectories.add(dirname(runnerPath));
+      if (onRun) return onRun(runnerPath);
+      runnerProcesses.push(Bun.spawn(["/bin/sh", runnerPath], { stdout: "ignore", stderr: "ignore" }));
+      return { code: 0, stdout: "", stderr: "" };
+    }
+    if (args[0] === "pane" && args[1] === "read") {
+      if (readFailure) return { code: 1, stdout: "", stderr: "output unavailable" };
+      return { code: 0, stdout: "command output", stderr: "" };
+    }
+    if (args[0] === "tab" && args[1] === "close") return closeResult;
+    throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
+  });
+}
+
+async function runAndWait(pi: FakePi, command: string, timeout_ms = 1_000, signal?: AbortSignal): Promise<any> {
+  return tool(pi, "herdr_run_and_wait").execute("run", { command, timeout_ms }, signal, undefined, { cwd: process.cwd() });
+}
+
+test.each(["TERM", "KILL"])("reports unknown completion when the real wrapper receives SIG%s", async (signal) => {
+  enableHerdr();
+  const pi = runnerPi();
+  await loadExtension(pi);
+  const result = await runAndWait(pi, `kill -${signal} "$PPID"`, 500);
+  expect(result.details).toMatchObject({ status: "completion_unknown", workMayBeRunning: true });
+  expect(result.details.exitCode).toBeUndefined();
+  expect(pi.calls.some((call) => call.args[0] === "tab" && call.args[1] === "close")).toBe(false);
+  expect(existsSync([...runnerDirectories][0])).toBe(true);
+});
+
+test.each([0, 7, 255])("records real command exit %i and closes only completed work", async (exitCode) => {
+  enableHerdr();
+  const pi = runnerPi();
+  await loadExtension(pi);
+  const result = await runAndWait(pi, `exit ${exitCode}`);
+  expect(result.details).toMatchObject({ status: "completed", exitCode });
+  expect(pi.calls.filter((call) => call.args[0] === "pane" && call.args[1] === "read")).toHaveLength(1);
+  expect(pi.calls.filter((call) => call.args[0] === "tab" && call.args[1] === "close")).toHaveLength(1);
+  expect(existsSync([...runnerDirectories][0])).toBe(false);
+});
+
+test("keeps concurrent command records isolated", async () => {
+  enableHerdr();
+  const pi = runnerPi();
+  await loadExtension(pi);
+  const results = await Promise.all([runAndWait(pi, "exit 0"), runAndWait(pi, "exit 7")]);
+  expect(results.map((result) => result.details.exitCode)).toEqual([0, 7]);
+  expect(new Set(results.map((result) => result.details.commandId)).size).toBe(2);
+});
+
+async function startRunner(runnerPath: string): Promise<ExecResult> {
+  runnerProcesses.push(Bun.spawn(["/bin/sh", runnerPath], { stdout: "ignore", stderr: "ignore" }));
+  const deadline = performance.now() + 1_000;
+  while (performance.now() < deadline) {
+    if (existsSync(join(dirname(runnerPath), "status"))) return { code: 0, stdout: "", stderr: "" };
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+  throw new Error("Runner did not publish its start record");
+}
+
+test("preserves a running command and its records on timeout", async () => {
+  enableHerdr();
+  const pi = runnerPi(startRunner);
+  await loadExtension(pi);
+  const result = await runAndWait(pi, "sleep 0.2", 40);
+  expect(result.details).toMatchObject({ status: "timeout", executionState: "running", workMayBeRunning: true });
+  expect(pi.calls.some((call) => call.args[1] === "close")).toBe(false);
+  expect(existsSync([...runnerDirectories][0])).toBe(true);
+});
+
+test("cancellation while monitoring does not terminate the command", async () => {
+  enableHerdr();
+  const controller = new AbortController();
+  const pi = runnerPi(async (path) => {
+    const result = await startRunner(path);
+    setTimeout(() => controller.abort(), 10);
+    return result;
+  });
+  await loadExtension(pi);
+  const result = await runAndWait(pi, "sleep 0.1; exit 7", 1_000, controller.signal);
+  expect(result.details).toMatchObject({ status: "cancelled", executionState: "running", workMayBeRunning: true });
+  expect(pi.calls.some((call) => call.args[1] === "close")).toBe(false);
+  expect(await runnerProcesses.at(-1)?.exited).toBe(7);
+  expect(JSON.parse(await readFile(join([...runnerDirectories][0], "status"), "utf8"))).toMatchObject({ phase: "completed", exitCode: 7 });
+});
+
+test("reports wrapper death without closing work while a child survives", async () => {
+  enableHerdr();
+  const pi = runnerPi();
+  await loadExtension(pi);
+  const result = await runAndWait(pi, 'kill -KILL "$PPID"; sleep 0.2', 500);
+  expect(result.details).toMatchObject({ status: "completion_unknown", workMayBeRunning: true });
+  expect(pi.calls.some((call) => call.args[1] === "close")).toBe(false);
+});
+
+test("does not claim an acknowledged but unstarted command ran", async () => {
+  enableHerdr();
+  const pi = runnerPi(async () => ({ code: 0, stdout: "", stderr: "" }));
+  await loadExtension(pi);
+  const result = await runAndWait(pi, "exit 0", 20);
+  expect(result.details).toMatchObject({ status: "timeout", executionState: "start_unconfirmed", workMayBeRunning: true });
+  expect(pi.calls.some((call) => call.args[1] === "close")).toBe(false);
+});
+
+test("preserves work when command dispatch is cancelled ambiguously", async () => {
+  enableHerdr();
+  const controller = new AbortController();
+  const pi = runnerPi(async () => {
+    controller.abort();
+    return { code: 0, stdout: "", stderr: "", killed: true };
+  });
+  await loadExtension(pi);
+  const result = await runAndWait(pi, "exit 0", 1_000, controller.signal);
+  expect(result.details).toMatchObject({ status: "cancelled", workMayBeRunning: true, paneId: "w1:p9" });
+  expect(pi.calls.some((call) => call.args[1] === "close")).toBe(false);
+  expect(existsSync([...runnerDirectories][0])).toBe(true);
+});
+
+test.each(["invalid JSON", "stale", "invalid exit code", "invalid PID"])("preserves work with %s completion record", async (variant) => {
+  enableHerdr();
+  const pi = runnerPi(async (runnerPath) => {
+    const directory = dirname(runnerPath);
+    const record = { commandId: variant === "stale" ? "another-command" : basename(directory), phase: variant === "invalid PID" ? "running" : "completed", pid: 0, exitCode: variant === "invalid exit code" ? 256 : 0 };
+    await writeFile(join(directory, "status"), variant === "invalid JSON" ? "broken" : JSON.stringify(record));
+    return { code: 0, stdout: "", stderr: "" };
+  });
+  await loadExtension(pi);
+  const result = await runAndWait(pi, "exit 0", 100);
+  expect(result.details).toMatchObject({ status: "completion_unknown", workMayBeRunning: true });
+  expect(result.details.exitCode).toBeUndefined();
+  expect(pi.calls.some((call) => call.args[1] === "close")).toBe(false);
+});
+
+test("keeps a known exit code when output retrieval fails", async () => {
+  enableHerdr();
+  const pi = runnerPi(undefined, true);
+  await loadExtension(pi);
+  const result = await runAndWait(pi, "exit 7");
+  expect(result.details).toMatchObject({ status: "completed", exitCode: 7 });
+  expect(result.details.outputWarning).toContain("output unavailable");
+  expect(pi.calls.some((call) => call.args[1] === "close")).toBe(false);
+  expect(existsSync([...runnerDirectories][0])).toBe(true);
+});
+
+test.each(["herdr_run", "herdr_run_and_wait"])("preserves ambiguous dispatch failures for %s", async (name) => {
+  enableHerdr();
+  const pi = runnerPi(async () => ({ code: 1, stdout: "", stderr: "transport failed after submission" }));
+  await loadExtension(pi);
+  const result = await tool(pi, name).execute("run", { command: "exit 0", close_on_exit: true }, undefined, undefined, { cwd: process.cwd() });
+  expect(result.details).toMatchObject({ status: "submission_unknown", workMayBeRunning: true });
+  expect(existsSync([...runnerDirectories][0])).toBe(true);
+  expect(pi.calls.some((call) => call.args[1] === "close")).toBe(false);
+});
+
+test.each([success("unexpected"), { code: 1, stdout: "", stderr: "close failed" }])("preserves known completion on cleanup failure %p", async (closeResult) => {
+  enableHerdr();
+  const pi = runnerPi(undefined, false, closeResult);
+  await loadExtension(pi);
+  const result = await runAndWait(pi, "exit 7");
+  expect(result.details).toMatchObject({ status: "completed", exitCode: 7 });
+  expect(result.details.cleanupWarning).toBeString();
+  expect(existsSync([...runnerDirectories][0])).toBe(true);
+  expect(pi.calls.filter((call) => call.args[1] === "close")).toHaveLength(1);
+});
+
+test.each(["ok", "pane_closed"])("accepts %s acknowledgement after closing an owned pane", async (type) => {
+  enableHerdr();
+  const pi = createPi((_command, args) => {
+    if (args.join(" ") === "pane current --current") return success("pane_current", { pane: { pane_id: "w1:p1", workspace_id: "w1", tab_id: "w1:t1" } });
+    if (args.join(" ") === "pane close w1:p2") return success(type);
+    throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
+  });
+  await loadExtension(pi);
+  const result = await tool(pi, "herdr_close").execute("close", { pane_id: "w1:p2" });
+  expect(result.details).toEqual({ paneId: "w1:p2" });
+  expect(pi.calls.filter((call) => call.args[1] === "close")).toHaveLength(1);
+});
 
 test("registers no Herdr tools outside Herdr", async () => {
   delete process.env.HERDR_ENV;
@@ -204,6 +396,73 @@ test("fails compatibility before topology mutation when Herdr lacks a required s
 
   await expect(tool(pi, "herdr_run").execute("test", { command: "npm test" }, undefined, undefined, { cwd: "/project" })).rejects.toThrow("HERDR_UNSUPPORTED");
   expect(pi.calls.map((call) => call.args.join(" "))).not.toContain("tab create --workspace w1 --cwd /project --no-focus");
+});
+
+test.each([false, true])("uses a single snapshot with all_workspaces=%s", async (allWorkspaces) => {
+  enableHerdr();
+  const snapshot = {
+    workspaces: [{ workspace_id: "w1" }, { workspace_id: "w2" }],
+    tabs: [{ tab_id: "w1:t1", workspace_id: "w1" }, { tab_id: "w2:t1", workspace_id: "w2" }],
+    panes: [{ pane_id: "w1:p1", tab_id: "w1:t1", workspace_id: "w1" }, { pane_id: "w2:p1", tab_id: "w2:t1", workspace_id: "w2" }],
+    agents: [{ name: "local", workspace_id: "w1" }, { name: "other", workspace_id: "w2" }],
+  };
+  const pi = createPi((_command, args) => {
+    if (args.join(" ") === "api snapshot") return success("session_snapshot", { snapshot });
+    throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
+  });
+  const exec = pi.exec;
+  pi.exec = async (command, args, options) => args.join(" ") === "api schema --json" ? capabilitySchema(["session.snapshot"]) : exec(command, args, options);
+  await loadExtension(pi);
+  const result = await tool(pi, "herdr_list").execute("list", { all_workspaces: allWorkspaces });
+  for (const field of ["workspaces", "tabs", "panes", "agents"] as const) {
+    expect(result.details[field]).toEqual(allWorkspaces ? snapshot[field] : [snapshot[field][0]]);
+  }
+  expect(pi.calls.filter((call) => call.args.join(" ") === "api snapshot")).toHaveLength(1);
+  expect(pi.calls.some((call) => call.args[1] === "list")).toBe(false);
+});
+
+test.each(["missing collection", "wrong workspace", "failed snapshot"])("does not hide %s with legacy discovery", async (variant) => {
+  enableHerdr();
+  const pi = createPi((_command, args) => {
+    if (args.join(" ") === "api snapshot") {
+      if (variant === "failed snapshot") return { code: 1, stdout: "", stderr: "snapshot unavailable" };
+      return success("session_snapshot", { snapshot: { workspaces: [{ workspace_id: "w2" }], tabs: [], panes: [], ...(variant === "missing collection" ? {} : { agents: [] }) } });
+    }
+    throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
+  });
+  const exec = pi.exec;
+  pi.exec = async (command, args, options) => args.join(" ") === "api schema --json" ? capabilitySchema(["session.snapshot"]) : exec(command, args, options);
+  await loadExtension(pi);
+  await expect(tool(pi, "herdr_list").execute("list", {})).rejects.toThrow(variant === "failed snapshot" ? "HERDR_SERVER_ERROR" : "HERDR_PROTOCOL_ERROR");
+  expect(pi.calls.some((call) => call.args[1] === "list")).toBe(false);
+});
+
+test.each(["{incomplete JSON", "[plain log line]", '{"message":"server ready"}'])("keeps JSON-looking output verbatim: %s", async (stdout) => {
+  enableHerdr();
+  const pi = createPi((_command, args) => {
+    if (args[0] === "pane" && args[1] === "read") return { code: 0, stdout, stderr: "" };
+    throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
+  });
+  await loadExtension(pi);
+  const result = await tool(pi, "herdr_pane_output").execute("read", { pane_id: "w1:p2" });
+  expect(result.content[0].text).toContain(stdout);
+  expect(pi.calls.filter((call) => call.args[1] === "read")).toHaveLength(1);
+});
+
+test("reads agent text once and validates structured envelopes", async () => {
+  enableHerdr();
+  let stdout = "agent response";
+  const pi = createPi((_command, args) => {
+    if (args[0] === "agent" && args[1] === "read") return { code: 0, stdout, stderr: "" };
+    throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
+  });
+  await loadExtension(pi);
+  const read = tool(pi, "herdr_agent_read");
+  expect((await read.execute("read", { target: "reviewer" })).content[0].text).toContain(stdout);
+  expect(pi.calls.filter((call) => call.args[1] === "read")).toHaveLength(1);
+  stdout = JSON.stringify({ id: "fixture", result: { type: "wrong" } });
+  await expect(read.execute("bad", { target: "reviewer" })).rejects.toThrow("HERDR_PROTOCOL_ERROR");
+  expect(pi.calls.filter((call) => call.args[1] === "read")).toHaveLength(2);
 });
 
 test("herdr_list combines the caller workspace topology and detected agents", async () => {
@@ -382,6 +641,7 @@ test("herdr_pane_output returns Pi-truncated recent output and Herdr identifiers
 
   expect(result.content[0].text).toContain("server ready");
   expect(result.details).toMatchObject({ paneId: "w1:p2", source: "recent-unwrapped", truncated: false });
+  expect(pi.calls.filter((call) => call.args[0] === "pane" && call.args[1] === "read")).toHaveLength(1);
 });
 
 test("herdr_wait_for_output distinguishes an output match from transport failure", async () => {

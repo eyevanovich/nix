@@ -262,6 +262,7 @@ function renderInventory(
 
 class HerdrClient {
   private capabilities: Promise<void> | undefined;
+  private methods = new Set<string>();
 
   constructor(
     private readonly pi: ExtensionAPI,
@@ -269,30 +270,7 @@ class HerdrClient {
   ) {}
 
   async run(args: string[], signal?: AbortSignal, timeout?: number): Promise<JsonRecord> {
-    if (signal?.aborted) throw new HerdrError("HERDR_CANCELLED", "The operation was cancelled before Herdr was called.");
-
-    let result;
-    try {
-      result = await this.pi.exec(this.caller.binary, args, { signal, timeout });
-    } catch (error) {
-      if (isAbort(error, signal)) throw new HerdrError("HERDR_CANCELLED", "The Herdr operation was cancelled.");
-      throw error;
-    }
-
-      if (signal?.aborted || result.killed) {
-      throw new HerdrError("HERDR_CANCELLED", "The Herdr operation was cancelled.");
-    }
-    if (result.code === 1) {
-      throw new HerdrError("HERDR_SERVER_ERROR", renderErrorMessage(result));
-    }
-    if (result.code === 2) {
-      throw new HerdrError("HERDR_CLI_USAGE", renderErrorMessage(result));
-    }
-    if (result.code !== 0) {
-      throw new HerdrError("HERDR_SERVER_ERROR", renderErrorMessage(result));
-    }
-
-    return jsonEnvelope(result.stdout, `herdr ${args.join(" ")}`);
+    return jsonEnvelope(await this.runRaw(args, signal, timeout), `herdr ${args.join(" ")}`);
   }
 
   async runRaw(args: string[], signal?: AbortSignal, timeout?: number): Promise<string> {
@@ -358,10 +336,16 @@ class HerdrClient {
       throw new HerdrError("HERDR_UNSUPPORTED", "Herdr api schema returned malformed JSON.");
     }
     const methods = collectSchemaMethods(decoded);
+    this.methods = methods;
     const missing = REQUIRED_METHODS.filter((method) => !methods.has(method));
     if (missing.length > 0) {
       throw new HerdrError("HERDR_UNSUPPORTED", `Herdr is missing required CLI capabilities: ${missing.join(", ")}.`);
     }
+  }
+
+  async supports(method: string, signal?: AbortSignal): Promise<boolean> {
+    await this.ensureCapabilities(signal);
+    return this.methods.has(method);
   }
 
   async command(args: string[], signal?: AbortSignal, timeout?: number): Promise<JsonRecord> {
@@ -472,43 +456,7 @@ export default function registerHerdrExtension(pi: ExtensionAPI): void {
     }),
     async execute(_id, params, signal) {
       const allWorkspaces = params.all_workspaces === true;
-      const workspacesResult = resultWithType(await herdr.command(["workspace", "list"], signal, 5_000), "workspace_list", "workspace list");
-      const workspaces = Array.isArray(workspacesResult.workspaces) ? workspacesResult.workspaces : undefined;
-      if (!workspaces || !workspaces.every(isRecord)) {
-        throw new HerdrError("HERDR_PROTOCOL_ERROR", "workspace list did not return workspaces.");
-      }
-
-      const scopedWorkspaces = allWorkspaces
-        ? workspaces
-        : workspaces.filter((workspace) => workspace.workspace_id === caller.workspaceId);
-      if (!allWorkspaces && scopedWorkspaces.length !== 1) {
-        throw new HerdrError("HERDR_PROTOCOL_ERROR", `Herdr did not return caller workspace ${caller.workspaceId}.`);
-      }
-
-      const tabs: JsonRecord[] = [];
-      const panes: JsonRecord[] = [];
-      for (const workspace of scopedWorkspaces) {
-        const workspaceId = requiredString(workspace.workspace_id, "workspace_id", "workspace list");
-        const tabResult = resultWithType(await herdr.command(["tab", "list", "--workspace", workspaceId], signal, 5_000), "tab_list", "tab list");
-        const paneResult = resultWithType(await herdr.command(["pane", "list", "--workspace", workspaceId], signal, 5_000), "pane_list", "pane list");
-        if (!Array.isArray(tabResult.tabs) || !tabResult.tabs.every(isRecord)) {
-          throw new HerdrError("HERDR_PROTOCOL_ERROR", "tab list did not return tabs.");
-        }
-        if (!Array.isArray(paneResult.panes) || !paneResult.panes.every(isRecord)) {
-          throw new HerdrError("HERDR_PROTOCOL_ERROR", "pane list did not return panes.");
-        }
-        tabs.push(...tabResult.tabs);
-        panes.push(...paneResult.panes);
-      }
-
-      const agentResult = resultWithType(await herdr.command(["agent", "list"], signal, 5_000), "agent_list", "agent list");
-      if (!Array.isArray(agentResult.agents) || !agentResult.agents.every(isRecord)) {
-        throw new HerdrError("HERDR_PROTOCOL_ERROR", "agent list did not return agents.");
-      }
-      const workspaceIds = new Set(scopedWorkspaces.map((workspace) => workspace.workspace_id));
-      const agents = allWorkspaces
-        ? agentResult.agents
-        : agentResult.agents.filter((agent) => workspaceIds.has(agent.workspace_id));
+      const { workspaces: scopedWorkspaces, tabs, panes, agents } = await readInventory(herdr, caller, allWorkspaces, signal);
 
       return textResult(
         renderInventory(allWorkspaces, scopedWorkspaces, tabs, panes, agents),
@@ -534,29 +482,31 @@ export default function registerHerdrExtension(pi: ExtensionAPI): void {
     async execute(_id, params, signal, _update, ctx) {
       const cwd = params.cwd ?? ctx.cwd;
       const created = await createWorkTab(herdr, caller, cwd, params.label, signal);
+      let runner: CommandRunner | undefined;
+      let submissionAttempted = false;
 
       try {
         if (params.start_suspended) {
+          submissionAttempted = true;
           await herdr.commandAcknowledged(["pane", "send-text", created.paneId, params.command], signal, 10_000);
         } else if (params.close_on_exit) {
-          const runner = await createCommandRunner(params.command, ctx.cwd, params.cwd, caller.binary, true);
-          try {
-            await herdr.runRaw(["pane", "run", created.paneId, shellQuote(runner.runnerPath)], signal, 10_000);
-          } catch (error) {
-            await runner.cleanup();
-            throw error;
-          }
+          runner = await createCommandRunner(params.command, ctx.cwd, params.cwd, caller.binary, true);
+          submissionAttempted = true;
+          await herdr.runRaw(["pane", "run", created.paneId, shellQuote(runner.runnerPath)], signal, 10_000);
         } else {
+          submissionAttempted = true;
           await herdr.runRaw(["pane", "run", created.paneId, params.command], signal, 10_000);
         }
       } catch (error) {
-        if (error instanceof HerdrError && error.code === "HERDR_CANCELLED") {
+        if (submissionAttempted) {
+          const cancelled = error instanceof HerdrError && error.code === "HERDR_CANCELLED";
           return textResult(
-            `Command submission was cancelled. Tab ${created.tabId} and pane ${created.paneId} may still be available.`,
-            { ...created, command: params.command, cancelled: true, workMayBeRunning: true },
+            `Command submission ${cancelled ? "was cancelled" : "could not be confirmed"}. Inspect pane ${created.paneId} before retrying; work was preserved.`,
+            { ...created, command: params.command, commandId: runner?.commandId, status: cancelled ? "cancelled" : "submission_unknown", cancelled, workMayBeRunning: true, warning: error instanceof Error ? error.message : String(error) },
           );
         }
 
+        await runner?.cleanup();
         const rollback = await closeCompletedWork(herdr, created.tabId);
         const message = error instanceof Error ? error.message : String(error);
         throw new HerdrError("HERDR_SERVER_ERROR", `${message}${rollback ? ` Rollback failed: ${rollback}` : " The unused tab was closed."}`);
@@ -572,7 +522,7 @@ export default function registerHerdrExtension(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "herdr_run_and_wait",
     label: "Herdr Run & Wait",
-    description: "Run a command in a dedicated Herdr tab, wait for its command-correlated completion, read output, and close the completed tab. A timeout or cancellation leaves the work available for inspection.",
+    description: "Run a command in a dedicated Herdr tab, wait for its recorded exit code, read output, and close completed work. Monitoring defaults to 120 seconds. Timeout, cancellation, or unknown completion preserves work for inspection; never blindly rerun it.",
     promptSnippet: "Run a command in a Herdr tab and wait for its exit status",
     promptGuidelines: ["Use herdr_run_and_wait when a command outcome is needed but the command should remain visibly isolated while it runs."],
     executionMode: "sequential",
@@ -585,29 +535,55 @@ export default function registerHerdrExtension(pi: ExtensionAPI): void {
     async execute(_id, params, signal, _update, ctx) {
       const runner = await createCommandRunner(params.command, ctx.cwd, params.cwd, caller.binary);
       let launched: (HerdrTopology & { tabId: string }) | undefined;
-      let preserveRunner = false;
+      let cleanupRunner = true;
       try {
-        launched = await launchRunner(herdr, caller, runner, params.label, signal);
-        const completion = await waitForStatusFile(runner.statusPath, params.timeout_ms ?? 120_000, signal);
-
-        if (completion.kind !== "completed") {
-          preserveRunner = true;
+        launched = await createWorkTab(herdr, caller, runner.cwd, params.label, signal);
+        cleanupRunner = false;
+        try {
+          await herdr.runRaw(["pane", "run", launched.paneId, shellQuote(runner.runnerPath)], signal, 10_000);
+        } catch (error) {
+          const cancelled = error instanceof HerdrError && error.code === "HERDR_CANCELLED";
           return textResult(
-            completion.kind === "cancelled"
-              ? `Cancelled while waiting. Tab ${launched.tabId} and pane ${launched.paneId} may still be running.`
-              : `Timed out after ${params.timeout_ms ?? 120_000}ms. Tab ${launched.tabId} and pane ${launched.paneId} may still be running.`,
-            { ...launched, status: completion.kind, workMayBeRunning: true },
+            `Command submission ${cancelled ? "was cancelled" : "could not be confirmed"}. Inspect pane ${launched.paneId} before retrying; work and its records were preserved.`,
+            { ...launched, commandId: runner.commandId, status: cancelled ? "cancelled" : "submission_unknown", executionState: "start_unconfirmed", workMayBeRunning: true, warning: error instanceof Error ? error.message : String(error) },
           );
         }
 
-        const output = await readPaneOutput(herdr, launched.paneId, "recent-unwrapped", undefined, signal);
+        const completion = await waitForStatusFile(runner, params.timeout_ms ?? 120_000, signal);
+        if (completion.kind !== "completed") {
+          const message = completion.kind === "completion_unknown"
+            ? "Command completion could not be determined."
+            : completion.kind === "cancelled" ? "Cancelled while waiting." : `Timed out after ${params.timeout_ms ?? 120_000}ms.`;
+          return textResult(
+            `${message} Pane ${launched.paneId} and its command records were preserved; work may still be running. ${completion.reason ?? ""}`.trim(),
+            { ...launched, commandId: runner.commandId, status: completion.kind, executionState: completion.executionState, workMayBeRunning: true, reason: completion.reason },
+          );
+        }
+
+        let output;
+        try {
+          output = await readPaneOutput(herdr, launched.paneId, "recent-unwrapped", undefined, signal);
+        } catch (error) {
+          const outputWarning = error instanceof Error ? error.message : String(error);
+          return textResult(
+            `Exit code: ${completion.exitCode}. Output could not be read; pane ${launched.paneId} and its command records were preserved. ${outputWarning}`,
+            { ...launched, commandId: runner.commandId, exitCode: completion.exitCode, status: "completed", executionState: "completed", outputWarning },
+          );
+        }
+        if (signal?.aborted) {
+          return textResult(
+            `Exit code: ${completion.exitCode}. Cleanup was cancelled; pane ${launched.paneId} and its command records were preserved.\n\n${output.text}`,
+            { ...launched, commandId: runner.commandId, exitCode: completion.exitCode, status: "completed", executionState: "completed", output: output.details, cleanupWarning: "Cancelled before cleanup." },
+          );
+        }
         const cleanupWarning = await closeCompletedWork(herdr, launched.tabId);
+        cleanupRunner = cleanupWarning === undefined;
         return textResult(
           `Exit code: ${completion.exitCode}\n\n${output.text}${cleanupWarning ? `\n\nCleanup warning: ${cleanupWarning}` : ""}`,
-          { ...launched, exitCode: completion.exitCode, status: "completed", output: output.details, cleanupWarning },
+          { ...launched, commandId: runner.commandId, exitCode: completion.exitCode, status: "completed", executionState: "completed", output: output.details, cleanupWarning },
         );
       } finally {
-        if (!preserveRunner) await runner.cleanup();
+        if (cleanupRunner) await runner.cleanup();
       }
     },
   });
@@ -700,7 +676,10 @@ export default function registerHerdrExtension(pi: ExtensionAPI): void {
         throw new HerdrError("HERDR_CONTEXT_ERROR", "Refusing to close the Pi caller pane.");
       }
 
-      resultWithType(await herdr.command(["pane", "close", params.pane_id], signal, 10_000), "pane_closed", "pane close");
+      const result = await herdr.command(["pane", "close", params.pane_id], signal, 10_000);
+      if (result.type !== "ok" && result.type !== "pane_closed") {
+        throw new HerdrError("HERDR_PROTOCOL_ERROR", `pane close returned ${String(result.type)} instead of an acknowledgement. Inspect the pane before retrying.`);
+      }
       return textResult(`Closed pane ${params.pane_id}.`, { paneId: params.pane_id });
     },
   });
@@ -908,6 +887,90 @@ export default function registerHerdrExtension(pi: ExtensionAPI): void {
   });
 }
 
+type Inventory = { workspaces: JsonRecord[]; tabs: JsonRecord[]; panes: JsonRecord[]; agents: JsonRecord[] };
+
+async function readInventory(
+  herdr: HerdrClient,
+  caller: CallerContext,
+  allWorkspaces: boolean,
+  signal?: AbortSignal,
+): Promise<Inventory> {
+  if (await herdr.supports("session.snapshot", signal)) {
+    const result = resultWithType(await herdr.command(["api", "snapshot"], signal, 5_000), "session_snapshot", "api snapshot");
+    const snapshot = requiredRecord(result.snapshot, "snapshot", "api snapshot");
+    const collections = ["workspaces", "tabs", "panes", "agents"] as const;
+    for (const field of collections) {
+      if (!Array.isArray(snapshot[field]) || !snapshot[field].every(isRecord)) {
+        throw new HerdrError("HERDR_PROTOCOL_ERROR", `api snapshot did not return ${field}.`);
+      }
+      for (const record of snapshot[field] as JsonRecord[]) {
+        requiredString(record.workspace_id, `${field}.workspace_id`, "api snapshot");
+      }
+    }
+    const inventory = snapshot as Inventory;
+    const workspaces = allWorkspaces ? inventory.workspaces : inventory.workspaces.filter((workspace) => workspace.workspace_id === caller.workspaceId);
+    if (!allWorkspaces && workspaces.length !== 1) {
+      throw new HerdrError("HERDR_PROTOCOL_ERROR", `Herdr did not return caller workspace ${caller.workspaceId}.`);
+    }
+    const workspaceIds = new Set(workspaces.map((workspace) => workspace.workspace_id));
+    const scoped = (records: JsonRecord[]) => records.filter((record) => workspaceIds.has(record.workspace_id));
+    return { workspaces, tabs: scoped(inventory.tabs), panes: scoped(inventory.panes), agents: scoped(inventory.agents) };
+  }
+
+  const workspacesResult = resultWithType(await herdr.command(["workspace", "list"], signal, 5_000), "workspace_list", "workspace list");
+  const workspaces = Array.isArray(workspacesResult.workspaces) ? workspacesResult.workspaces : undefined;
+  if (!workspaces || !workspaces.every(isRecord)) {
+    throw new HerdrError("HERDR_PROTOCOL_ERROR", "workspace list did not return workspaces.");
+  }
+
+  const scopedWorkspaces = allWorkspaces
+    ? workspaces
+    : workspaces.filter((workspace) => workspace.workspace_id === caller.workspaceId);
+  if (!allWorkspaces && scopedWorkspaces.length !== 1) {
+    throw new HerdrError("HERDR_PROTOCOL_ERROR", `Herdr did not return caller workspace ${caller.workspaceId}.`);
+  }
+
+  const tabs: JsonRecord[] = [];
+  const panes: JsonRecord[] = [];
+  for (const workspace of scopedWorkspaces) {
+    const workspaceId = requiredString(workspace.workspace_id, "workspace_id", "workspace list");
+    const tabResult = resultWithType(await herdr.command(["tab", "list", "--workspace", workspaceId], signal, 5_000), "tab_list", "tab list");
+    const paneResult = resultWithType(await herdr.command(["pane", "list", "--workspace", workspaceId], signal, 5_000), "pane_list", "pane list");
+    if (!Array.isArray(tabResult.tabs) || !tabResult.tabs.every(isRecord)) {
+      throw new HerdrError("HERDR_PROTOCOL_ERROR", "tab list did not return tabs.");
+    }
+    if (!Array.isArray(paneResult.panes) || !paneResult.panes.every(isRecord)) {
+      throw new HerdrError("HERDR_PROTOCOL_ERROR", "pane list did not return panes.");
+    }
+    tabs.push(...tabResult.tabs);
+    panes.push(...paneResult.panes);
+  }
+
+  const agentResult = resultWithType(await herdr.command(["agent", "list"], signal, 5_000), "agent_list", "agent list");
+  if (!Array.isArray(agentResult.agents) || !agentResult.agents.every(isRecord)) {
+    throw new HerdrError("HERDR_PROTOCOL_ERROR", "agent list did not return agents.");
+  }
+  const workspaceIds = new Set(scopedWorkspaces.map((workspace) => workspace.workspace_id));
+  const agents = allWorkspaces
+    ? agentResult.agents
+    : agentResult.agents.filter((agent) => workspaceIds.has(agent.workspace_id));
+
+  return { workspaces: scopedWorkspaces, tabs, panes, agents };
+}
+
+function renderReadOutput(stdout: string, operation: string, fallbackDetails: JsonRecord): { text: string; details: JsonRecord } {
+  let decoded: unknown;
+  try {
+    decoded = JSON.parse(stdout);
+  } catch {
+    return renderReadText(stdout, fallbackDetails);
+  }
+  if (isRecord(decoded) && typeof decoded.id === "string" && ("result" in decoded || "error" in decoded)) {
+    return renderRead(resultWithType(jsonEnvelope(stdout, operation), "pane_read", operation), operation);
+  }
+  return renderReadText(stdout, fallbackDetails);
+}
+
 async function readPaneOutput(
   herdr: HerdrClient,
   paneId: string,
@@ -919,22 +982,7 @@ async function readPaneOutput(
   const args = ["pane", "read", paneId];
   appendReadOptions(args, source, lines, format);
   await herdr.ensureCapabilities(signal);
-
-  let result;
-  try {
-    result = await herdr.run(args, signal, 10_000);
-    return renderRead(resultWithType(result, "pane_read", "pane read"), "pane read");
-  } catch (error) {
-    if (!(error instanceof HerdrError) || error.code !== "HERDR_PROTOCOL_ERROR") throw error;
-
-    let text;
-    try {
-      text = await herdr.runRaw(args, signal, 10_000);
-    } catch {
-      throw error;
-    }
-    return renderReadText(text, { paneId, source, format, herdrTruncated: false });
-  }
+  return renderReadOutput(await herdr.runRaw(args, signal, 10_000), "pane read", { paneId, source, format, herdrTruncated: false });
 }
 
 async function readAgentOutput(
@@ -946,13 +994,7 @@ async function readAgentOutput(
   signal?: AbortSignal,
 ): Promise<{ text: string; details: JsonRecord }> {
   await herdr.ensureCapabilities(signal);
-  try {
-    return renderRead(resultWithType(await herdr.run(args, signal, 10_000), "pane_read", "agent read"), "agent read");
-  } catch (error) {
-    if (!(error instanceof HerdrError) || error.code !== "HERDR_PROTOCOL_ERROR") throw error;
-    const text = await herdr.runRaw(args, signal, 10_000);
-    return renderReadText(text, { target, source, format, herdrTruncated: false });
-  }
+  return renderReadOutput(await herdr.runRaw(args, signal, 10_000), "agent read", { target, source, format, herdrTruncated: false });
 }
 
 async function createWorkTab(
@@ -974,7 +1016,10 @@ async function createWorkTab(
 
 async function closeCompletedWork(herdr: HerdrClient, tabId: string): Promise<string | undefined> {
   try {
-    await herdr.command(["tab", "close", tabId], undefined, 5_000);
+    const result = await herdr.command(["tab", "close", tabId], undefined, 5_000);
+    if (result.type !== "ok" && result.type !== "tab_closed") {
+      return `tab close returned ${String(result.type)} instead of an acknowledgement. Inspect the tab before retrying.`;
+    }
     return undefined;
   } catch (error) {
     return error instanceof Error ? error.message : String(error);
@@ -982,6 +1027,7 @@ async function closeCompletedWork(herdr: HerdrClient, tabId: string): Promise<st
 }
 
 type CommandRunner = {
+  commandId: string;
   directory: string;
   cwd: string;
   runnerPath: string;
@@ -997,10 +1043,11 @@ async function createCommandRunner(
   closeOnExit = false,
 ): Promise<CommandRunner> {
   const { chmod, mkdtemp, rm, writeFile } = await import("node:fs/promises");
-  const { join } = await import("node:path");
+  const { basename, join } = await import("node:path");
   const { tmpdir } = await import("node:os");
 
   const directory = await mkdtemp(join(tmpdir(), "pi-herdr-"));
+  const commandId = basename(directory);
   const commandPath = join(directory, "command.sh");
   const runnerPath = join(directory, "runner.sh");
   const statusPath = join(directory, "status");
@@ -1012,24 +1059,23 @@ async function createCommandRunner(
     : "";
 
   const commandScript = `#! /bin/sh\ncd ${quoted(cwd)} || exit 125\nexec /bin/sh -c ${quoted(command)}\n`;
+  const recordPrefix = `{"commandId":${JSON.stringify(commandId)}`;
   const runnerScript = [
     "#! /bin/sh",
     "set +e",
+    "publish() {",
+    `  printf '%s\\n' "$1" > ${quoted(`${statusPath}.tmp`)} && mv ${quoted(`${statusPath}.tmp`)} ${quoted(statusPath)}`,
+    "}",
+    `publish ${quoted(`${recordPrefix},"phase":"running","pid":`)}"$$"'}' || exit 125`,
     `touch ${quoted(heartbeatPath)}`,
-    `(while :; do touch ${quoted(heartbeatPath)}; sleep 3600; done) &`,
-    "heartbeat_pid=$!",
-    "trap 'kill \"$heartbeat_pid\" 2>/dev/null || true' EXIT",
     `/bin/sh ${quoted(commandPath)}`,
     "status=$?",
-    `tmp=${quoted(`${statusPath}.tmp`)}`,
-    `printf '%s\\n' \"$status\" > \"$tmp\" && mv \"$tmp\" ${quoted(statusPath)}`,
+    `publish ${quoted(`${recordPrefix},"phase":"completed","exitCode":`)}"$status"'}'`,
     ...(closeCommand ? [
-      `kill \"$heartbeat_pid\" 2>/dev/null || true`,
-      `wait \"$heartbeat_pid\" 2>/dev/null || true`,
-      `rm -f ${quoted(commandPath)} ${quoted(statusPath)} ${quoted(heartbeatPath)} \"$0\"`,
+      `rm -f ${quoted(commandPath)} ${quoted(statusPath)} ${quoted(heartbeatPath)} "$0"`,
       `rmdir ${quoted(directory)} 2>/dev/null || true`,
       closeCommand,
-    ] : [`rm -f ${quoted(commandPath)} \"$0\"`]),
+    ] : [`rm -f ${quoted(commandPath)} "$0"`]),
     "exit \"$status\"",
     "",
   ].join("\n");
@@ -1045,6 +1091,7 @@ async function createCommandRunner(
   }
 
   return {
+    commandId,
     directory,
     cwd,
     runnerPath,
@@ -1058,7 +1105,7 @@ function shellQuote(value: string): string {
 }
 
 async function pruneStaleRunners(): Promise<void> {
-  const { readdir, rm, stat } = await import("node:fs/promises");
+  const { readFile, readdir, rm, stat } = await import("node:fs/promises");
   const { join } = await import("node:path");
   const { tmpdir } = await import("node:os");
   const staleBefore = Date.now() - 24 * 60 * 60 * 1_000;
@@ -1067,6 +1114,12 @@ async function pruneStaleRunners(): Promise<void> {
     await Promise.all(names.filter((name) => name.startsWith("pi-herdr-")).map(async (name) => {
       const path = join(tmpdir(), name);
       try {
+        try {
+          const record = runnerRecord(await readFile(join(path, "status"), "utf8"), name);
+          if (record.phase === "running" && processIsAlive(record.pid)) return;
+        } catch {
+          // Older runners only expose a heartbeat; keep their age-based pruning.
+        }
         const heartbeatPath = join(path, "heartbeat");
         const lastActivity = await stat(heartbeatPath).then((heartbeat) => heartbeat.mtimeMs, async () => (await stat(path)).mtimeMs);
         if (lastActivity < staleBefore) await rm(path, { recursive: true, force: true });
@@ -1079,43 +1132,78 @@ async function pruneStaleRunners(): Promise<void> {
   }
 }
 
-async function launchRunner(
-  herdr: HerdrClient,
-  caller: CallerContext,
-  runner: CommandRunner,
-  label: string | undefined,
-  signal?: AbortSignal,
-): Promise<HerdrTopology & { tabId: string }> {
-  const created = await createWorkTab(herdr, caller, runner.cwd, label, signal);
+type ExecutionState = "start_unconfirmed" | "running" | "completed";
+type Completion =
+  | { kind: "completed"; executionState: "completed"; exitCode: number }
+  | { kind: "cancelled" | "timeout" | "completion_unknown"; executionState: ExecutionState; reason?: string };
 
-  try {
-    await herdr.runRaw(["pane", "run", created.paneId, shellQuote(runner.runnerPath)], signal, 10_000);
-  } catch (error) {
-    const rollback = await closeCompletedWork(herdr, created.tabId);
-    await runner.cleanup();
-    const message = error instanceof Error ? error.message : String(error);
-    throw new HerdrError("HERDR_SERVER_ERROR", `${message}${rollback ? ` Rollback failed: ${rollback}` : ""}`);
+type RunnerRecord =
+  | { commandId: string; phase: "running"; pid: number }
+  | { commandId: string; phase: "completed"; exitCode: number };
+
+function runnerRecord(raw: string, commandId: string): RunnerRecord {
+  const decoded: unknown = JSON.parse(raw);
+  if (!isRecord(decoded) || decoded.commandId !== commandId) throw new Error("Command record identity does not match.");
+  if (decoded.phase === "running" && Number.isSafeInteger(decoded.pid) && (decoded.pid as number) > 1) {
+    return decoded as RunnerRecord;
   }
-
-  return created;
+  if (decoded.phase === "completed" && Number.isInteger(decoded.exitCode) && (decoded.exitCode as number) >= 0 && (decoded.exitCode as number) <= 255) {
+    return decoded as RunnerRecord;
+  }
+  throw new Error("Command record has an invalid phase, PID, or exit code.");
 }
 
-async function waitForStatusFile(
-  statusPath: string,
-  timeoutMs: number,
-  signal?: AbortSignal,
-): Promise<{ kind: "completed"; exitCode: number } | { kind: "cancelled" | "timeout" }> {
-  const { readFile } = await import("node:fs/promises");
-  const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    if (signal?.aborted) return { kind: "cancelled" };
-    try {
-      const raw = (await readFile(statusPath, "utf8")).trim();
-      if (/^-?\d+$/.test(raw)) return { kind: "completed", exitCode: Number(raw) };
-    } catch {
-      // The runner has not yet atomically published its status.
-    }
-    await new Promise((resolve) => setTimeout(resolve, 100));
+function processIsAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return !(isRecord(error) && error.code === "ESRCH");
   }
-  return signal?.aborted ? { kind: "cancelled" } : { kind: "timeout" };
+}
+
+async function waitForStatusFile(runner: CommandRunner, timeoutMs: number, signal?: AbortSignal): Promise<Completion> {
+  const { readFile } = await import("node:fs/promises");
+  const { setTimeout: delay } = await import("node:timers/promises");
+  const deadline = performance.now() + timeoutMs;
+  let executionState: ExecutionState = "start_unconfirmed";
+
+  const readRecord = async (): Promise<RunnerRecord | undefined> => {
+    try {
+      return runnerRecord(await readFile(runner.statusPath, "utf8"), runner.commandId);
+    } catch (error) {
+      if (isRecord(error) && error.code === "ENOENT") return undefined;
+      throw error;
+    }
+  };
+
+  while (true) {
+    if (signal?.aborted) return { kind: "cancelled", executionState };
+    try {
+      const record = await readRecord();
+      if (signal?.aborted) return { kind: "cancelled", executionState };
+      if (record?.phase === "completed") return { kind: "completed", executionState: "completed", exitCode: record.exitCode };
+      if (record?.phase === "running") {
+        executionState = "running";
+        if (!processIsAlive(record.pid)) {
+          const final = await readRecord();
+          if (signal?.aborted) return { kind: "cancelled", executionState };
+          if (final?.phase === "completed") return { kind: "completed", executionState: "completed", exitCode: final.exitCode };
+          return { kind: "completion_unknown", executionState, reason: "The command wrapper exited without recording an exit code." };
+        }
+      } else if (executionState === "running") {
+        return { kind: "completion_unknown", executionState, reason: "The command record disappeared after execution started." };
+      }
+    } catch (error) {
+      return { kind: "completion_unknown", executionState, reason: error instanceof Error ? error.message : String(error) };
+    }
+    const remaining = deadline - performance.now();
+    if (remaining <= 0) return { kind: "timeout", executionState };
+    try {
+      await delay(Math.min(100, remaining), undefined, { signal });
+    } catch (error) {
+      if (isAbort(error, signal)) return { kind: "cancelled", executionState };
+      throw error;
+    }
+  }
 }
