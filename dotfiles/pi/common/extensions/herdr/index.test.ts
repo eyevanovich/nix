@@ -133,10 +133,63 @@ test("registers no Herdr tools outside Herdr", async () => {
   expect(pi.calls).toHaveLength(0);
 });
 
+test("checks capabilities without consulting a version and caches successful probes", async () => {
+  enableHerdr();
+  const pi = createPi((_command, args) => {
+    if (args.join(" ") === "--version") throw new Error("Compatibility must not depend on a version");
+    if (args.join(" ") === "pane run w1:p2 printf done") return { code: 0, stdout: "", stderr: "" };
+    throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
+  });
+
+  await loadExtension(pi);
+  const run = tool(pi, "herdr_pane_run");
+  await run.execute("first", { pane_id: "w1:p2", command: "printf done" });
+  await run.execute("second", { pane_id: "w1:p2", command: "printf done" });
+
+  const commands = pi.calls.map((call) => call.args.join(" "));
+  expect(commands).not.toContain("--version");
+  expect(commands.filter((command) => command === "pane run --help")).toHaveLength(1);
+  expect(commands.filter((command) => command === "api schema --json")).toHaveLength(1);
+  expect(commands.filter((command) => command === "pane run w1:p2 printf done")).toHaveLength(2);
+});
+
+test.each([
+  ["missing CLI", "pane run --help", { code: 2, stdout: "", stderr: "unknown command: run" }, "unknown command: run"],
+  ["missing method", "api schema --json", { code: 0, stdout: JSON.stringify({ schemas: { request: { oneOf: [] } } }), stderr: "" }, "missing required CLI capabilities: workspace.list"],
+  ["malformed schema", "api schema --json", { code: 0, stdout: "not JSON", stderr: "" }, "malformed JSON"],
+  ["failed schema", "api schema --json", { code: 1, stdout: "", stderr: "schema unavailable" }, "schema unavailable"],
+] as const)("blocks mutations and retries discovery after %s", async (_name, probe, failure, message) => {
+  enableHerdr();
+  const pi = createPi((_command, args) => {
+    if (args.join(" ") === "pane run w1:p2 printf done") return { code: 0, stdout: "", stderr: "" };
+    throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
+  });
+  const originalExec = pi.exec;
+  const attempted: string[] = [];
+  let fail = true;
+  pi.exec = async (command, args, options) => {
+    const operation = args.join(" ");
+    attempted.push(operation);
+    if (fail && operation === probe) return failure;
+    return originalExec(command, args, options);
+  };
+
+  await loadExtension(pi);
+  const run = tool(pi, "herdr_pane_run");
+  await expect(run.execute("first", { pane_id: "w1:p2", command: "printf done" })).rejects.toThrow("HERDR_UNSUPPORTED:");
+  expect(attempted).toEqual(probe === "pane run --help" ? [probe] : ["pane run --help", probe]);
+  await expect(run.execute("second", { pane_id: "w1:p2", command: "printf done" })).rejects.toThrow(message);
+  expect(attempted).not.toContain("pane run w1:p2 printf done");
+
+  fail = false;
+  await run.execute("retry", { pane_id: "w1:p2", command: "printf done" });
+  expect(attempted.filter((command) => command === "pane run --help")).toHaveLength(3);
+  expect(attempted.at(-1)).toBe("pane run w1:p2 printf done");
+});
+
 test("fails compatibility before topology mutation when Herdr lacks a required schema capability", async () => {
   enableHerdr();
   const pi = createPi((_command, args) => {
-    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     throw new Error(`Topology mutation must not run: ${args.join(" ")}`);
   });
   const originalExec = pi.exec;
@@ -157,7 +210,6 @@ test("herdr_list combines the caller workspace topology and detected agents", as
   enableHerdr();
   const pi = createPi((_command, args) => {
     const command = args.join(" ");
-    if (command === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (command === "workspace list") return success("workspace_list", { workspaces: [{ workspace_id: "w1", label: "project", number: 1, focused: true, pane_count: 1, tab_count: 1, active_tab_id: "w1:t1", agent_status: "working" }] });
     if (command === "tab list --workspace w1") return success("tab_list", { tabs: [{ tab_id: "w1:t1", workspace_id: "w1", label: "main", number: 1, focused: true, pane_count: 1, agent_status: "working" }] });
     if (command === "pane list --workspace w1") return success("pane_list", { panes: [{ pane_id: "w1:p1", terminal_id: "term_1", workspace_id: "w1", tab_id: "w1:t1", focused: true, agent_status: "working", revision: 1, terminal_title: "Pi" }] });
@@ -187,7 +239,6 @@ test("herdr_list keeps long identifiers exact and bounds each inventory section"
   paneIds[0] = longPaneId;
   const pi = createPi((_command, args) => {
     const command = args.join(" ");
-    if (command === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (command === "workspace list") return success("workspace_list", { workspaces: [{ workspace_id: "w1" }] });
     if (command === "tab list --workspace w1") return success("tab_list", { tabs: [{ tab_id: "w1:t1", workspace_id: "w1" }] });
     if (command === "pane list --workspace w1") return success("pane_list", {
@@ -210,7 +261,6 @@ test("herdr_list keeps long identifiers exact and bounds each inventory section"
 test("herdr_run creates an unfocused current-workspace tab then atomically starts its command", async () => {
   enableHerdr();
   const pi = createPi((_command, args) => {
-    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (args.join(" ") === "tab create --workspace w1 --cwd /project --label tests --no-focus") return tabCreated();
     if (args[0] === "pane" && args[1] === "run") return { code: 0, stdout: "", stderr: "" };
     throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
@@ -227,7 +277,6 @@ test("herdr_run creates an unfocused current-workspace tab then atomically start
 test("herdr_run with close_on_exit submits only an extension-owned runner", async () => {
   enableHerdr();
   const pi = createPi((_command, args) => {
-    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (args.join(" ") === "tab create --workspace w1 --cwd /project --label short-lived --no-focus") return tabCreated();
     if (args[0] === "pane" && args[1] === "run") return { code: 0, stdout: "", stderr: "" };
     throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
@@ -250,7 +299,6 @@ test("herdr_run with close_on_exit submits only an extension-owned runner", asyn
 test("herdr_close refuses the canonical caller pane after it has moved", async () => {
   enableHerdr();
   const pi = createPi((_command, args) => {
-    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (args.join(" ") === "pane current --current") return success("pane_current", { pane: { pane_id: "w2:p7", terminal_id: "term_caller", workspace_id: "w2", tab_id: "w2:t1", focused: true, agent_status: "working", revision: 4 } });
     throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
   });
@@ -264,7 +312,6 @@ test("herdr_close refuses the canonical caller pane after it has moved", async (
 test("herdr_pane_run accepts Herdr's successful empty acknowledgement", async () => {
   enableHerdr();
   const pi = createPi((_command, args) => {
-    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (args.join(" ") === "pane run w1:p2 printf done") return { code: 0, stdout: "", stderr: "" };
     throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
   });
@@ -273,14 +320,13 @@ test("herdr_pane_run accepts Herdr's successful empty acknowledgement", async ()
   const result = await tool(pi, "herdr_pane_run").execute("test", { pane_id: "w1:p2", command: "printf done" });
 
   expect(result.details).toEqual({ paneId: "w1:p2", command: "printf done" });
-  expect(pi.calls.map((call) => call.args.join(" "))).toContain("--version");
+  expect(pi.calls.map((call) => call.args.join(" "))).toContain("api schema --json");
   expect(pi.calls.map((call) => call.args.join(" "))).toContain("pane run w1:p2 printf done");
 });
 
 test("herdr_pane_run rejects malformed non-empty success output", async () => {
   enableHerdr();
   const pi = createPi((_command, args) => {
-    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (args.join(" ") === "pane run w1:p2 printf done") return { code: 0, stdout: "unexpected output", stderr: "" };
     throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
   });
@@ -293,7 +339,6 @@ test("herdr_pane_run rejects malformed non-empty success output", async () => {
 test("herdr_send_keys accepts Herdr's successful empty acknowledgements", async () => {
   enableHerdr();
   const pi = createPi((_command, args) => {
-    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (args.join(" ") === "pane send-text w1:p2 echo ready") return { code: 0, stdout: "", stderr: "" };
     if (args.join(" ") === "pane send-keys w1:p2 enter") return { code: 0, stdout: "", stderr: "" };
     throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
@@ -303,7 +348,7 @@ test("herdr_send_keys accepts Herdr's successful empty acknowledgements", async 
   const result = await tool(pi, "herdr_send_keys").execute("test", { pane_id: "w1:p2", text: "echo ready", keys: ["enter"] });
 
   expect(result.details).toEqual({ paneId: "w1:p2", text: "echo ready", keys: ["enter"] });
-  expect(pi.calls.map((call) => call.args.join(" "))).toContain("--version");
+  expect(pi.calls.map((call) => call.args.join(" "))).toContain("api schema --json");
   expect(pi.calls.map((call) => call.args.join(" "))).toContain("pane send-text w1:p2 echo ready");
   expect(pi.calls.map((call) => call.args.join(" "))).toContain("pane send-keys w1:p2 enter");
 });
@@ -311,7 +356,6 @@ test("herdr_send_keys accepts Herdr's successful empty acknowledgements", async 
 test("herdr_agent_send_keys accepts Herdr's successful empty acknowledgement", async () => {
   enableHerdr();
   const pi = createPi((_command, args) => {
-    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (args.join(" ") === "agent send-keys reviewer esc") return { code: 0, stdout: "", stderr: "" };
     throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
   });
@@ -320,14 +364,13 @@ test("herdr_agent_send_keys accepts Herdr's successful empty acknowledgement", a
   const result = await tool(pi, "herdr_agent_send_keys").execute("test", { target: "reviewer", keys: ["esc"] });
 
   expect(result.details).toEqual({ target: "reviewer", keys: ["esc"] });
-  expect(pi.calls.map((call) => call.args.join(" "))).toContain("--version");
+  expect(pi.calls.map((call) => call.args.join(" "))).toContain("api schema --json");
   expect(pi.calls.map((call) => call.args.join(" "))).toContain("agent send-keys reviewer esc");
 });
 
 test("herdr_pane_output returns Pi-truncated recent output and Herdr identifiers", async () => {
   enableHerdr();
   const pi = createPi((_command, args) => {
-    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (args.join(" ") === "pane read w1:p2 --source recent-unwrapped --lines 40") {
       return { code: 0, stdout: "server ready", stderr: "" };
     }
@@ -344,7 +387,6 @@ test("herdr_pane_output returns Pi-truncated recent output and Herdr identifiers
 test("herdr_wait_for_output distinguishes an output match from transport failure", async () => {
   enableHerdr();
   const pi = createPi((_command, args) => {
-    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (args.join(" ") === "pane wait-output w1:p2 --match ready --source recent-unwrapped --timeout 500") {
       return success("output_matched", { pane_id: "w1:p2", revision: 9, matched_line: "ready", read: { pane_id: "w1:p2", workspace_id: "w1", tab_id: "w1:t2", source: "recent_unwrapped", format: "text", text: "ready", revision: 9, truncated: false } });
     }
@@ -361,7 +403,6 @@ test("herdr_run_and_wait creates the tab in its requested cwd", async () => {
   enableHerdr();
   const controller = new AbortController();
   const pi = createPi((_command, args) => {
-    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (args.join(" ") === "tab create --workspace w1 --cwd /other-project --label tests --no-focus") return tabCreated();
     if (args[0] === "pane" && args[1] === "run") {
       setTimeout(() => controller.abort(), 0);
@@ -380,7 +421,6 @@ test("herdr_run_and_wait creates the tab in its requested cwd", async () => {
 test("herdr_agent_start returns canonical topology from Herdr", async () => {
   enableHerdr();
   const pi = createPi((_command, args) => {
-    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (args.join(" ") === "tab create --workspace w1 --cwd /project --label review --no-focus") return tabCreated();
     if (args.join(" ") === "agent start reviewer --kind codex --pane w1:p9 --timeout 30000 -- --model gpt-5") {
       return success("agent_started", { agent: { name: "reviewer", pane_id: "w1:p10", terminal_id: "term_10", workspace_id: "w1", tab_id: "w1:t10", focused: false, agent_status: "idle", revision: 2 }, argv: ["codex", "--model", "gpt-5"] });
@@ -398,7 +438,6 @@ test("herdr_agent_start returns canonical topology from Herdr", async () => {
 test("herdr_agent_prompt forwards one lifecycle-aware Herdr request", async () => {
   enableHerdr();
   const pi = createPi((_command, args) => {
-    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (args.join(" ") === "agent prompt reviewer inspect --wait --until done --timeout 120000") {
       return success("agent_prompted", { agent: { name: "reviewer", pane_id: "w1:p9", terminal_id: "term_9", workspace_id: "w1", tab_id: "w1:t9", focused: false, agent_status: "done", revision: 4 } });
     }
@@ -414,7 +453,6 @@ test("herdr_agent_prompt forwards one lifecycle-aware Herdr request", async () =
 test("herdr_agent_wait preserves cancellation as a normal lifecycle outcome", async () => {
   enableHerdr();
   const pi = createPi((_command, args) => {
-    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (args.join(" ") === "agent wait reviewer --until idle --timeout 10") return { code: 0, stdout: "", stderr: "", killed: true };
     throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
   });
@@ -428,7 +466,6 @@ test("herdr_agent_wait preserves cancellation as a normal lifecycle outcome", as
 test("herdr_agent_start preserves cancellation instead of misreporting partial success", async () => {
   enableHerdr();
   const pi = createPi((_command, args) => {
-    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (args.join(" ") === "agent start reviewer --kind codex --pane w1:p1 --timeout 30000") return { code: 0, stdout: "", stderr: "", killed: true };
     throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
   });
@@ -441,7 +478,6 @@ test("herdr_agent_start preserves cancellation instead of misreporting partial s
 test("herdr_agent_start returns created topology when cancellation follows tab creation", async () => {
   enableHerdr();
   const pi = createPi((_command, args) => {
-    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (args.join(" ") === "tab create --workspace w1 --cwd /project --label worker --no-focus") return tabCreated();
     if (args.join(" ") === "agent start worker --kind codex --pane w1:p9 --timeout 30000") return { code: 0, stdout: "", stderr: "", killed: true };
     throw new Error(`Unexpected Herdr argv: ${args.join(" ")}`);
@@ -456,7 +492,6 @@ test("herdr_agent_start returns created topology when cancellation follows tab c
 test("surfaces a Herdr server error without treating it as malformed output", async () => {
   enableHerdr();
   const pi = createPi((_command, args) => {
-    if (args.join(" ") === "--version") return { code: 0, stdout: "herdr 0.8.2\n", stderr: "" };
     if (args.join(" ") === "agent wait reviewer --until idle --timeout 10") {
       return { code: 1, stdout: "", stderr: JSON.stringify({ error: { code: "agent_not_found", message: "No live agent reviewer" } }) };
     }

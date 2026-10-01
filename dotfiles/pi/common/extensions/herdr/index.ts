@@ -329,20 +329,6 @@ class HerdrClient {
   }
 
   private async probeCapabilities(signal?: AbortSignal): Promise<void> {
-    let version;
-    try {
-      version = await this.pi.exec(this.caller.binary, ["--version"], { signal, timeout: 5_000 });
-    } catch (error) {
-      if (isAbort(error, signal)) throw new HerdrError("HERDR_CANCELLED", "The compatibility probe was cancelled.");
-      throw new HerdrError("HERDR_UNSUPPORTED", "Could not execute HERDR_BIN_PATH.");
-    }
-
-    if (signal?.aborted || version.killed) throw new HerdrError("HERDR_CANCELLED", "The compatibility probe was cancelled.");
-    if (version.code !== 0) throw new HerdrError("HERDR_UNSUPPORTED", renderErrorMessage(version));
-    if (!/^herdr\s+0\.8\.2\s*$/m.test(version.stdout)) {
-      throw new HerdrError("HERDR_UNSUPPORTED", `Expected Herdr 0.8.2; received ${version.stdout.trim() || "an unrecognised version"}.`);
-    }
-
     for (const args of CLI_CAPABILITY_PROBES) {
       try {
         const help = await this.pi.exec(this.caller.binary, args, { signal, timeout: 5_000 });
@@ -374,7 +360,7 @@ class HerdrClient {
     const methods = collectSchemaMethods(decoded);
     const missing = REQUIRED_METHODS.filter((method) => !methods.has(method));
     if (missing.length > 0) {
-      throw new HerdrError("HERDR_UNSUPPORTED", `Herdr 0.8.2 is missing required CLI capabilities: ${missing.join(", ")}.`);
+      throw new HerdrError("HERDR_UNSUPPORTED", `Herdr is missing required CLI capabilities: ${missing.join(", ")}.`);
     }
   }
 
