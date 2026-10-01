@@ -43,12 +43,11 @@ It is not written to disk or carried into a reloaded or replacement session.
 Explicit `/beads-tasks` and `/gitlab-issues` commands bypass the chooser without
 changing the remembered selection.
 
-> **Note:** pi has no conflict-free `ctrl+<letter>` left — every non-control-code
-> letter is bound by either the app or the emacs-style editor. `ctrl+e` overrides
-> the editor's *cursor-to-line-end*; the extension wins the binding, and the
-> **End** key still jumps to line-end, so the loss is negligible. To rebind, edit
-> the `pi.registerShortcut(...)` block in `extension.ts` — `/tasks`, `/beads-tasks`,
-> and `/gitlab-issues` work regardless.
+> **Note:** the managed `keybindings.json` reserves `ctrl+e` for task-picker by
+> binding `tui.editor.cursorLineEnd` to `end` and `ctrl+end` only. This avoids a
+> shortcut conflict while preserving line-end navigation. To rebind task-picker,
+> edit the `pi.registerShortcut(...)` block in `extension.ts` — `/tasks`,
+> `/beads-tasks`, and `/gitlab-issues` work regardless.
 
 ## Keybindings
 
