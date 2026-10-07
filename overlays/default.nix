@@ -62,13 +62,13 @@
 
     headroom-ai-package = python.buildPythonPackage rec {
       pname = "headroom-ai";
-      version = "0.36.5";
+      version = "0.40.0";
       format = "wheel";
 
       src = final.fetchurl {
         name = "headroom_ai-${version}-cp310-abi3-macosx_11_0_arm64.whl";
-        url = "https://files.pythonhosted.org/packages/1b/99/410b64a578f36d249b76915d733873192537e986b2bc911373e6d72839e9/headroom_ai-${version}-cp310-abi3-macosx_11_0_arm64.whl";
-        hash = "sha256-AZDFXwInYNSfYmjzwJcEOPm91acrwCiOJ4j/fouM5zA=";
+        url = "https://files.pythonhosted.org/packages/f6/cf/2e7f237f343187bd4f1edba7f8117e6aa69953b46002a44f5136cc59f896/headroom_ai-${version}-cp310-abi3-macosx_11_0_arm64.whl";
+        hash = "sha256-97AYatXnbVyPdeXebFfgAWNyWOrXVIFXXMyk1XVX9fs=";
       };
 
       dependencies = [
@@ -80,6 +80,7 @@
         python.opentelemetry-api
         python.pyyaml
         python.tomlkit
+        python.truststore
         python.fastapi
         python.uvicorn
         python.orjson
