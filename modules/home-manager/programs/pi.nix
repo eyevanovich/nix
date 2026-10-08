@@ -14,6 +14,7 @@
   profile,
   lib,
   pkgs,
+  pi,
   ...
 }: let
   dotfiles = "${config.xdg.configHome}/nix/dotfiles/pi";
@@ -145,15 +146,16 @@
       "extensions/mysql-connector"
     ];
 
-  # pi is installed from npm (tracks @latest), not nixpkgs.
-  piPrefix = "${config.home.homeDirectory}/.local/state/pi-coding-agent";
-  piBin = "${piPrefix}/bin/pi";
-  piPath = "${piPrefix}/bin:${pkgs.git}/bin:${pkgs.nodejs}/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+  # pi comes from its own flake input (pinned in flake.lock), not nixpkgs.
+  # `pi update` can't update it; use `task update-pi`.
+  piPkg = pi.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  piBin = "${piPkg}/bin/pi";
+  piPath = "${piPkg}/bin:${pkgs.git}/bin:${pkgs.nodejs}/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
   headroomPiCommand = "${pkgs.headroom-pi}/bin/headroom-pi";
 in {
   home.file = homeFiles;
 
-  home.sessionPath = ["${piPrefix}/bin"];
+  home.packages = [piPkg];
 
   home.activation.piAdoptExistingFiles = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
     backupDir="$HOME/.pi/agent/pre-nix-backup"
@@ -191,17 +193,7 @@ in {
       retiredPaths}
   '';
 
-  # Scope PATH per-command with `env`, never `export` — a global export leaks
-  # a macOS PATH into home-manager's later setupLaunchAgents and breaks it.
-  home.activation.piInstallAgent = lib.hm.dag.entryAfter ["writeBoundary"] ''
-    mkdir -p "${piPrefix}"
-    echo "Updating pi-coding-agent to @latest via npm"
-    env PATH="${piPath}" ${pkgs.nodejs}/bin/npm install -g @earendil-works/pi-coding-agent@latest \
-      --prefix "${piPrefix}" --ignore-scripts --no-audit --no-fund >/dev/null 2>&1 \
-      || echo "warning: pi npm install failed; keeping existing install at ${piPrefix}"
-  '';
-
-  home.activation.piPackages = lib.hm.dag.entryAfter ["writeBoundary" "piInstallAgent"] ''
+  home.activation.piPackages = lib.hm.dag.entryAfter ["writeBoundary"] ''
     piBin="${piBin}"
     piPath="${piPath}"
     if [ -x "$piBin" ]; then

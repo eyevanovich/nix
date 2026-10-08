@@ -36,3 +36,6 @@ If you see changes that you didn't do it was probably him but check with him fir
 ## Proportionate reasoning
 - Thinking length matches task. Trivial call (`cat`/`ls`/`git log`) -> ~no preamble.
 - No token-heavy dumps before a simple action.
+
+## Exact-text edits
+- Before editing, locate the symbol’s owning file and read the exact region. Copy the smallest unique `oldText` verbatim; don’t use abbreviated shell output as the source. All blocks in one `edits[]` call match the same original file; if the call fails, none were applied. After a successful edit or formatting, reread before editing that region again. If an edit fails, check the current file and path before retrying.

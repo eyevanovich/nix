@@ -54,6 +54,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # pi coding agent, built from source. Bump with `task update-pi`.
+    pi.url = "github:earendil-works/pi/stable";
+
     # pinned nixpkgs for localstack (python3.13-plux test broken on unstable)
     nixpkgs-localstack.url = "github:NixOS/nixpkgs/16c7794d0a28b5a37904d55bcca36003b9109aaa";
   };

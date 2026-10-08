@@ -50,6 +50,12 @@ tasks:
     cmds:
     - nix flake update nixpkgs
 
+  update-pi:
+    desc: "Bump the pi flake input to the latest stable release, then rebuild"
+    cmds:
+      - nix flake update pi
+      - task: rebuild
+
   update-omp:
     desc: "Pin Oh My Pi to GitHub's latest stable release"
     cmds:
