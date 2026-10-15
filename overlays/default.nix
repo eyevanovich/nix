@@ -14,6 +14,12 @@
       doInstallCheck = false;
     });
   })
+  # atuin e2e_capture PTY test times out in the build sandbox.
+  (final: prev: {
+    atuin = prev.atuin.overrideAttrs (_: {
+      doCheck = false;
+    });
+  })
   (final: prev: let
     python = final.python313Packages;
     headroomTreeSitterLanguagePack = python.buildPythonPackage rec {
