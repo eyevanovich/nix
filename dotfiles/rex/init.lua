@@ -1,7 +1,7 @@
--- Zellij-style bindings. Zellij's Ctrl+<letter> modes map to Rex key modes.
+-- Zellij-inspired bindings. Modes are entered with a key, then act on the next key.
 -- Escape leaves any mode.
 
--- Shared (no mode): Alt-based, like zellij's shared bindings
+-- Shared (no mode): Alt-based bindings
 rex.bind("alt+h", "pane.focus", { direction = "left" })
 rex.bind("alt+j", "pane.focus", { direction = "down" })
 rex.bind("alt+k", "pane.focus", { direction = "up" })
@@ -17,8 +17,8 @@ rex.bind("alt+i", "client.tab.move.backward")
 rex.bind("alt+o", "client.tab.move.forward")
 rex.bind("alt+f", "pane.zoom")
 
--- Pane mode (Ctrl+P)
-rex.bind("ctrl+p", "client.mode.enter", { name = "pane" })
+-- Pane mode (Alt+P)
+rex.bind("alt+p", "client.mode.enter", { name = "pane" })
 rex.bind("pane/h", "pane.focus", { direction = "left" })
 rex.bind("pane/j", "pane.focus", { direction = "down" })
 rex.bind("pane/k", "pane.focus", { direction = "up" })
@@ -55,8 +55,8 @@ rex.bind("tab/7", "client.tab.goto", { index = 7 })
 rex.bind("tab/8", "client.tab.goto", { index = 8 })
 rex.bind("tab/9", "client.tab.goto", { index = 9 })
 
--- Resize mode (Ctrl+N)
-rex.bind("ctrl+n", "client.mode.enter", { name = "resize" })
+-- Resize mode (Alt+R)
+rex.bind("alt+r", "client.mode.enter", { name = "resize" })
 rex.bind("resize/h", "pane.resize", { direction = "left" })
 rex.bind("resize/j", "pane.resize", { direction = "down" })
 rex.bind("resize/k", "pane.resize", { direction = "up" })
