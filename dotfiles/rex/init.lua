@@ -2,18 +2,33 @@
 -- Escape leaves any mode.
 
 -- Shared (no mode): Alt-based bindings
+rex.bind("alt+n", "session.new")
 rex.bind("alt+h", "pane.focus", { direction = "left" })
 rex.bind("alt+j", "pane.focus", { direction = "down" })
 rex.bind("alt+k", "pane.focus", { direction = "up" })
 rex.bind("alt+l", "pane.focus", { direction = "right" })
-rex.bind("alt+n", "pane.split", { direction = "right" })
 rex.bind("alt+-", "pane.split", { direction = "down" })  -- horizontal split (stacked)
 rex.bind("alt+v", "pane.split", { direction = "right" }) -- vertical split (side by side)
-rex.bind("alt+1", "client.tab.goto", { index = 1 })
-rex.bind("alt+2", "client.tab.goto", { index = 2 })
-rex.bind("alt+3", "client.tab.goto", { index = 3 })
-rex.bind("alt+4", "client.tab.goto", { index = 4 })
-rex.bind("alt+i", "client.tab.move.backward")
+
+-- Option+1..9: switch to session N (Command+1..9 still switches tabs)
+rex.action{
+  name = "goto_session",
+  title = "Go to Session by Number",
+  args = { index = "integer" },
+  run = function(ctx, args)
+    local res, err = rex.call("session.list")
+    if err ~= nil then error(err, 0) end
+    local s = res.sessions[args.index]
+    if s == nil then error("no session " .. args.index, 0) end
+    rex.client.queue("session.select", { session_id = s.session_id })
+  end,
+}
+for i = 1, 9 do
+  rex.bind("alt+" .. i, "goto_session", { index = i })
+end
+
+rex.bind("alt+[", "client.tab.previous")
+rex.bind("alt+]", "client.tab.next")
 rex.bind("alt+o", "client.tab.move.forward")
 rex.bind("alt+f", "pane.zoom")
 
