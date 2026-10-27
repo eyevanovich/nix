@@ -97,6 +97,33 @@ run_in_herdr() {
   fi
 }
 
+run_in_rex() {
+  local mode=$1
+  local direction=$2
+  local fullscreen=$3
+  shift 3
+
+  require_command rex
+  require_command jq
+
+  # shortcut: Rex block closes when its command exits, so no cleanup step; upgrade if pane must outlive command
+  local rex_split=right
+  [[ $direction == down ]] && rex_split=below
+
+  local block_id
+  block_id=$(
+    rex split --json --focus --cwd "$PWD" --split "$rex_split" -- "$@" |
+      jq -er '.block_ids[0] | strings | select(length > 0)'
+  ) || fail "could not create Rex block"
+
+  if [[ $mode == popup ]]; then
+    if ! rex zoom --on -b "$block_id" >/dev/null; then
+      rex block close "$block_id" >/dev/null 2>&1 || true
+      fail "could not zoom Rex block $block_id"
+    fi
+  fi
+}
+
 run_in_zellij() {
   local mode=$1
   local direction=$2
@@ -158,10 +185,12 @@ main() {
 
   if [[ -n ${HERDR_PANE_ID:-} ]]; then
     run_in_herdr "$mode" "$direction" "$@"
+  elif [[ -n ${REX_BLOCK:-} ]]; then
+    run_in_rex "$mode" "$direction" "$fullscreen" "$@"
   elif [[ -n ${ZELLIJ:-} ]]; then
     run_in_zellij "$mode" "$direction" "$fullscreen" "$@"
   else
-    fail "not running inside Herdr or Zellij"
+    fail "not running inside Rex, Herdr, or Zellij"
   fi
 }
 

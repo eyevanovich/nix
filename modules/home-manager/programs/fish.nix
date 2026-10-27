@@ -25,6 +25,10 @@
 
         fish_add_path "/opt/homebrew/bin/"
 
+        if set -q REX_BIN_DIR
+          fish_add_path --path --prepend --move $REX_BIN_DIR
+        end
+
         fnm env --shell fish | source
 
         ##Keep this at the end
