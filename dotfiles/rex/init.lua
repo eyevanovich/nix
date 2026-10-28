@@ -37,8 +37,12 @@ rex.bind("alt+h", "focus_keep_zoom", { direction = "left" })
 rex.bind("alt+j", "focus_keep_zoom", { direction = "down" })
 rex.bind("alt+k", "focus_keep_zoom", { direction = "up" })
 rex.bind("alt+l", "focus_keep_zoom", { direction = "right" })
-rex.bind("alt+-", "pane.split", { direction = "down" })  -- horizontal split (stacked)
+rex.bind("alt+=", "pane.resize", { direction = "right", amount = 5 }) -- grow width
+rex.bind("alt+-", "pane.resize", { direction = "left", amount = 5 })  -- shrink width
+rex.bind("cmd+alt+=", "pane.resize", { direction = "down", amount = 5 }) -- grow height
+rex.bind("cmd+alt+-", "pane.resize", { direction = "up", amount = 5 })  -- shrink height
 rex.bind("alt+v", "pane.split", { direction = "right" }) -- vertical split (side by side)
+rex.bind("alt+g", "pane.split", { direction = "down" })  -- horizontal split (stacked)
 
 -- Option+1..9: switch to session N (Command+1..9 still switches tabs)
 rex.action{
