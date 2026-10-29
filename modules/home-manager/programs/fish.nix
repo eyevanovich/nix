@@ -4,6 +4,10 @@
   profile,
   ...
 }: {
+  home.sessionPath = [
+    "/Users/ipiesh/Library/Application Support/com.superlogical.rex/RexServer/Versions/Current/Rex Server.app/Contents/MacOS"
+  ];
+
   programs.fish = {
     enable = true;
     interactiveShellInit =
