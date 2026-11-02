@@ -198,6 +198,10 @@
 
       on-window-detected = [
         {
+          "if".app-id = "com.superlogical.rex";
+          run = ["move-node-to-workspace Term"];
+        }
+        {
           "if".app-id = "com.github.wez.wezterm";
           run = ["move-node-to-workspace Term"];
         }
