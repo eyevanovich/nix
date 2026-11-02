@@ -38,6 +38,7 @@
             "Applications/1password.app"
             "Applications/WezTerm.app"
             "Applications/Ghostty.app"
+            "Applications/Rex Beta.app"
             "Applications/Orbstack.app"
             "Applications/Obsidian.app"
             "Applications/Tidal.app"
