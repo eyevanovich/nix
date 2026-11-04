@@ -141,3 +141,6 @@ rex.bind("scroll/j", "client.prompt.next")
 
 -- Use Ctrl+G to leave everything, like zellij's locked mode toggle
 rex.bind("ctrl+g", "client.mode.exit_all")
+
+-- rexdiff (installed via `go install`; rexdiff.lua is written by `rexdiff install`)
+require("rexdiff")
