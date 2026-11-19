@@ -68,8 +68,6 @@
       "${piDir}/extensions/task-picker" = link "${dotfiles}/common/extensions/task-picker";
       "${piDir}/extensions/subagent/config.json" =
         link "${dotfiles}/common/extensions/subagent/config.json";
-      "${piDir}/extensions/zellij" = link "${dotfiles}/common/extensions/zellij";
-      "${piDir}/extensions/herdr" = link "${dotfiles}/common/extensions/herdr";
     };
 
   profileFiles = {
@@ -106,6 +104,8 @@
 
   retiredPaths = [
     "${piDir}/extensions/beads"
+    "${piDir}/extensions/zellij"
+    "${piDir}/extensions/herdr"
   ];
 
   piPackages =
@@ -139,7 +139,6 @@
   # on activation. path is relative to ~/.pi/agent.
   npmExtensions =
     [
-      "extensions/herdr"
       "extensions/task-picker"
     ]
     ++ lib.optionals (profile == "work") [

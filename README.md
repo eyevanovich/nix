@@ -126,7 +126,6 @@ Both `build` and `rebuild` accept an optional hostname argument: `task rebuild -
 │           ├── sqls.nix
 │           ├── starship.nix
 │           ├── wezterm.nix
-│           └── zellij.nix
 │
 ├── dotfiles/                          # Raw config files symlinked by home-manager
 │   ├── helix/
@@ -134,7 +133,6 @@ Both `build` and `rebuild` accept an optional hostname argument: `task rebuild -
 │   ├── starship/
 │   ├── wezterm/
 │   ├── yazi/
-│   └── zellij/
 │
 └── overlays/                          # Nixpkgs overlays (package overrides)
     └── default.nix

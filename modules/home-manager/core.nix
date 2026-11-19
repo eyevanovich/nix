@@ -57,7 +57,6 @@
       ripgrep
       fnm
       claude-code
-      herdr
       tmux
 
       # langs

@@ -56,7 +56,6 @@ in {
       m = "make";
       t = "task";
       lg = "lazygit";
-      j = "zellij -l welcome";
     };
     plugins = [
       {
@@ -82,13 +81,6 @@ in {
       #   };
       # }
     ];
-    functions.jn = ''
-      if test (count $argv) -eq 0
-        echo "Usage: jn <session-name>"
-        return 1
-      end
-      zellij --session $argv[1] --new-session-with-layout hx
-    '';
     functions.fish_user_key_bindings = ''
       bind ctrl-r _atuin_search
       bind -M insert ctrl-r _atuin_search

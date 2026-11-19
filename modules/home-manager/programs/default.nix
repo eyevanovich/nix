@@ -2,8 +2,6 @@
   imports = [
     ./bat.nix
     ./helix.nix
-    ./zellij.nix
-    ./herdr.nix
     ./rex.nix
     ./mux-run.nix
     ./karabiner.nix

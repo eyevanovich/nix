@@ -28,7 +28,7 @@ modules/
     settings/      # nix-core, system preferences, host-users
   home-manager/    # Home Manager user-level config
     core.nix       # home.packages — all CLI tools and dev packages
-    programs/      # Per-program modules (helix, fish, git, wezterm, zellij, etc.)
+    programs/      # Per-program modules (helix, fish, git, wezterm, etc.)
 dotfiles/          # Mutable config files symlinked from home-manager modules
 ```
 
@@ -55,7 +55,7 @@ home.file.".config/helix/config.toml".source =
     "${config.xdg.configHome}/nix/dotfiles/helix/config.toml";
 ```
 
-**Plain `source` with `recursive = true` (wezterm, zellij, karabiner, starship):** Files
+**Plain `source` with `recursive = true` (wezterm, karabiner, starship):** Files
 are copied into the Nix store at build time — edits require a rebuild to take effect:
 ```nix
 home.file.".config/wezterm" = {
