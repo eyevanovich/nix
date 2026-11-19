@@ -15,13 +15,11 @@
     ./ghostty.nix
     ./starship.nix
     ./atuin.nix
-    ./nushell.nix
     ./zoxide.nix
     ./carapace.nix
     ./opencode.nix
     ./claude-code.nix
     ./pi.nix
-    ./omp.nix
     ./rtk.nix
   ];
 }

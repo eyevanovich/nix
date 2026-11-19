@@ -1,4 +1,4 @@
-{config, ...}: {
+{...}: {
   programs.starship = {
     enable = true;
     enableFishIntegration = true;
@@ -6,7 +6,7 @@
   };
 
   home.file.".config/starship" = {
-    source = "${config.xdg.configHome}/nix/dotfiles/starship";
+    source = ../../../dotfiles/starship;
     recursive = true;
   };
 }

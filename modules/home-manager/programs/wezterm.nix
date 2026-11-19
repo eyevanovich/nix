@@ -1,5 +1,5 @@
 {
-  config,
+  lib,
   pkgs,
   ...
 }: let
@@ -14,17 +14,19 @@
       }}
     '';
 in {
-  programs.wezterm = {
-    enable = true;
-  };
+  config = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
+    programs.wezterm = {
+      enable = true;
+    };
 
-  home.file.".config/wezterm" = {
-    source = "${config.xdg.configHome}/nix/dotfiles/wezterm";
-    recursive = true;
-  };
+    home.file.".config/wezterm" = {
+      source = ../../../dotfiles/wezterm;
+      recursive = true;
+    };
 
-  home.file.".terminfo" = {
-    source = "${wezterm-terminfo}/share/terminfo";
-    recursive = true;
+    home.file.".terminfo" = {
+      source = "${wezterm-terminfo}/share/terminfo";
+      recursive = true;
+    };
   };
 }

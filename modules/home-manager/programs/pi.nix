@@ -150,7 +150,7 @@
   # `pi update` can't update it; use `task update-pi`.
   piPkg = pi.packages.${pkgs.stdenv.hostPlatform.system}.default;
   piBin = "${piPkg}/bin/pi";
-  piPath = "${piPkg}/bin:${pkgs.git}/bin:${pkgs.nodejs}/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+  piPath = "${piPkg}/bin:${pkgs.git}/bin:${pkgs.nodejs}/bin:${lib.optionalString pkgs.stdenv.hostPlatform.isDarwin "/opt/homebrew/bin:"}/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
   headroomPiCommand = "${pkgs.headroom-pi}/bin/headroom-pi";
 in {
   home.file = homeFiles;

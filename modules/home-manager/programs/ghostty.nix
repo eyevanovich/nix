@@ -1,9 +1,13 @@
-{pkgs, ...}: let
+{
+  lib,
+  pkgs,
+  ...
+}: let
   ghostty-mock = pkgs.writeShellScriptBin "gostty-mock" ''
     true
   '';
 in {
-  programs.ghostty = {
+  programs.ghostty = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
     package = ghostty-mock;
     enable = true;
     enableFishIntegration = true;

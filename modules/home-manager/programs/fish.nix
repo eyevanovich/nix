@@ -1,10 +1,13 @@
 {
+  config,
   pkgs,
   lib,
   profile,
   ...
-}: {
-  home.sessionPath = [
+}: let
+  isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
+in {
+  home.sessionPath = lib.optionals isDarwin [
     "/Users/ipiesh/Library/Application Support/com.superlogical.rex/RexServer/Versions/Current/Rex Server.app/Contents/MacOS"
   ];
 
@@ -21,13 +24,16 @@
         export NODE_EXTRA_CA_CERTS="/etc/ssl/certs/all_certs.pem"
         export GIT_TERMINAL_PROMPT=0
       ''
-      + lib.optionalString (profile == "personal") ''
+      + lib.optionalString (profile == "personal" && isDarwin) ''
         set -gx SSH_AUTH_SOCK /Users/ipiesh/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh      ''
       + ''
 
-        alias config='/usr/bin/git --git-dir=/Users/ipiesh/.cfg/.git/ --work-tree=/Users/ipiesh'
-
+        alias config='/usr/bin/git --git-dir=${config.home.homeDirectory}/.cfg/.git/ --work-tree=${config.home.homeDirectory}'
+      ''
+      + lib.optionalString isDarwin ''
         fish_add_path "/opt/homebrew/bin/"
+      ''
+      + ''
 
         if set -q REX_BIN_DIR
           fish_add_path --path --prepend --move $REX_BIN_DIR

@@ -1,6 +1,12 @@
-{config, ...}: {
-  home.file.".config/karabiner" = {
-    source = "${config.xdg.configHome}/nix/dotfiles/karabiner";
-    recursive = true;
+{
+  lib,
+  pkgs,
+  ...
+}: {
+  home.file = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
+    ".config/karabiner" = {
+      source = ../../../dotfiles/karabiner;
+      recursive = true;
+    };
   };
 }
