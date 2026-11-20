@@ -125,14 +125,14 @@ Both `build` and `rebuild` accept an optional hostname argument: `task rebuild -
 │           ├── karabiner.nix
 │           ├── sqls.nix
 │           ├── starship.nix
-│           ├── wezterm.nix
+│           └── wezterm.nix
 │
 ├── dotfiles/                          # Raw config files symlinked by home-manager
 │   ├── helix/
 │   ├── karabiner/
 │   ├── starship/
 │   ├── wezterm/
-│   ├── yazi/
+│   └── yazi/
 │
 └── overlays/                          # Nixpkgs overlays (package overrides)
     └── default.nix

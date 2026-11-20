@@ -98,13 +98,13 @@
   # Legacy loose extension files from pre-Nix machines. Back these up to avoid
   # duplicate extension loading once the directory packages are managed.
   legacyPaths = [
-    "${piDir}/extensions/zellij.ts"
     "${piDir}/extensions/permission-gate.ts"
   ];
 
   retiredPaths = [
     "${piDir}/extensions/beads"
     "${piDir}/extensions/zellij"
+    "${piDir}/extensions/zellij.ts"
     "${piDir}/extensions/herdr"
   ];
 
