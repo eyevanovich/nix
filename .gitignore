@@ -19,3 +19,7 @@ dotfiles/pi/common/skills/
 result
 /.pi-subagents/artifacts
 /dotfiles/.pi-subagents/
+
+# python bytecode from local test runs
+__pycache__/
+*.pyc
