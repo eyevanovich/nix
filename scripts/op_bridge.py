@@ -19,6 +19,7 @@ import json
 import os
 import re
 import secrets
+import signal
 import subprocess
 import sys
 import time
@@ -101,6 +102,13 @@ class Handler(BaseHTTPRequestHandler):
         self.reply(200 if p.returncode == 0 else 502, p.stdout if p.returncode == 0 else p.stderr)
 
 
+def close_orphans(target):
+    # A killed `rex forward new` leaves its block listening, and the next start then
+    # fails with "address already in use". This closes every orphaned forward in the
+    # host's default session, not only ours.
+    subprocess.run(["rex", "-S", f"ssh://{target}", "forward", "close", "--orphaned"], capture_output=True)
+
+
 def serve(args):
     if len(args) != 2 or args[0] != "serve" or "@" not in args[1]:
         die("usage: op-bridge serve user@host")
@@ -110,17 +118,26 @@ def serve(args):
     subprocess.run(["ssh", "-o", "BatchMode=yes", target, remote], input=secret.encode(), check=True)
     httpd = ThreadingHTTPServer(("127.0.0.1", n), Handler)
     httpd.secret = secret
+    # Closing the Rex block sends SIGHUP; treat it like Ctrl-C so cleanup runs.
+    for sig in (signal.SIGTERM, signal.SIGHUP):
+        signal.signal(sig, signal.default_int_handler)
+    close_orphans(target)
     tunnel = subprocess.Popen(["rex", "-S", f"ssh://{target}", "forward", "new", "-R", f"127.0.0.1:{n}:127.0.0.1:{n}"])
-    time.sleep(2)
-    if tunnel.poll() is not None:
-        die("rex forward exited; is Rex reachable on that host?")
-    print(f"op-bridge up: {target} -> 127.0.0.1:{n}. Ctrl-C to stop.", flush=True)
     try:
+        time.sleep(2)
+        if tunnel.poll() is not None:
+            die("rex forward exited; is Rex reachable on that host?")
+        print(f"op-bridge up: {target} -> 127.0.0.1:{n}. Ctrl-C to stop.", flush=True)
         httpd.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
         tunnel.terminate()
+        try:
+            tunnel.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            tunnel.kill()
+        close_orphans(target)
         subprocess.run(["ssh", "-o", "BatchMode=yes", target, "rm -f ~/.config/op-bridge/secret"])
 
 

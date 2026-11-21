@@ -1,11 +1,13 @@
 """Loopback test of scripts/op_bridge.py with a fake `op`; no real 1Password."""
 import importlib.util
 import os
+import signal
 import stat
 import subprocess
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from http.server import ThreadingHTTPServer
 
@@ -113,6 +115,62 @@ class Bridge(unittest.TestCase):
     def test_no_secret_file_message(self):
         r = self.op("read", "op://v/i/f", env=dict(self.env, OP_BRIDGE_SECRET_FILE="/nonexistent"))
         self.assertIn("not set up", r.stderr)
+
+
+FAKE_REX = """#!/bin/sh
+echo "rex $*" >> "$OP_BRIDGE_TEST_LOG"
+case "$*" in *"forward new"*) exec sleep 60 ;; esac
+"""
+FAKE_SSH = """#!/bin/sh
+echo "ssh $*" >> "$OP_BRIDGE_TEST_LOG"
+cat > /dev/null 2>&1 || true
+"""
+
+
+class Serve(unittest.TestCase):
+    """`serve` must clean up on every way of stopping, or the next start hits a stale tunnel."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.log = os.path.join(self.tmp, "log")
+        open(self.log, "w").close()
+        for name, body in (("rex", FAKE_REX), ("ssh", FAKE_SSH)):
+            path = os.path.join(self.tmp, name)
+            open(path, "w").write(body)
+            os.chmod(path, 0o755)
+        self.env = dict(os.environ, PATH=self.tmp + os.pathsep + os.environ["PATH"],
+                        OP_BRIDGE_TEST_LOG=self.log, OP_BRIDGE_PORT="0")
+
+    def lines(self):
+        return open(self.log).read().splitlines()
+
+    def stop_with(self, sig):
+        link = os.path.join(self.tmp, "op-bridge")  # the script serves only when named op-bridge
+        if not os.path.exists(link):
+            os.symlink(os.path.abspath(SCRIPT), link)
+        p = subprocess.Popen([sys.executable, link, "serve", "u@h"],
+                             env=dict(self.env, PYTHONUNBUFFERED="1"), stdout=subprocess.PIPE, text=True)
+        self.assertIn("op-bridge up", p.stdout.readline())
+        p.send_signal(sig)
+        self.assertEqual(p.wait(timeout=15), 0)
+        return self.lines()
+
+    def check(self, lines):
+        closes = [i for i, l in enumerate(lines) if "forward close --orphaned" in l]
+        new = [i for i, l in enumerate(lines) if "forward new" in l]
+        self.assertEqual(len(closes), 2, lines)
+        self.assertLess(closes[0], new[0], "orphans must be closed before the tunnel starts")
+        self.assertGreater(closes[1], new[0], "orphans must be closed after the tunnel stops")
+        self.assertIn("rm -f ~/.config/op-bridge/secret", lines[-1])
+
+    def test_cleanup_on_sigint(self):
+        self.check(self.stop_with(signal.SIGINT))
+
+    def test_cleanup_on_sigterm(self):
+        self.check(self.stop_with(signal.SIGTERM))
+
+    def test_cleanup_on_sighup(self):
+        self.check(self.stop_with(signal.SIGHUP))
 
 
 if __name__ == "__main__":
