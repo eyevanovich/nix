@@ -4,6 +4,7 @@
     ./helix.nix
     ./rex.nix
     ./mux-run.nix
+    ./op-bridge.nix
     ./karabiner.nix
     ./git.nix
     ./wezterm.nix

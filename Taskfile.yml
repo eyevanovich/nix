@@ -56,6 +56,11 @@ tasks:
       - nix flake update pi
       - task: rebuild
 
+  test-op-bridge:
+    desc: "Run the op-bridge loopback tests (fake op, no 1Password needed)"
+    cmds:
+      - python3 tests/test_op_bridge.py
+
   upgrade:
     desc: "Update nixpkgs and rebuild the current host"
     cmds:
