@@ -28,6 +28,7 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 DEFAULT_PORT = 17979
+SESSION = "op-bridge"
 ACCOUNT_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 FLAGS = {  # flag -> (dest, takes_value)
     "-n": ("no_newline", 0), "--no-newline": ("no_newline", 0),
@@ -102,11 +103,26 @@ class Handler(BaseHTTPRequestHandler):
         self.reply(200 if p.returncode == 0 else 502, p.stdout if p.returncode == 0 else p.stderr)
 
 
+def rex(target, *args, **kw):
+    return subprocess.run(["rex", "-S", f"ssh://{target}", *args], **kw)
+
+
+def ensure_session(target):
+    # The tunnel is a block in a Rex session, and with several sessions on the host the
+    # CLI refuses to pick a default. Own a dedicated session instead of guessing.
+    r = rex(target, "session", "ls", "--json", capture_output=True, text=True)
+    if r.returncode != 0:
+        die("cannot list Rex sessions: " + (r.stderr.strip() or "is Rex reachable on that host?"))
+    if not any(x.get("label") == SESSION for x in json.loads(r.stdout).get("sessions", [])):
+        r = rex(target, "session", "new", SESSION, "--", "sleep", "infinity", capture_output=True, text=True)
+        if r.returncode != 0:
+            die("cannot create Rex session: " + r.stderr.strip())
+
+
 def close_orphans(target):
     # A killed `rex forward new` leaves its block listening, and the next start then
-    # fails with "address already in use". This closes every orphaned forward in the
-    # host's default session, not only ours.
-    subprocess.run(["rex", "-S", f"ssh://{target}", "forward", "close", "--orphaned"], capture_output=True)
+    # fails with "address already in use". Only our own session is touched.
+    rex(target, "forward", "close", "-s", SESSION, "--orphaned", capture_output=True)
 
 
 def serve(args):
@@ -121,8 +137,9 @@ def serve(args):
     # Closing the Rex block sends SIGHUP; treat it like Ctrl-C so cleanup runs.
     for sig in (signal.SIGTERM, signal.SIGHUP):
         signal.signal(sig, signal.default_int_handler)
+    ensure_session(target)
     close_orphans(target)
-    tunnel = subprocess.Popen(["rex", "-S", f"ssh://{target}", "forward", "new", "-R", f"127.0.0.1:{n}:127.0.0.1:{n}"])
+    tunnel = subprocess.Popen(["rex", "-S", f"ssh://{target}", "forward", "new", "-s", SESSION, "-R", f"127.0.0.1:{n}:127.0.0.1:{n}"])
     try:
         time.sleep(2)
         if tunnel.poll() is not None:

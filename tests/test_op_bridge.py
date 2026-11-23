@@ -1,5 +1,6 @@
 """Loopback test of scripts/op_bridge.py with a fake `op`; no real 1Password."""
 import importlib.util
+import json
 import os
 import signal
 import stat
@@ -119,7 +120,13 @@ class Bridge(unittest.TestCase):
 
 FAKE_REX = """#!/bin/sh
 echo "rex $*" >> "$OP_BRIDGE_TEST_LOG"
-case "$*" in *"forward new"*) exec sleep 60 ;; esac
+case "$*" in
+  *"session ls --json"*) cat "$OP_BRIDGE_TEST_SESSIONS" ;;
+  *"session new"*) echo '{}' ;;
+  *"forward new"*)
+    # like real rex: with several sessions and no -s, the target is ambiguous
+    case "$*" in *" -s op-bridge "*) exec sleep 60 ;; *) echo "session target default is ambiguous" >&2; exit 1 ;; esac ;;
+esac
 """
 FAKE_SSH = """#!/bin/sh
 echo "ssh $*" >> "$OP_BRIDGE_TEST_LOG"
@@ -138,8 +145,14 @@ class Serve(unittest.TestCase):
             path = os.path.join(self.tmp, name)
             open(path, "w").write(body)
             os.chmod(path, 0o755)
+        self.sessions = os.path.join(self.tmp, "sessions.json")
+        self.set_sessions("NIX", "hidden-creek")  # the host that broke the first version
         self.env = dict(os.environ, PATH=self.tmp + os.pathsep + os.environ["PATH"],
-                        OP_BRIDGE_TEST_LOG=self.log, OP_BRIDGE_PORT="0")
+                        OP_BRIDGE_TEST_LOG=self.log, OP_BRIDGE_PORT="0",
+                        OP_BRIDGE_TEST_SESSIONS=self.sessions)
+
+    def set_sessions(self, *labels):
+        open(self.sessions, "w").write(json.dumps({"sessions": [{"session_id": f"session:{l}", "label": l} for l in labels]}))
 
     def lines(self):
         return open(self.log).read().splitlines()
@@ -156,12 +169,27 @@ class Serve(unittest.TestCase):
         return self.lines()
 
     def check(self, lines):
-        closes = [i for i, l in enumerate(lines) if "forward close --orphaned" in l]
+        closes = [i for i, l in enumerate(lines) if "forward close -s op-bridge --orphaned" in l]
         new = [i for i, l in enumerate(lines) if "forward new" in l]
         self.assertEqual(len(closes), 2, lines)
         self.assertLess(closes[0], new[0], "orphans must be closed before the tunnel starts")
         self.assertGreater(closes[1], new[0], "orphans must be closed after the tunnel stops")
         self.assertIn("rm -f ~/.config/op-bridge/secret", lines[-1])
+
+    def test_creates_its_own_session_when_missing(self):
+        lines = self.stop_with(signal.SIGINT)
+        self.assertEqual(sum("session new op-bridge" in l for l in lines), 1, lines)
+        self.assertLess([i for i, l in enumerate(lines) if "session new" in l][0],
+                        [i for i, l in enumerate(lines) if "forward new" in l][0])
+
+    def test_reuses_existing_session(self):
+        self.set_sessions("NIX", "op-bridge")
+        lines = self.stop_with(signal.SIGINT)
+        self.assertFalse(any("session new" in l for l in lines), lines)
+
+    def test_forward_always_names_the_session(self):
+        lines = self.stop_with(signal.SIGINT)
+        self.assertTrue(all(" -s op-bridge " in l for l in lines if "forward " in l), lines)
 
     def test_cleanup_on_sigint(self):
         self.check(self.stop_with(signal.SIGINT))
