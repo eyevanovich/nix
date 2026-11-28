@@ -84,7 +84,7 @@ home.packages = [ pkg1 ]
 
 ### Dotfile Management
 
-Two approaches exist in this repo:
+Most dotfiles use one of these approaches:
 
 1. **`mkOutOfStoreSymlink`** - For configs needing immediate edits without rebuild:
    ```nix

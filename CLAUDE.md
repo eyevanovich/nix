@@ -45,7 +45,7 @@ casks = [ "shared-app" ]
 The `profile` arg flows from `hosts.nix` → `flake.nix` → `specialArgs`/`extraSpecialArgs`
 into every module via the function argument.
 
-### Dotfile Management — Two Approaches
+### Dotfile Management
 
 **`mkOutOfStoreSymlink` (helix only):** Symlinks point back into this repo — edits take
 effect immediately, no rebuild needed:
@@ -55,7 +55,7 @@ home.file.".config/helix/config.toml".source =
     "${config.xdg.configHome}/nix/dotfiles/helix/config.toml";
 ```
 
-**Plain `source` with `recursive = true` (wezterm, karabiner, starship):** Files
+**Plain `source` with `recursive = true` (wezterm, Karabiner assets, starship):** Files
 are copied into the Nix store at build time — edits require a rebuild to take effect:
 ```nix
 home.file.".config/wezterm" = {
@@ -63,6 +63,10 @@ home.file.".config/wezterm" = {
   recursive = true;
 };
 ```
+
+**Karabiner settings:** Activation seeds or migrates a writable
+`~/.config/karabiner/karabiner.json`. Later rebuilds leave local edits alone.
+Edit `dotfiles/karabiner/karabiner.json` to change the default for fresh installs.
 
 For configs fully managed by home-manager options (git, etc.), use the standard
 `programs.<name>.settings` / inline config approach (files end up in the Nix store).
